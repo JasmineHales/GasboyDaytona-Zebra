@@ -1,6 +1,8 @@
 import { ChevronLeft } from 'lucide-react'
+import { useCallback, useState } from 'react'
+import { ExitConfirmDialog } from './ExitConfirmDialog'
 import { HeaderMenu } from './HeaderMenu'
-import { SessionTimer } from './SessionTimer'
+import { resetSessionTimer, SessionTimer } from './SessionTimer'
 import { StatusBar } from './StatusBar'
 
 type HeaderProps = {
@@ -22,7 +24,28 @@ export function Header({
   onReportIssue,
   onSignOut,
 }: HeaderProps) {
+  const [showExitConfirm, setShowExitConfirm] = useState(false)
+  const [pendingExit, setPendingExit] = useState<(() => void) | null>(null)
   const showBackButton = showBack ?? Boolean(onBack)
+
+  const requestExit = useCallback((action?: () => void) => {
+    if (!action) return
+    setPendingExit(() => action)
+    setShowExitConfirm(true)
+  }, [])
+
+  const handleContinue = useCallback(() => {
+    setShowExitConfirm(false)
+    setPendingExit(null)
+  }, [])
+
+  const handleLeave = useCallback(() => {
+    setShowExitConfirm(false)
+    resetSessionTimer()
+    pendingExit?.()
+    setPendingExit(null)
+  }, [pendingExit])
+
   return (
     <header className="shrink-0 border-b-2 border-[#fec310] bg-white">
       <StatusBar />
@@ -32,8 +55,8 @@ export function Header({
           {showBackButton && (
             <button
               type="button"
-              onClick={onBack}
-              className="flex shrink-0 items-center justify-center rounded-full p-4 text-[var(--color-fleet-text)]"
+              onClick={() => requestExit(onBack)}
+              className="field-target flex shrink-0 items-center justify-center rounded-full p-4 text-[var(--color-fleet-text)]"
               aria-label="Go back"
             >
               <ChevronLeft className="h-6 w-6" />
@@ -44,10 +67,19 @@ export function Header({
             <p className="mt-0.5 text-xs font-medium text-[var(--color-fleet-text)]">{subtitle}</p>
           </div>
         </div>
-        <HeaderMenu onReportIssue={onReportIssue} onSignOut={onSignOut} />
+        <HeaderMenu
+          onReportIssue={onReportIssue}
+          onSignOut={() => requestExit(onSignOut)}
+        />
       </div>
 
       {showSessionTimer && <SessionTimer />}
+
+      <ExitConfirmDialog
+        open={showExitConfirm}
+        onContinue={handleContinue}
+        onLeave={handleLeave}
+      />
     </header>
   )
 }

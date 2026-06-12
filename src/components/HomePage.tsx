@@ -22,7 +22,7 @@ function HomeOption({ title, action, icon, accentClass, onClick }: HomeOptionPro
     <button
       type="button"
       onClick={onClick}
-      className="fleet-shadow-1 flex min-h-[72px] w-full items-center gap-4 rounded-[4px] border border-[var(--color-fleet-secondary-border)] bg-white p-4 text-left transition-colors hover:border-[var(--color-fleet-info)]"
+      className="fleet-shadow-1 flex min-h-[72px] w-full items-center gap-4 rounded-[4px] border border-[var(--color-fleet-secondary-border)] bg-white p-5 text-left transition-colors hover:border-[var(--color-fleet-info)]"
     >
       <div
         className={`flex h-14 w-14 shrink-0 items-center justify-center rounded-[4px] text-[var(--color-fleet-info)] ${accentClass}`}

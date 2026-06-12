@@ -51,10 +51,11 @@ const SCREEN_GROUPS: { label: string; screens: { id: ScreenId; label: string }[]
     ],
   },
   {
-    label: 'On-Site Unlock',
+    label: 'On-Site',
     screens: [
-      { id: 'on-site-pump-unlocked', label: 'Pump Unlocked' },
-      { id: 'on-site-pump-verified', label: 'Pump Verified' },
+      { id: 'on-site-default', label: 'Default' },
+      { id: 'on-site-manual-entry', label: 'Manual Entry' },
+      { id: 'on-site-pump-verified', label: 'At Pump' },
       { id: 'on-site-fueling-in-progress', label: 'Fueling In Progress' },
       { id: 'on-site-fueling-complete', label: 'Fueling Complete' },
       { id: 'on-site-missing-info', label: 'Missing Info' },
@@ -64,8 +65,9 @@ const SCREEN_GROUPS: { label: string; screens: { id: ScreenId; label: string }[]
   {
     label: 'Non-Gasboy',
     screens: [
-      { id: 'non-gasboy-pump-unlocked', label: 'Pump Unlocked' },
-      { id: 'non-gasboy-pump-verified', label: 'Pump Verified' },
+      { id: 'non-gasboy-default', label: 'Default' },
+      { id: 'non-gasboy-manual-entry', label: 'Manual Entry' },
+      { id: 'non-gasboy-pump-verified', label: 'At Pump' },
       { id: 'non-gasboy-fueling-in-progress', label: 'Fueling In Progress' },
       { id: 'non-gasboy-fueling-complete', label: 'Fueling Complete' },
       { id: 'non-gasboy-missing-info', label: 'Missing Info' },

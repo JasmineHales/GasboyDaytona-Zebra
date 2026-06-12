@@ -60,7 +60,6 @@ const fuelProgress: Record<FuelStep, ProgressIndicatorProps> = {
     showProgress: true,
     progressPercent: 0,
     progressFillClass: 'bg-[var(--color-fleet-primary-200)]',
-    stepText: 'Step 1 of 4',
   },
   'manual-entry': {
     step: 1,
@@ -70,7 +69,6 @@ const fuelProgress: Record<FuelStep, ProgressIndicatorProps> = {
     showProgress: true,
     progressPercent: 0,
     progressFillClass: 'bg-[var(--color-fleet-primary-200)]',
-    stepText: 'Step 1 of 4',
   },
   'manual-entry-error': {
     step: 1,
@@ -80,7 +78,6 @@ const fuelProgress: Record<FuelStep, ProgressIndicatorProps> = {
     showProgress: true,
     progressPercent: 0,
     progressFillClass: 'bg-[var(--color-fleet-primary-200)]',
-    stepText: 'Step 1 of 4',
   },
   'manual-entry-filled': {
     step: 1,
@@ -90,7 +87,6 @@ const fuelProgress: Record<FuelStep, ProgressIndicatorProps> = {
     showProgress: true,
     progressPercent: 0,
     progressFillClass: 'bg-[var(--color-fleet-primary-200)]',
-    stepText: 'Step 1 of 4',
   },
   'pump-unavailable': {
     step: 1,
@@ -100,7 +96,6 @@ const fuelProgress: Record<FuelStep, ProgressIndicatorProps> = {
     showProgress: true,
     progressPercent: 0,
     progressFillClass: 'bg-[var(--color-fleet-primary-200)]',
-    stepText: 'Step 1 of 4',
   },
   'unlocking-pump': {
     step: 2,
@@ -110,7 +105,6 @@ const fuelProgress: Record<FuelStep, ProgressIndicatorProps> = {
     showProgress: true,
     progressPercent: 33,
     progressFillClass: 'bg-[var(--color-fleet-positive-500)]',
-    stepText: 'Step 2 of 4',
   },
   'pump-unlocked': {
     step: 3,
@@ -120,7 +114,15 @@ const fuelProgress: Record<FuelStep, ProgressIndicatorProps> = {
     showProgress: true,
     progressPercent: 66,
     progressFillClass: 'bg-[var(--color-fleet-positive-500)]',
-    stepText: 'Step 3 of 4',
+  },
+  'pump-verified': {
+    step: 2,
+    label: 'Start Fueling',
+    badgeVariant: 'active',
+    labelVariant: 'default',
+    showProgress: true,
+    progressPercent: 33,
+    progressFillClass: 'bg-[var(--color-fleet-positive-500)]',
   },
   'connection-lost': {
     step: 2,
@@ -130,7 +132,6 @@ const fuelProgress: Record<FuelStep, ProgressIndicatorProps> = {
     showProgress: true,
     progressPercent: 33,
     progressFillClass: 'bg-[var(--color-fleet-text-red)]',
-    stepText: 'Step 2 of 4',
   },
   'no-response': {
     step: 2,
@@ -140,7 +141,6 @@ const fuelProgress: Record<FuelStep, ProgressIndicatorProps> = {
     showProgress: true,
     progressPercent: 33,
     progressFillClass: 'bg-[var(--color-fleet-text-red)]',
-    stepText: 'Step 2 of 4',
   },
   'pump-timeout': {
     step: 2,
@@ -150,7 +150,6 @@ const fuelProgress: Record<FuelStep, ProgressIndicatorProps> = {
     showProgress: true,
     progressPercent: 33,
     progressFillClass: 'bg-[var(--color-fleet-text-red)]',
-    stepText: 'Step 2 of 4',
   },
   'fueling-in-progress': {
     step: 3,
@@ -160,7 +159,6 @@ const fuelProgress: Record<FuelStep, ProgressIndicatorProps> = {
     showProgress: true,
     progressPercent: 66,
     progressFillClass: 'bg-[var(--color-fleet-positive-500)]',
-    stepText: 'Step 3 of 4',
   },
   'fueling-complete': {
     step: 4,
@@ -184,7 +182,6 @@ const fuelProgress: Record<FuelStep, ProgressIndicatorProps> = {
     showProgress: true,
     progressPercent: 0,
     progressFillClass: 'bg-[var(--color-fleet-primary-200)]',
-    stepText: 'Step 1 of 4',
   },
   'additional-fueling-complete': {
     step: 4,

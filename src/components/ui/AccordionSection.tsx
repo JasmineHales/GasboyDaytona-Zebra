@@ -10,6 +10,7 @@ type AccordionSectionProps = {
   onToggle: () => void
   children?: ReactNode
   collapsedOnly?: boolean
+  disabled?: boolean
   isLast?: boolean
   sectionRef?: Ref<HTMLDivElement>
 }
@@ -21,6 +22,7 @@ export function AccordionSection({
   onToggle,
   children,
   collapsedOnly = false,
+  disabled = false,
   isLast = true,
   sectionRef,
 }: AccordionSectionProps) {
@@ -30,16 +32,18 @@ export function AccordionSection({
         type="button"
         data-accordion-scroll-header
         onClick={onToggle}
-        className="flex w-full items-center justify-between px-4 py-3 text-left"
+        disabled={disabled}
+        aria-disabled={disabled}
+        className={`fleet-accordion-header${disabled ? ' fleet-accordion-header--disabled' : ''}`}
       >
-        <div className="flex min-w-0 flex-col gap-1">
+        <div className="flex min-w-0 flex-col gap-1.5">
           <StatusChip status={status} />
-          <p className="text-base font-bold text-[var(--color-fleet-text)]">{title}</p>
+          <p className="text-lg font-bold text-[var(--color-fleet-text)]">{title}</p>
         </div>
         {expanded ? (
-          <ChevronUp className="h-6 w-6 shrink-0 text-[var(--color-fleet-text)]" />
+          <ChevronUp className="h-7 w-7 shrink-0 text-[var(--color-fleet-text)]" />
         ) : (
-          <ChevronDown className="h-6 w-6 shrink-0 text-[var(--color-fleet-text)]" />
+          <ChevronDown className="h-7 w-7 shrink-0 text-[var(--color-fleet-text)]" />
         )}
       </button>
 

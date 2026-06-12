@@ -139,10 +139,22 @@ export function getVehicleSummary(
     ? { priority: 'high' as const, priorityLabel: 'On Hold' }
     : derivePriority(sectionStatus, sections)
 
+  const stallUnlocked = context.fuelComplete || context.cleaningComplete
+  const isActionableSection = (section: WorkflowSection) =>
+    section !== 'stall' || stallUnlocked
+
   const activeSection =
-    sections.find((section) => sectionStatus[section] === 'missing') ??
-    sections.find((section) => sectionStatus[section] === 'in-progress') ??
-    sections.find((section) => sectionStatus[section] === 'not-started') ??
+    sections.find(
+      (section) => isActionableSection(section) && sectionStatus[section] === 'missing',
+    ) ??
+    sections.find(
+      (section) =>
+        isActionableSection(section) && sectionStatus[section] === 'in-progress',
+    ) ??
+    sections.find(
+      (section) =>
+        isActionableSection(section) && sectionStatus[section] === 'not-started',
+    ) ??
     sections[sections.length - 1]
 
   const nextAction =

@@ -40,7 +40,6 @@ type TransportScreenProps = {
   subtitle?: string
   sections?: WorkflowSection[]
   defaultExpanded?: WorkflowSection | null
-  autoExpandFromScreen?: boolean
   vehicleProfile?: VehicleProfile
   context: FlowContext
   onAction: (action: string, payload?: string) => void
@@ -54,7 +53,6 @@ export function TransportScreen({
   subtitle = 'Fuel Island',
   sections = DEFAULT_SECTIONS,
   defaultExpanded,
-  autoExpandFromScreen = true,
   vehicleProfile = TRANSPORT_VEHICLE,
   context,
   onAction,
@@ -65,25 +63,22 @@ export function TransportScreen({
   const [expandedSection, setExpandedSection] = useState<WorkflowSection | null>(() =>
     initialExpanded(sections, defaultExpanded),
   )
+  const [acknowledgedSections, setAcknowledgedSections] = useState<WorkflowSection[]>(
+    [],
+  )
   const [showScanner, setShowScanner] = useState(false)
   const [scannerTarget, setScannerTarget] = useState<'fuel' | 'cleaning'>('fuel')
   const [showLocationSearch, setShowLocationSearch] = useState(false)
-  const scanSectionRef = useRef<WorkflowSection | null>(null)
   const mainRef = useRef<HTMLElement>(null)
   const sectionRefs = useRef<Partial<Record<WorkflowSection, HTMLDivElement | null>>>({})
 
   const openScanner = (target: 'fuel' | 'cleaning') => {
-    scanSectionRef.current = target
     setScannerTarget(target)
-    setExpandedSection(target)
     setShowScanner(true)
   }
 
   const closeScanner = () => {
     setShowScanner(false)
-    if (scanSectionRef.current) {
-      setExpandedSection(scanSectionRef.current)
-    }
   }
   const movementStatus: SectionStatus = context.movementComplete
     ? 'complete'
@@ -104,13 +99,16 @@ export function TransportScreen({
           : context.fuelStep === 'verify-pump' && !context.isAdditionalFueling
             ? 'not-started'
             : 'in-progress'
-  const stallStatus: SectionStatus = context.stallComplete
-    ? 'complete'
-    : context.stallPhase === 'stall-verify'
-      ? 'missing'
-      : context.stallPhase === 'select-stall'
-        ? 'not-started'
-        : 'in-progress'
+  const stallUnlocked = context.fuelComplete || context.cleaningComplete
+  const stallStatus: SectionStatus = !stallUnlocked
+    ? 'not-started'
+    : context.stallComplete
+      ? 'complete'
+      : context.stallPhase === 'stall-verify'
+        ? 'missing'
+        : context.stallPhase === 'select-stall'
+          ? 'not-started'
+          : 'in-progress'
   const cleaningStatus: SectionStatus = context.cleaningComplete
     ? 'complete'
     : context.cleaningStep === 'verify-pump'
@@ -124,49 +122,38 @@ export function TransportScreen({
     cleaning: cleaningStatus,
   }
 
-  const sectionComplete: Record<WorkflowSection, boolean> = {
-    movement: context.movementComplete,
-    fuel:
-      context.fuelStep === 'fueling-complete-missing'
-        ? false
-        : context.fuelComplete,
-    stall: context.stallComplete,
-    cleaning: context.cleaningComplete,
-  }
-
-  const expandSection = (section: WorkflowSection) => {
-    setExpandedSection(section)
-  }
+  const isSectionDisabled = (section: WorkflowSection) =>
+    section === 'stall' && !stallUnlocked
 
   const toggleSection = (section: WorkflowSection) => {
+    if (isSectionDisabled(section)) return
     setExpandedSection((current) => (current === section ? null : section))
   }
 
-  useEffect(() => {
-    if (context.screen === 'transport-default' || context.screen === 'stall-default') {
-      setExpandedSection(initialExpanded(sections, defaultExpanded))
-    }
-  }, [context.screen, defaultExpanded, sections])
+  const completableSection = sections.find(
+    (section) =>
+      sectionStatus[section] === 'complete' &&
+      !acknowledgedSections.includes(section),
+  )
+
+  const handleComplete = () => {
+    if (!completableSection) return
+
+    onAction('complete', completableSection)
+    setAcknowledgedSections((prev) => [...prev, completableSection])
+  }
 
   useEffect(() => {
-    if (!autoExpandFromScreen) return
-    if (context.screen.endsWith('-default')) return
+    setAcknowledgedSections((prev) =>
+      prev.filter((section) => sectionStatus[section] === 'complete'),
+    )
+  }, [movementStatus, fuelStatus, stallStatus, cleaningStatus])
 
-    if (sections.includes('stall') && context.screen.startsWith('stall-')) {
-      expandSection('stall')
-    } else if (sections.includes('movement') && context.screen.startsWith('movement-')) {
-      expandSection('movement')
-    } else if (
-      sections.includes('fuel') &&
-      (context.screen.startsWith('fueling-') ||
-        context.screen.startsWith('on-site-') ||
-        context.screen.startsWith('non-gasboy-'))
-    ) {
-      expandSection('fuel')
-    } else if (sections.includes('cleaning') && context.screen.startsWith('cleaning-')) {
-      expandSection('cleaning')
+  useEffect(() => {
+    if (expandedSection && isSectionDisabled(expandedSection)) {
+      setExpandedSection(null)
     }
-  }, [context.screen, sections, autoExpandFromScreen])
+  }, [expandedSection, stallUnlocked])
 
   useEffect(() => {
     const mainEl = mainRef.current
@@ -270,7 +257,11 @@ export function TransportScreen({
   }
 
   const showAlert = context.unavailablePumps.length > 0
-  const canComplete = sections.every((section) => sectionComplete[section])
+  const hasSectionInProgress = sections.some(
+    (section) => sectionStatus[section] === 'in-progress',
+  )
+  const canComplete =
+    completableSection !== undefined && !hasSectionInProgress
   const vehicleSummary = getVehicleSummary(sections, sectionStatus, context, vehicleProfile)
 
   const renderSectionContent = (section: WorkflowSection) => {
@@ -324,7 +315,6 @@ export function TransportScreen({
             onSubmitMissingGallons={() => handleFuelAction('submit-missing-gallons')}
             isAdditionalFueling={context.isAdditionalFueling}
             fuelTransactions={context.fuelTransactions}
-            unavailablePumps={context.unavailablePumps}
             onScanPump={() => handleFuelAction('scan')}
             onManualEntry={() => handleFuelAction('manual-entry')}
             onBackToScan={() => handleFuelAction('back-to-scan')}
@@ -386,6 +376,7 @@ export function TransportScreen({
                   title={SECTION_TITLES[section]}
                   status={sectionStatus[section]}
                   expanded={expandedSection === section}
+                  disabled={isSectionDisabled(section)}
                   onToggle={() => toggleSection(section)}
                   isLast={index === sections.length - 1}
                   sectionRef={(el) => {
@@ -400,10 +391,10 @@ export function TransportScreen({
         </div>
       </main>
 
-      <footer className="shrink-0 px-3 pb-[max(1rem,env(safe-area-inset-bottom))] pt-2 sm:px-4 md:px-6">
+      <footer className="shrink-0 border-t border-[var(--color-fleet-secondary-border)] px-3 pb-[max(1rem,env(safe-area-inset-bottom))] pt-3 sm:px-4 md:px-6">
         <CompleteButton
           disabled={!canComplete}
-          onClick={() => onAction('complete')}
+          onClick={handleComplete}
         />
       </footer>
 
@@ -421,11 +412,11 @@ export function TransportScreen({
         <ScannerScreen
           onBack={closeScanner}
           onManualEntry={() => {
-            closeScanner()
+            setShowScanner(false)
             if (scannerTarget === 'cleaning') {
               onCleaningAction('manual-entry')
             } else {
-              handleFuelAction('manual-entry')
+              onAction('manual-entry')
             }
           }}
           onScanComplete={() => {

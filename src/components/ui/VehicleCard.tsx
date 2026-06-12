@@ -36,7 +36,7 @@ export function VehicleCard({ summary }: VehicleCardProps) {
         onClick={() => hasDetails && setExpanded((open) => !open)}
         aria-expanded={hasDetails ? expanded : undefined}
         disabled={!hasDetails}
-        className={`flex w-full items-center gap-2 px-3 py-2.5 text-left transition-colors disabled:cursor-default ${
+        className={`field-target flex w-full items-center gap-3 px-4 py-3 text-left transition-colors disabled:cursor-default ${
           hasDetails ? 'hover:bg-[var(--color-fleet-surface-muted)]' : ''
         }`}
       >
@@ -45,11 +45,11 @@ export function VehicleCard({ summary }: VehicleCardProps) {
             <span className="fleet-chip fleet-chip-neutral shrink-0 px-2 py-0.5 text-xs font-bold">
               {summary.unitId}
             </span>
-            <span className="truncate text-sm font-bold leading-tight text-[var(--color-fleet-text)]">
+            <span className="truncate text-base font-bold leading-tight text-[var(--color-fleet-text)]">
               {summary.name}
             </span>
           </div>
-          <p className="truncate text-xs font-semibold leading-tight text-[var(--color-fleet-text-secondary)]">
+          <p className="truncate text-sm font-semibold leading-tight text-[var(--color-fleet-text-secondary)]">
             {summary.vehicleClass}
           </p>
         </div>

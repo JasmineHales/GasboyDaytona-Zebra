@@ -3,10 +3,12 @@ import {
   ArrowLeft,
   Check,
   ChevronRight,
-  QrCode,
   X,
 } from 'lucide-react'
+import { BottomSheetOverlay } from '../ui/BottomSheetOverlay'
+import { PumpVerifyCard } from '../ui/PumpVerifyCard'
 import { ScannerScreen } from './ScannerScreen'
+import { TextAreaField, TextField } from '../ui/TextField'
 
 type Step = 'category' | 'select-pump' | 'issue-type' | 'details' | 'confirmation'
 
@@ -66,13 +68,13 @@ function OverlayList({
           key={item}
           type="button"
           onClick={() => onSelect(item)}
-          className={`field-target flex w-full items-center px-4 py-2 text-left ${
+          className={`field-target flex w-full items-center px-4 text-left ${
             index < items.length - 1
               ? 'border-b border-[var(--color-fleet-secondary-border)]'
               : ''
           }`}
         >
-          <span className="flex-1 py-1 text-sm font-semibold text-[var(--color-fleet-text)]">
+          <span className="flex-1 py-2 text-base font-semibold text-[var(--color-fleet-text)]">
             {item}
           </span>
           <ChevronRight className="h-10 w-10 shrink-0 text-[var(--color-fleet-text-secondary)]" />
@@ -84,19 +86,21 @@ function OverlayList({
 
 function OverlayHeader({
   title,
+  subtitle,
   centered = false,
   showBack,
   onBack,
   onClose,
 }: {
   title: string
+  subtitle?: string
   centered?: boolean
   showBack?: boolean
   onBack?: () => void
   onClose: () => void
 }) {
-  if (!showBack && !centered) {
-    return (
+  const toolbar =
+    !showBack && !centered ? (
       <div className="flex w-full items-center">
         <p className="min-w-0 flex-1 text-lg font-bold text-[var(--color-fleet-text)]">
           {title}
@@ -110,34 +114,42 @@ function OverlayHeader({
           <X className="h-6 w-6 text-[var(--color-fleet-text)]" />
         </button>
       </div>
-    )
-  }
-
-  return (
-    <div className="flex w-full items-center">
-      {showBack ? (
+    ) : (
+      <div className="flex w-full items-center">
+        {showBack ? (
+          <button
+            type="button"
+            onClick={onBack}
+            className="field-target flex shrink-0 items-center justify-center rounded-full p-2"
+            aria-label="Go back"
+          >
+            <ArrowLeft className="h-6 w-6 text-[var(--color-fleet-text)]" />
+          </button>
+        ) : (
+          <div className="w-10 shrink-0" />
+        )}
+        <p className="min-w-0 flex-1 text-center text-lg font-bold text-[var(--color-fleet-text)]">
+          {title}
+        </p>
         <button
           type="button"
-          onClick={onBack}
+          onClick={onClose}
           className="field-target flex shrink-0 items-center justify-center rounded-full p-2"
-          aria-label="Go back"
+          aria-label="Close"
         >
-          <ArrowLeft className="h-6 w-6 text-[var(--color-fleet-text)]" />
+          <X className="h-6 w-6 text-[var(--color-fleet-text)]" />
         </button>
-      ) : (
-        <div className="w-10 shrink-0" />
+      </div>
+    )
+
+  return (
+    <div className="shrink-0">
+      {toolbar}
+      {subtitle && (
+        <p className="mt-2 text-left text-sm leading-relaxed text-[var(--color-fleet-text-secondary)]">
+          {subtitle}
+        </p>
       )}
-      <p className="min-w-0 flex-1 text-center text-lg font-bold text-[var(--color-fleet-text)]">
-        {title}
-      </p>
-      <button
-        type="button"
-        onClick={onClose}
-        className="field-target flex shrink-0 items-center justify-center rounded-full p-2"
-        aria-label="Close"
-      >
-        <X className="h-6 w-6 text-[var(--color-fleet-text)]" />
-      </button>
     </div>
   )
 }
@@ -153,7 +165,7 @@ function TextButton({
     <button
       type="button"
       onClick={onClick}
-      className="fleet-btn fleet-btn-md w-full text-[var(--color-fleet-text-blue)]"
+      className="fleet-btn fleet-btn-lg fleet-btn-link w-full"
     >
       {children}
     </button>
@@ -178,6 +190,10 @@ export function IssueOverlay({
 
   const isPumpFlow = category === 'pump' || source === 'fuel'
   const headerTitle = isPumpFlow ? 'Report Fuelling Issue' : 'Report Issue'
+  const overlaySubtitle =
+    source === 'fuel'
+      ? 'Your fuelling session stays open behind this form. Tap outside or Cancel to go back.'
+      : 'Your workflow stays open behind this form. Tap outside or Cancel to go back.'
   const showPumpSubtitle =
     isPumpFlow && pumpNumber.trim().length > 0 && step !== 'select-pump'
 
@@ -242,10 +258,11 @@ export function IssueOverlay({
   }
 
   return (
-    <div className="app-overlay bg-white">
-      <div className="flex min-h-0 flex-1 flex-col gap-2 overflow-hidden px-4 py-4">
+    <BottomSheetOverlay open onDismiss={onClose}>
+      <div className="flex min-h-[50dvh] max-h-[92dvh] flex-col gap-2 overflow-hidden px-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
         <OverlayHeader
           title={step === 'category' ? 'Report Issue' : headerTitle}
+          subtitle={step === 'confirmation' ? undefined : overlaySubtitle}
           showBack={step !== 'category' && !(source === 'fuel' && step === initial.step)}
           onBack={handleBack}
           onClose={onClose}
@@ -275,56 +292,31 @@ export function IssueOverlay({
 
           {step === 'select-pump' && (
             <>
-              <div className="flex flex-col gap-2">
+              <div className="workflow-stack">
                 <p className="text-base font-semibold text-[var(--color-fleet-text)]">
                   Select Pump
                 </p>
-                <p className="text-xs text-[var(--color-fleet-text-secondary)]">
-                  Scan Pump
-                </p>
-                <button
-                  type="button"
+                <PumpVerifyCard
+                  buttonLabel="Scan Pump"
                   onClick={() => setShowScanner(true)}
-                  className="flex w-full flex-col gap-4 rounded-xl border border-[#7ccffd] bg-white px-6 pb-5 pt-6 text-left"
-                >
-                  <div className="flex flex-col items-center gap-2">
-                    <div className="relative flex h-24 w-24 items-center justify-center">
-                      <div className="absolute inset-0 rounded-full bg-[var(--color-fleet-info-ring)] opacity-60" />
-                      <QrCode className="relative h-14 w-14 text-[var(--color-fleet-info)]" />
-                    </div>
-                    <p className="text-center text-base font-semibold text-[var(--color-fleet-text-blue-secondary)]">
-                      Scan Pump QR
-                    </p>
-                  </div>
-                  <p className="text-center text-xs text-[var(--color-fleet-text-secondary)]">
-                    Scan the QR code at your pump
-                  </p>
-                  <span className="fleet-btn fleet-btn-md fleet-btn-contained-info fleet-btn-elevated w-full">
-                    <QrCode className="h-5 w-5" />
-                    Scan Pump
-                  </span>
-                </button>
+                />
                 <p className="text-center text-sm font-bold text-[var(--color-fleet-text)]">
                   OR
                 </p>
-                <p className="text-xs text-[var(--color-fleet-text-secondary)]">
-                  Enter Manually
-                </p>
-                <input
-                  type="text"
-                  inputMode="numeric"
+                <TextField
+                  label="Enter Manually"
                   value={pumpNumber}
-                  onChange={(e) => setPumpNumber(e.target.value)}
+                  onChange={setPumpNumber}
                   placeholder="Enter pump no."
-                  className="w-full rounded border border-[var(--color-fleet-secondary-border)] px-3 py-4 text-base text-[var(--color-fleet-text)] outline-none focus:border-[var(--color-fleet-info)]"
+                  inputMode="numeric"
                 />
               </div>
-              <div className="mt-auto flex flex-col gap-2 pt-4">
+              <div className="workflow-stack mt-auto pt-4">
                 <button
                   type="button"
                   disabled={!canContinuePump}
                   onClick={() => setStep('issue-type')}
-                  className={`fleet-btn fleet-btn-md w-full ${
+                  className={`fleet-btn fleet-btn-lg w-full ${
                     canContinuePump
                       ? 'fleet-btn-contained-info fleet-btn-elevated'
                       : 'cursor-not-allowed bg-[rgba(45,47,49,0.12)] text-[rgba(45,47,49,0.38)]'
@@ -355,21 +347,18 @@ export function IssueOverlay({
           {step === 'details' && (
             <div className="flex flex-1 flex-col gap-2">
               <div className="flex flex-1 flex-col gap-2 pb-4">
-                <p className="text-base font-semibold text-[var(--color-fleet-text)]">
-                  Additional details?
-                </p>
-                <textarea
+                <TextAreaField
+                  label="Additional details?"
                   value={details}
-                  onChange={(e) => setDetails(e.target.value)}
+                  onChange={setDetails}
                   placeholder="Tell us more (optional)"
-                  className="h-56 w-full resize-none rounded-lg border border-[var(--color-fleet-secondary-border)] p-3 text-base text-[var(--color-fleet-text)] outline-none focus:border-[var(--color-fleet-info)]"
                 />
               </div>
-              <div className="flex flex-col gap-2">
+              <div className="workflow-stack">
                 <button
                   type="button"
                   onClick={() => setStep('confirmation')}
-                  className="fleet-btn fleet-btn-md fleet-btn-contained-info fleet-btn-elevated w-full"
+                  className="fleet-btn fleet-btn-lg fleet-btn-contained-info fleet-btn-elevated w-full"
                 >
                   Continue
                 </button>
@@ -384,7 +373,7 @@ export function IssueOverlay({
                 <div className="flex h-[72px] w-[72px] items-center justify-center rounded-full bg-[#b9e4fe]">
                   <Check className="h-8 w-8 text-[var(--color-fleet-info)]" strokeWidth={3} />
                 </div>
-                <div className="flex flex-col gap-2">
+                <div className="workflow-stack">
                   <p className="text-xl font-bold text-[#111827]">Issue Reported</p>
                   <p className="text-sm leading-normal text-[#4b5563]">
                     Thank you for letting us know. We&apos;ll look into this and get back to
@@ -394,7 +383,7 @@ export function IssueOverlay({
                 <button
                   type="button"
                   onClick={() => onComplete(reportData)}
-                  className="fleet-btn fleet-btn-md fleet-btn-outlined w-full border-[var(--color-fleet-info)] text-[var(--color-fleet-text-blue)]"
+                  className="fleet-btn fleet-btn-lg fleet-btn-outlined w-full border-[var(--color-fleet-info)] text-[var(--color-fleet-text-blue)]"
                 >
                   Done
                 </button>
@@ -403,6 +392,6 @@ export function IssueOverlay({
           )}
         </div>
       </div>
-    </div>
+    </BottomSheetOverlay>
   )
 }

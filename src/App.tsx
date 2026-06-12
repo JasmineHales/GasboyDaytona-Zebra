@@ -20,7 +20,10 @@ export default function App() {
   } = useFlow()
 
   const handleFlowAction = (action: string, payload?: string) => {
-    if (action === 'back') {
+    if (action === 'back' || action === 'complete') {
+      if (action === 'complete') {
+        handleAction(action, payload)
+      }
       setView('home')
       return
     }

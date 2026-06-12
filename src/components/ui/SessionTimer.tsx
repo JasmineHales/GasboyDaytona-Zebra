@@ -2,6 +2,10 @@ import { useEffect, useState } from 'react'
 
 const SESSION_START_KEY = 'remote-off-session-start'
 
+export function resetSessionTimer() {
+  sessionStorage.removeItem(SESSION_START_KEY)
+}
+
 function getSessionStartAt(): number {
   const stored = sessionStorage.getItem(SESSION_START_KEY)
   if (stored) return Number(stored)

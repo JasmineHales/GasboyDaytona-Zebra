@@ -2,22 +2,21 @@ import {
   AlertTriangle,
   ArrowLeft,
   ArrowLeftRight,
-  CheckCircle2,
-  ChevronRight,
   Flag,
   Fuel,
-  Info,
   Lock,
   Play,
-  QrCode,
   RefreshCw,
-  X,
 } from 'lucide-react'
 import type { ReactNode } from 'react'
-import { useEffect, useState } from 'react'
 import type { FuelStep, FuelTransaction } from '../../types/flow'
 import { ProgressIndicator } from '../ui/ProgressIndicator'
+import { PumpConfirmedCard } from '../ui/PumpConfirmedCard'
+import { PumpVerifyDefault } from '../ui/PumpVerifyDefault'
+import { TextField } from '../ui/TextField'
+import { WorkflowInProgressStatus } from '../ui/WorkflowInProgressStatus'
 import { getFuelProgress } from '../../utils/progress'
+import { FuelUnlockModeInfo } from './FuelUnlockModeInfo'
 
 type FuelStepContentProps = {
   step: FuelStep
@@ -30,7 +29,6 @@ type FuelStepContentProps = {
   fuelStartedAt: number | null
   isAdditionalFueling: boolean
   fuelTransactions: FuelTransaction[]
-  unavailablePumps: number[]
   onScanPump: () => void
   onManualEntry: () => void
   onBackToScan: () => void
@@ -48,41 +46,6 @@ type FuelStepContentProps = {
 }
 
 type ManualFuelingVariant = 'on-site' | 'non-gasboy'
-
-function formatElapsed(totalSeconds: number) {
-  const hours = String(Math.floor(totalSeconds / 3600)).padStart(2, '0')
-  const minutes = String(Math.floor((totalSeconds % 3600) / 60)).padStart(2, '0')
-  const seconds = String(totalSeconds % 60).padStart(2, '0')
-  return { hours, minutes, seconds }
-}
-
-function FuelTimer({ startedAt }: { startedAt: number | null }) {
-  const [elapsed, setElapsed] = useState(0)
-
-  useEffect(() => {
-    if (!startedAt) return
-
-    const tick = () => {
-      setElapsed(Math.floor((Date.now() - startedAt) / 1000))
-    }
-
-    tick()
-    const id = window.setInterval(tick, 1000)
-    return () => window.clearInterval(id)
-  }, [startedAt])
-
-  const { hours, minutes, seconds } = formatElapsed(elapsed)
-
-  return (
-    <div className="flex items-center justify-center gap-1 text-3xl font-bold tabular-nums text-[var(--color-text-primary)]">
-      <span>{hours}</span>
-      <span>:</span>
-      <span>{minutes}</span>
-      <span>:</span>
-      <span>{seconds}</span>
-    </div>
-  )
-}
 
 function FuelStatusChip({ status }: { status: FuelTransaction['status'] }) {
   if (status === 'complete') {
@@ -146,33 +109,20 @@ function MissingGallonsForm({
   const canSubmit = fuelGallons.trim().length > 0
 
   return (
-    <div className="flex flex-col gap-2">
-      <p className="text-sm font-bold text-[var(--color-text-primary)]">Gallons Pumped</p>
-      <div className="flex items-center rounded border border-[var(--color-border)] px-3">
-        <input
-          type="text"
-          inputMode="decimal"
-          value={fuelGallons}
-          placeholder="Enter gallons dispensed"
-          onChange={(e) => onGallonsChange(e.target.value)}
-          className="h-14 flex-1 bg-transparent text-base text-[var(--color-text-primary)] outline-none placeholder:text-[var(--color-text-secondary)]"
-        />
-        {fuelGallons && (
-          <button
-            type="button"
-            onClick={() => onGallonsChange('')}
-            className="field-target flex shrink-0 items-center justify-center"
-            aria-label="Clear gallons"
-          >
-            <X className="h-6 w-6 text-[var(--color-text-secondary)]" />
-          </button>
-        )}
-      </div>
+    <div className="workflow-stack">
+      <TextField
+        label="Gallons Pumped"
+        value={fuelGallons}
+        placeholder="Enter gallons dispensed"
+        inputMode="decimal"
+        onChange={onGallonsChange}
+        onClear={() => onGallonsChange('')}
+      />
       <button
         type="button"
         onClick={onSubmit}
         disabled={!canSubmit}
-        className={`fleet-btn fleet-btn-md h-12 w-full ${
+        className={`fleet-btn fleet-btn-lg w-full ${
           canSubmit
             ? 'fleet-btn-contained-info fleet-btn-elevated text-white'
             : 'cursor-not-allowed bg-[rgba(45,47,49,0.12)] text-[rgba(45,47,49,0.38)]'
@@ -224,8 +174,8 @@ function FuelIssueNotification({
       <div className="flex gap-3">
         <AlertTriangle className="h-8 w-8 shrink-0 text-[var(--color-brand-error)]" />
         <div className="min-w-0 flex-1">
-          <p className="text-base font-semibold text-[var(--color-brand-secondary)]">{title}</p>
-          <p className="mt-1 text-sm text-[var(--color-text-secondary)]">{message}</p>
+          <p className="fleet-issue-notification__title">{title}</p>
+          <p className="fleet-issue-notification__message">{message}</p>
         </div>
       </div>
       {footer}
@@ -233,36 +183,43 @@ function FuelIssueNotification({
   )
 }
 
-const reportIssueButtonClass =
-  'fleet-btn fleet-btn-lg h-12 w-full border border-[var(--color-fleet-error)] bg-white text-[var(--color-fleet-text-red)]'
-
-function ReportIssueCard({ onReportIssue }: { onReportIssue: () => void }) {
+function ReportIssueLink({
+  onReportIssue,
+  title,
+  description,
+  actionLabel = 'Report it',
+}: {
+  onReportIssue: () => void
+  title: string
+  description: string
+  actionLabel?: string
+}) {
   return (
-    <FuelIssueNotification
-      title="Pump issue?"
-      message="Report the issue to continue fuelling."
-      footer={
-        <button type="button" onClick={onReportIssue} className={reportIssueButtonClass}>
-          Report Issue
-          <ChevronRight className="h-5 w-5" />
-        </button>
-      }
-    />
+    <div className="fleet-report-issue">
+      <div className="fleet-report-issue__copy">
+        <p className="fleet-report-issue__title">{title}</p>
+        <p className="fleet-report-issue__message">{description}</p>
+      </div>
+      <button
+        type="button"
+        onClick={onReportIssue}
+        className="fleet-btn fleet-btn-lg fleet-btn-outlined fleet-report-issue__action w-full"
+      >
+        <Flag className="h-4 w-4" />
+        {actionLabel}
+      </button>
+    </div>
   )
 }
 
-function NotEnoughFuelCard({ onReportIssue }: { onReportIssue: () => void }) {
+function PriorFuelSummary({ rows }: { rows: FuelTransaction[] }) {
   return (
-    <FuelIssueNotification
-      title="Didn't get enough fuel?"
-      message="Report the issue to continue fuelling at another pump."
-      footer={
-        <button type="button" onClick={onReportIssue} className={reportIssueButtonClass}>
-          Report Issue
-          <ChevronRight className="h-5 w-5" />
-        </button>
-      }
-    />
+    <p className="text-sm text-[var(--color-fleet-text-secondary)]">
+      Previous:{' '}
+      {rows
+        .map((row) => `Pump ${row.pump} · ${row.gallons} gal`)
+        .join(' · ')}
+    </p>
   )
 }
 
@@ -275,164 +232,30 @@ function getManualFuelingVariant(
   return null
 }
 
-function ManualFuelingInfoBanner({ variant }: { variant: ManualFuelingVariant }) {
-  const message =
-    variant === 'on-site'
-      ? 'Unlock the pump on-site, then verify the pump number and record gallons dispensed.'
-      : 'Remote unlock is unavailable at this location. Enter the pump number and gallons dispensed manually.'
+const unlockActionClass =
+  'fleet-btn fleet-btn-lg fleet-btn-contained-success fleet-btn-elevated w-full disabled:cursor-not-allowed disabled:bg-[rgba(45,47,49,0.12)] disabled:text-[rgba(45,47,49,0.38)] disabled:shadow-none'
 
-  return (
-    <div className="flex items-start gap-3 rounded bg-[var(--color-fleet-info-surface)] px-4 py-3">
-      <Info className="mt-0.5 h-[22px] w-[22px] shrink-0 text-[var(--color-brand-primary)]" />
-      <p className="text-xs text-[var(--color-brand-secondary)]">{message}</p>
-    </div>
-  )
-}
-
-function PumpTimerSummary({
-  pumpNumber,
-  startedAt,
-}: {
-  pumpNumber: string
-  startedAt: number | null
-}) {
-  return (
-    <div className="rounded-lg bg-[var(--color-fleet-info-surface)] p-4">
-      <div className="flex items-center">
-        <div className="flex flex-1 flex-col items-center gap-2 text-center">
-          <p className="text-[11px] font-semibold uppercase tracking-wide text-[var(--color-fleet-text-secondary)]">
-            Pump
-          </p>
-          <p className="text-[32px] font-bold leading-none text-[var(--color-fleet-text)]">
-            {pumpNumber}
-          </p>
-        </div>
-        <div className="flex flex-col items-center gap-2 border-l border-[var(--color-border)] px-4">
-          <p className="text-[11px] font-semibold uppercase tracking-wide text-[var(--color-fleet-text-secondary)]">
-            Time
-          </p>
-          <FuelTimer startedAt={startedAt} />
-        </div>
-      </div>
-    </div>
-  )
-}
-
-function ManualVerifyPumpForm({
-  pumpNumber,
-  hasError,
-  onPumpChange,
-  onClearPump,
-  onVerifyPump,
-}: {
-  pumpNumber: string
-  hasError: boolean
-  onPumpChange: (value: string) => void
-  onClearPump: () => void
-  onVerifyPump: () => void
-}) {
-  const canVerify = pumpNumber.trim().length > 0
-
-  return (
-    <>
-      <div>
-        <p className="text-sm font-bold text-[var(--color-text-primary)]">Manual Entry</p>
-        <p className="text-sm text-[var(--color-fleet-text-blue-secondary)]">
-          Enter the pump number displayed on the pump
-        </p>
-      </div>
-
-      <div className="flex flex-col gap-2">
-        <div
-          className={`flex items-center rounded border px-3 ${
-            hasError
-              ? 'border-[var(--color-fleet-error)]'
-              : 'border-[var(--color-border)]'
-          }`}
-        >
-          <input
-            type="text"
-            inputMode="numeric"
-            value={pumpNumber}
-            placeholder="Enter pump no."
-            onChange={(e) => onPumpChange(e.target.value)}
-            className="h-14 flex-1 bg-transparent text-base text-[var(--color-text-primary)] outline-none placeholder:text-[var(--color-text-secondary)]"
-          />
-          {pumpNumber && (
-            <button
-              type="button"
-              onClick={onClearPump}
-              className="field-target flex shrink-0 items-center justify-center"
-              aria-label="Clear pump number"
-            >
-              <X
-                className={`h-5 w-5 ${
-                  hasError
-                    ? 'text-[var(--color-brand-error)]'
-                    : 'text-[var(--color-brand-primary)]'
-                }`}
-              />
-            </button>
-          )}
-        </div>
-
-        {hasError && (
-          <FuelIssueNotification
-            title="Pump Unavailable"
-            message="This pump cannot be used. Select another pump."
-          />
-        )}
-
-        <button
-          type="button"
-          onClick={onVerifyPump}
-          disabled={!canVerify}
-          className="fleet-btn fleet-btn-lg fleet-btn-contained-info fleet-btn-elevated h-[54px] w-full disabled:cursor-not-allowed disabled:bg-[rgba(45,47,49,0.12)] disabled:text-[rgba(45,47,49,0.38)] disabled:shadow-none"
-        >
-          <Lock className="h-5 w-5" />
-          Verify Pump
-        </button>
-      </div>
-    </>
-  )
-}
+const verifyActionClass =
+  'fleet-btn fleet-btn-lg fleet-btn-contained-info fleet-btn-elevated w-full disabled:cursor-not-allowed disabled:bg-[rgba(45,47,49,0.12)] disabled:text-[rgba(45,47,49,0.38)] disabled:shadow-none'
 
 function ManualPumpConfirmedCard({
   pumpNumber,
-  variant,
   onStartFueling,
 }: {
   pumpNumber: string
-  variant: ManualFuelingVariant
   onStartFueling: () => void
 }) {
-  const title =
-    variant === 'non-gasboy'
-      ? `Pump ${pumpNumber} Verified`
-      : `Pump ${pumpNumber} Unlocked`
-  const subtitle =
-    variant === 'non-gasboy'
-      ? 'Your location has been verified'
-      : 'Begin fueling, then record gallons dispensed when complete'
+  const title = `You're at Pump ${pumpNumber}`
+  const subtitle = 'Begin fueling, then record gallons when done.'
 
   return (
-    <div className="flex flex-col gap-2 rounded border border-[var(--color-brand-success)] bg-[var(--color-fleet-positive-surface)] px-4 py-3">
-      <div className="flex items-start gap-2">
-        <CheckCircle2 className="h-[50px] w-[50px] shrink-0 text-[var(--color-brand-success)]" />
-        <div>
-          <p className="text-xl font-bold text-[var(--color-text-primary)]">{title}</p>
-          <p className="text-xs text-[var(--color-text-primary)]">{subtitle}</p>
-        </div>
-      </div>
-      <button
-        type="button"
-        onClick={onStartFueling}
-        className="fleet-btn fleet-btn-lg fleet-btn-contained-success fleet-btn-elevated w-full"
-      >
-        <Play className="h-5 w-5 fill-white" />
-        Start Fueling
-      </button>
-    </div>
+    <PumpConfirmedCard
+      title={title}
+      subtitle={subtitle}
+      actionLabel="Start Fueling"
+      onAction={onStartFueling}
+      actionIcon={<Play className="h-5 w-5 fill-white" />}
+    />
   )
 }
 
@@ -451,16 +274,21 @@ function ManualFuelingInProgress({
 }) {
   return (
     <>
-      <PumpTimerSummary pumpNumber={pumpNumber} startedAt={fuelStartedAt} />
-      <div className="flex flex-col gap-2">
-        <p className="text-sm font-bold text-[var(--color-fleet-text)]">Gallons Pumped</p>
-        <input
-          type="text"
-          inputMode="decimal"
+      <WorkflowInProgressStatus
+        icon={<Fuel className="h-6 w-6" />}
+        title="Fueling at the pump"
+        subtitle="Record gallons when you're done fueling"
+        note="Enter the amount from the pump display before finishing"
+        pumpNumber={pumpNumber}
+        startedAt={fuelStartedAt}
+      />
+      <div className="workflow-stack">
+        <TextField
+          label="Gallons Pumped"
           value={fuelGallons}
           placeholder="Enter gallons dispensed"
-          onChange={(e) => onGallonsChange(e.target.value)}
-          className="h-14 rounded border border-[var(--color-border)] px-3 text-base text-[var(--color-text-primary)] outline-none placeholder:text-[var(--color-text-secondary)]"
+          inputMode="decimal"
+          onChange={onGallonsChange}
         />
         <button
           type="button"
@@ -475,22 +303,6 @@ function ManualFuelingInProgress({
   )
 }
 
-function OnSiteUnlockRow({ onClick }: { onClick: () => void }) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className="field-target flex min-h-14 w-full items-center gap-3 rounded border border-[var(--color-border)] text-left"
-    >
-      <div className="flex flex-1 items-center gap-3 px-4 py-3">
-        <Lock className="h-6 w-6 shrink-0" />
-        <span className="text-sm font-semibold">On-Site Unlock</span>
-      </div>
-      <ChevronRight className="mr-2 h-6 w-6 shrink-0 text-[var(--color-text-secondary)]" />
-    </button>
-  )
-}
-
 export function FuelStepContent({
   step,
   pumpNumber,
@@ -502,7 +314,6 @@ export function FuelStepContent({
   fuelStartedAt,
   isAdditionalFueling,
   fuelTransactions,
-  unavailablePumps,
   onScanPump,
   onManualEntry,
   onBackToScan,
@@ -518,24 +329,56 @@ export function FuelStepContent({
   onGallonsChange,
   onRetry,
 }: FuelStepContentProps) {
-  const progress = getFuelProgress(step)
+  const isRemoteUnlockFlow = locationType === 'gasboy' && unlockMode === 'remote'
+  const isGasboyRemoteUnlockStep =
+    isRemoteUnlockFlow &&
+    (step === 'verify-pump' ||
+      step === 'manual-entry' ||
+      step === 'manual-entry-filled' ||
+      step === 'manual-entry-error')
   const manualVariant = getManualFuelingVariant(unlockMode, locationType)
   const isManualFuelingFlow = manualVariant !== null
-  const canUnlock = step === 'manual-entry-filled' && pumpNumber.trim().length > 0
-  const showRemoteManualEntry =
-    !isManualFuelingFlow &&
-    ['manual-entry', 'manual-entry-filled', 'manual-entry-error'].includes(step)
-  const manualVerifyHasError =
-    isManualFuelingFlow &&
-    step === 'verify-pump' &&
-    pumpNumber.trim().length > 0 &&
-    unavailablePumps.includes(Number(pumpNumber.trim()))
-  const isManualFuelingInProgress =
-    isManualFuelingFlow && step === 'fueling-in-progress'
   const isRemoteInProgress =
     !isManualFuelingFlow &&
     unlockMode === 'remote' &&
     (step === 'fueling-in-progress' || step === 'pump-unlocked')
+  const isManualFuelingInProgress =
+    isManualFuelingFlow && step === 'fueling-in-progress'
+  const progress = {
+    ...getFuelProgress(step),
+    ...(isGasboyRemoteUnlockStep && { label: 'Remote Unlock' }),
+    ...(isRemoteUnlockFlow && { tone: 'remote' as const }),
+    ...(isManualFuelingInProgress && {
+      tone: 'info' as const,
+      progressFillClass: 'bg-[var(--color-fleet-info)]',
+    }),
+    ...((isRemoteInProgress || isManualFuelingInProgress) && {
+      stepText: 'Step 3 of 4',
+    }),
+  }
+  const canUnlock = step === 'manual-entry-filled' && pumpNumber.trim().length > 0
+  const showGasboyVerifyDefault =
+    step === 'verify-pump' &&
+    locationType === 'gasboy' &&
+    (unlockMode === 'remote' || unlockMode === 'on-site')
+  const manualEntrySteps = [
+    'manual-entry',
+    'manual-entry-filled',
+    'manual-entry-error',
+  ] as const
+  const isManualEntryStep = manualEntrySteps.includes(
+    step as (typeof manualEntrySteps)[number],
+  )
+  const showNonGasboyVerifyDefault =
+    step === 'verify-pump' && locationType === 'non-gasboy'
+  const showNonGasboyManualEntry =
+    locationType === 'non-gasboy' && isManualEntryStep
+  const showGasboyManualEntry =
+    locationType === 'gasboy' &&
+    (unlockMode === 'remote' || unlockMode === 'on-site') &&
+    isManualEntryStep
+  const isLocationVerifyFlow =
+    locationType === 'non-gasboy' || unlockMode === 'on-site'
   const showIssueHistory =
     isAdditionalFueling &&
     step !== 'fueling-complete' &&
@@ -550,118 +393,63 @@ export function FuelStepContent({
             status: 'complete' as const,
           },
         ]
+  const switchUnlockMode =
+    unlockMode === 'remote' ? onOnSiteUnlock : onCancelUnlock
 
   return (
-    <div className="flex flex-col gap-2">
+    <div className="workflow-stack">
       {showIssueHistory && fuelTransactions.length > 0 && (
-        <FuelSummaryTable rows={fuelTransactions} />
+        <PriorFuelSummary rows={fuelTransactions} />
       )}
 
       <ProgressIndicator {...progress} />
 
-      {isManualFuelingFlow && manualVariant && ['verify-pump', 'pump-unlocked'].includes(step) && (
-        <ManualFuelingInfoBanner variant={manualVariant} />
-      )}
-
-      {step === 'verify-pump' && isManualFuelingFlow && manualVariant && (
-        <ManualVerifyPumpForm
-          pumpNumber={pumpNumber}
-          hasError={manualVerifyHasError}
-          onPumpChange={onPumpChange}
-          onClearPump={onClearPump}
-          onVerifyPump={onUnlockPump}
+      {showNonGasboyVerifyDefault && (
+        <PumpVerifyDefault
+          scanLabel="Scan Pump"
+          onScanPump={onScanPump}
+          onManualEntry={onManualEntry}
         />
       )}
 
-      {step === 'verify-pump' && !isManualFuelingFlow && (
-        <>
-          <button
-            type="button"
-            onClick={onScanPump}
-            className="flex w-full flex-col gap-4 rounded-xl border border-[var(--color-brand-info-border)] bg-white px-6 pb-5 pt-6 text-left"
-          >
-            <div className="flex flex-col items-center gap-2">
-              <div className="relative flex h-24 w-24 items-center justify-center">
-                <div className="absolute inset-0 rounded-full bg-[var(--color-fleet-info-ring)] opacity-60" />
-                <QrCode className="relative h-14 w-14 text-[var(--color-fleet-info)]" />
-              </div>
-              <p className="text-center text-base font-semibold text-[var(--color-fleet-text-blue-secondary)]">
-                Scan Pump QR
-              </p>
-            </div>
-            <p className="text-center text-xs text-[var(--color-fleet-text-secondary)]">
-              Scan the QR code at your pump
-            </p>
-            <span className="fleet-btn fleet-btn-md fleet-btn-contained-info fleet-btn-elevated w-full">
-              <QrCode className="h-5 w-5" />
-              Scan Pump
-            </span>
-          </button>
-          <button
-            type="button"
-            onClick={onManualEntry}
-            className="fleet-btn fleet-btn-md h-10 w-full text-[var(--color-fleet-text-blue)]"
-          >
-            Manually Enter Pump Number
-          </button>
-          <OnSiteUnlockRow onClick={onOnSiteUnlock} />
-        </>
+      {showGasboyVerifyDefault && (
+        <PumpVerifyDefault
+          onScanPump={onScanPump}
+          onManualEntry={onManualEntry}
+          unlockMode={unlockMode}
+          onSwitchUnlockMode={switchUnlockMode}
+        />
       )}
 
-      {step === 'pump-unlocked' && isManualFuelingFlow && manualVariant && (
+      {step === 'pump-verified' && isManualFuelingFlow && manualVariant && (
         <ManualPumpConfirmedCard
           pumpNumber={pumpNumber}
-          variant={manualVariant}
           onStartFueling={onStartFueling}
         />
       )}
 
-      {showRemoteManualEntry && (
+      {(showGasboyManualEntry || showNonGasboyManualEntry) && (
         <>
-          <div>
-            <p className="text-sm font-bold text-[var(--color-text-primary)]">Manual Entry</p>
-            <p className="text-sm text-[var(--color-fleet-text-blue-secondary)]">
-              Enter the Pump number displayed on the pump
-            </p>
-          </div>
+          <TextField
+            label="Manual Entry"
+            hint="Enter the pump number displayed on the pump"
+            value={pumpNumber}
+            placeholder="Enter pump no."
+            inputMode="numeric"
+            invalid={step === 'manual-entry-error'}
+            onChange={onPumpChange}
+            onClear={onClearPump}
+          />
 
-          <div className="flex flex-col gap-2">
-            <div
-              className={`flex items-center rounded border px-3 ${
-                step === 'manual-entry-error'
-                  ? 'border-[var(--color-fleet-error)]'
-                  : 'border-[var(--color-border)]'
-              }`}
-            >
-              <input
-                type="text"
-                inputMode="numeric"
-                value={pumpNumber}
-                placeholder="Enter pump no."
-                onChange={(e) => onPumpChange(e.target.value)}
-                className="h-14 flex-1 bg-transparent text-base text-[var(--color-text-primary)] outline-none placeholder:text-[var(--color-text-secondary)]"
-              />
-              {pumpNumber && (
-                <button
-                  type="button"
-                  onClick={onClearPump}
-                  className="field-target flex shrink-0 items-center justify-center"
-                  aria-label="Clear pump number"
-                >
-                  <X
-                    className={`h-5 w-5 ${
-                      step === 'manual-entry-error'
-                        ? 'text-[var(--color-brand-error)]'
-                        : 'text-[var(--color-brand-primary)]'
-                    }`}
-                  />
-                </button>
-              )}
-            </div>
+          <div className="workflow-stack">
             {step === 'manual-entry-error' && (
               <FuelIssueNotification
                 title="Pump Unavailable"
-                message="This pump cannot be unlocked. Select another pump."
+                message={
+                  isLocationVerifyFlow
+                    ? 'This pump cannot be used. Select another pump.'
+                    : 'This pump cannot be unlocked. Select another pump.'
+                }
               />
             )}
 
@@ -669,45 +457,64 @@ export function FuelStepContent({
               type="button"
               onClick={onUnlockPump}
               disabled={!canUnlock}
-              className="fleet-btn fleet-btn-lg fleet-btn-contained-info fleet-btn-elevated h-[54px] w-full disabled:cursor-not-allowed disabled:bg-[rgba(45,47,49,0.12)] disabled:text-[rgba(45,47,49,0.38)] disabled:shadow-none"
+              className={
+                showGasboyManualEntry && unlockMode === 'remote'
+                  ? unlockActionClass
+                  : verifyActionClass
+              }
             >
               <Lock className="h-5 w-5" />
-              Unlock
+              {isLocationVerifyFlow ? 'Verify Pump' : 'Unlock Pump'}
             </button>
           </div>
 
           <button
             type="button"
             onClick={onBackToScan}
-            className="fleet-btn fleet-btn-lg fleet-btn-outlined w-full"
+            className="fleet-btn fleet-btn-lg fleet-btn-outlined fleet-btn-start w-full"
           >
             <ArrowLeft className="h-5 w-5" />
-            Back to QR Scanning
+            Back to scan
           </button>
-          <OnSiteUnlockRow onClick={onOnSiteUnlock} />
+
+          {showGasboyManualEntry && (
+            <FuelUnlockModeInfo mode={unlockMode} onSwitch={switchUnlockMode} />
+          )}
         </>
       )}
 
       {step === 'unlocking-pump' && (
-        <div className="flex flex-col gap-2">
-          <div className="flex flex-col items-center gap-2 py-2">
-            <div className="relative flex h-[141px] w-[141px] items-center justify-center">
-              <div className="absolute inset-0 rounded-full border-4 border-[var(--color-fleet-info-ring)]" />
-              <div className="absolute inset-4 animate-pulse rounded-full border-2 border-[var(--color-brand-primary)] opacity-40" />
-              <Lock className="relative h-12 w-12 text-[var(--color-brand-primary)]" />
+        <div className="workflow-stack">
+          <div className="flex flex-col items-center gap-2 py-1">
+            <div className="relative flex h-20 w-20 items-center justify-center">
+              <div
+                className={`absolute inset-0 rounded-full border-4 ${
+                  isRemoteUnlockFlow
+                    ? 'border-[var(--color-fleet-positive-100)]'
+                    : 'border-[var(--color-fleet-info-ring)]'
+                }`}
+              />
+              <div
+                className={`absolute inset-2 animate-pulse rounded-full border-2 opacity-40 ${
+                  isRemoteUnlockFlow
+                    ? 'border-[var(--color-fleet-positive-500)]'
+                    : 'border-[var(--color-brand-primary)]'
+                }`}
+              />
+              <Lock
+                className={`relative h-8 w-8 ${
+                  isRemoteUnlockFlow
+                    ? 'text-[var(--color-fleet-positive-500)]'
+                    : 'text-[var(--color-brand-primary)]'
+                }`}
+              />
             </div>
-            <p className="text-center text-xl font-bold text-[var(--color-text-primary)]">
-              Unlocking Pump {pumpNumber || '5'}
+            <p className="text-center text-base font-bold text-[var(--color-text-primary)]">
+              Unlocking Pump {pumpNumber || '5'}…
             </p>
-            <p className="text-center text-sm text-[var(--color-text-primary)]">
-              Please wait
+            <p className="text-center text-sm text-[var(--color-fleet-text-secondary)]">
+              This may take a few seconds
             </p>
-            <div className="flex w-full items-start gap-3 rounded bg-[var(--color-fleet-info-surface)] px-4 py-3">
-              <Info className="mt-0.5 h-[22px] w-[22px] shrink-0 text-[var(--color-brand-primary)]" />
-              <p className="text-xs text-[var(--color-brand-secondary)]">
-                This may take a few seconds. Please do not leave the screen
-              </p>
-            </div>
           </div>
           <button
             type="button"
@@ -721,21 +528,20 @@ export function FuelStepContent({
 
       {isRemoteInProgress && (
         <>
-          <p className="text-center text-lg font-bold text-[var(--color-text-primary)]">
-            Pump {pumpNumber} · Fueling…
-          </p>
-          <div className="flex items-start gap-3 border-t-2 border-[var(--color-border)] px-4 py-3">
-            <Info className="mt-0.5 h-[22px] w-[22px] shrink-0 text-[var(--color-brand-primary)]" />
-            <div>
-              <p className="text-sm font-semibold text-[var(--color-text-primary)]">
-                Updates may be delayed
-              </p>
-              <p className="text-sm text-[var(--color-text-primary)]">
-                Data will update automatically when available
-              </p>
-            </div>
-          </div>
-          <ReportIssueCard onReportIssue={onReportIssue} />
+          <WorkflowInProgressStatus
+            tone="remote"
+            icon={<Fuel className="h-6 w-6" />}
+            title="Fueling at the pump"
+            subtitle="Fuel now — this screen updates when you're done"
+            note="Updates may be delayed — stay at the pump until fueling finishes"
+            pumpNumber={pumpNumber}
+            startedAt={fuelStartedAt}
+          />
+          <ReportIssueLink
+            onReportIssue={onReportIssue}
+            title="Pump issue?"
+            description="Let us know if the pump stopped early or isn't dispensing correctly."
+          />
         </>
       )}
 
@@ -775,7 +581,11 @@ export function FuelStepContent({
           ) : (
             <FuelSummaryTable rows={completeRows} />
           )}
-          <NotEnoughFuelCard onReportIssue={onReportIssue} />
+          <ReportIssueLink
+            onReportIssue={onReportIssue}
+            title="Didn't get enough fuel?"
+            description="Tell us if the gallons don't match what you expected at the pump."
+          />
         </>
       )}
 
@@ -786,43 +596,36 @@ export function FuelStepContent({
               title="Connection Lost"
               message={`Connection to Pump ${pumpNumber || '5'} was lost. Try lifting the nozzle or use on-site unlock.`}
             />
-            <div className="flex flex-col gap-2">
-              <p className="text-sm font-bold text-[var(--color-fleet-text)]">Pump locked?</p>
-              <button
-                type="button"
-                onClick={onOnSiteUnlock}
-                className="fleet-btn fleet-btn-lg h-12 fleet-btn-contained-info fleet-btn-elevated w-full"
-              >
-                <Fuel className="h-6 w-6" />
-                On-Site Unlock
-              </button>
-            </div>
+            <button
+              type="button"
+              onClick={onOnSiteUnlock}
+              className="fleet-btn fleet-btn-lg fleet-btn-contained-info fleet-btn-elevated w-full"
+            >
+              <Fuel className="h-6 w-6" />
+              On-Site Unlock
+            </button>
           </div>
-          <OnSiteUnlockRow onClick={onOnSiteUnlock} />
         </>
       )}
 
       {step === 'no-response' && (
-        <>
-          <div className="flex flex-col gap-4">
-            <FuelIssueNotification
-              title="No Response"
-              message={`Pump ${pumpNumber || '5'} did not respond. Try lifting the nozzle or retry unlock.`}
-            />
-            <div className="flex flex-col gap-2">
-              <p className="text-sm font-bold text-[var(--color-fleet-text)]">Pump locked?</p>
-              <button
-                type="button"
-                onClick={onRetry}
-                className="fleet-btn fleet-btn-lg h-12 w-full border border-[var(--color-fleet-info)] bg-white text-[var(--color-fleet-text-blue)]"
-              >
-                <RefreshCw className="h-6 w-6" />
-                Retry Unlock Pump
-              </button>
-            </div>
+        <div className="flex flex-col gap-4">
+          <FuelIssueNotification
+            title="No Response"
+            message={`Pump ${pumpNumber || '5'} did not respond. Try lifting the nozzle or retry unlock.`}
+          />
+          <div className="workflow-stack">
+            <button
+              type="button"
+              onClick={onRetry}
+              className="fleet-btn fleet-btn-lg w-full border border-[var(--color-fleet-info)] bg-white text-[var(--color-fleet-text-blue)]"
+            >
+              <RefreshCw className="h-6 w-6" />
+              Retry Unlock Pump
+            </button>
+            <FuelUnlockModeInfo mode="remote" onSwitch={onOnSiteUnlock} />
           </div>
-          <OnSiteUnlockRow onClick={onOnSiteUnlock} />
-        </>
+        </div>
       )}
 
       {step === 'pump-timeout' && (
@@ -832,11 +635,11 @@ export function FuelStepContent({
               title="Unlock Expired"
               message={`The 60-second unlock window for Pump ${pumpNumber || '5'} has ended.`}
               footer={
-                <div className="flex flex-col gap-2">
+                <div className="workflow-stack">
                   <button
                     type="button"
                     onClick={onRetry}
-                    className="fleet-btn fleet-btn-lg h-12 fleet-btn-elevated w-full bg-[var(--color-fleet-warning)] text-white"
+                    className="fleet-btn fleet-btn-lg fleet-btn-elevated w-full bg-[var(--color-fleet-warning)] text-white"
                   >
                     <RefreshCw className="h-6 w-6" />
                     Retry Unlock Pump
@@ -844,7 +647,7 @@ export function FuelStepContent({
                   <button
                     type="button"
                     onClick={onRetry}
-                    className="fleet-btn fleet-btn-lg h-12 w-full text-[var(--color-fleet-text-orange)]"
+                    className="fleet-btn fleet-btn-lg w-full text-[var(--color-fleet-text-orange)]"
                   >
                     <ArrowLeftRight className="h-6 w-6" />
                     Change Pump
@@ -853,28 +656,24 @@ export function FuelStepContent({
               }
             />
           </div>
-          <OnSiteUnlockRow onClick={onOnSiteUnlock} />
         </>
       )}
 
       {step === 'pump-unavailable' && (
-        <>
-          <FuelIssueNotification
-            title="Pump Unavailable"
-            message="This pump is currently unavailable. Try another pump or enter manually."
-            footer={
-              <button
-                type="button"
-                onClick={onRetry}
-                className="fleet-btn fleet-btn-lg h-12 fleet-btn-contained-info fleet-btn-elevated w-full"
-              >
-                <Fuel className="h-6 w-6" />
-                Choose Another Pump
-              </button>
-            }
-          />
-          <OnSiteUnlockRow onClick={onOnSiteUnlock} />
-        </>
+        <FuelIssueNotification
+          title="Pump Unavailable"
+          message="This pump is currently unavailable. Try another pump or enter manually."
+          footer={
+            <button
+              type="button"
+              onClick={onRetry}
+              className="fleet-btn fleet-btn-lg fleet-btn-contained-info fleet-btn-elevated w-full"
+            >
+              <Fuel className="h-6 w-6" />
+              Choose Another Pump
+            </button>
+          }
+        />
       )}
     </div>
   )

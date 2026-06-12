@@ -33,7 +33,6 @@ function formatFuelFinalTime(startedAt: number | null): string {
 
 function manualFuelingScreen(
   suffix:
-    | 'pump-unlocked'
     | 'pump-verified'
     | 'fueling-in-progress'
     | 'fueling-complete'
@@ -43,7 +42,6 @@ function manualFuelingScreen(
 ): ScreenId {
   if (ctx.unlockMode === 'on-site') {
     const map: Record<typeof suffix, ScreenId> = {
-      'pump-unlocked': 'on-site-pump-unlocked',
       'pump-verified': 'on-site-pump-verified',
       'fueling-in-progress': 'on-site-fueling-in-progress',
       'fueling-complete': 'on-site-fueling-complete',
@@ -53,7 +51,6 @@ function manualFuelingScreen(
     return map[suffix]
   }
   const map: Record<typeof suffix, ScreenId> = {
-    'pump-unlocked': 'non-gasboy-pump-unlocked',
     'pump-verified': 'non-gasboy-pump-verified',
     'fueling-in-progress': 'non-gasboy-fueling-in-progress',
     'fueling-complete': 'non-gasboy-fueling-complete',
@@ -61,6 +58,22 @@ function manualFuelingScreen(
     'missing-filled': 'non-gasboy-missing-filled',
   }
   return map[suffix]
+}
+
+function fuelVerifyScreen(
+  ctx: Pick<FlowContext, 'unlockMode' | 'locationType'>,
+): ScreenId {
+  if (ctx.locationType === 'non-gasboy') return 'non-gasboy-default'
+  if (ctx.unlockMode === 'on-site') return 'on-site-default'
+  return 'fueling-default'
+}
+
+function fuelManualEntryScreen(
+  ctx: Pick<FlowContext, 'unlockMode' | 'locationType'>,
+): ScreenId {
+  if (ctx.locationType === 'non-gasboy') return 'non-gasboy-manual-entry'
+  if (ctx.unlockMode === 'on-site') return 'on-site-manual-entry'
+  return 'fueling-manual-entry'
 }
 
 function appendFuelTransaction(prev: FlowContext): FuelTransaction[] {
@@ -368,11 +381,25 @@ const SCREEN_PRESETS: Record<ScreenId, Partial<FlowContext>> = {
     showIssueOverlay: true,
     issueDetails: '',
   },
-  'on-site-pump-unlocked': {
+  'on-site-default': {
+    movementComplete: true,
+    movementMode: 'transport',
+    movementPhase: 'location-selected',
+    location: 'Albany AP QTA',
+    stallNumber: '',
+    fuelComplete: false,
+    stallComplete: false,
+    fuelStep: 'verify-pump',
+    pumpNumber: '',
+    unlockMode: 'on-site',
+    locationType: 'gasboy',
+    showIssueOverlay: false,
+  },
+  'on-site-manual-entry': {
     movementComplete: true,
     fuelComplete: false,
-    fuelStep: 'pump-unlocked',
-    pumpNumber: '8',
+    fuelStep: 'manual-entry',
+    pumpNumber: '',
     unlockMode: 'on-site',
     locationType: 'gasboy',
     showIssueOverlay: false,
@@ -380,8 +407,8 @@ const SCREEN_PRESETS: Record<ScreenId, Partial<FlowContext>> = {
   'on-site-pump-verified': {
     movementComplete: true,
     fuelComplete: false,
-    fuelStep: 'verify-pump',
-    pumpNumber: '8',
+    fuelStep: 'pump-verified',
+    pumpNumber: '2',
     unlockMode: 'on-site',
     locationType: 'gasboy',
     showIssueOverlay: false,
@@ -430,18 +457,32 @@ const SCREEN_PRESETS: Record<ScreenId, Partial<FlowContext>> = {
     locationType: 'gasboy',
     showIssueOverlay: false,
   },
-  'non-gasboy-pump-unlocked': {
+  'non-gasboy-default': {
+    movementComplete: true,
+    movementMode: 'transport',
+    movementPhase: 'location-selected',
+    location: 'Albany AP QTA',
+    stallNumber: '',
+    fuelComplete: false,
+    stallComplete: false,
+    fuelStep: 'verify-pump',
+    pumpNumber: '',
+    unlockMode: 'remote',
+    locationType: 'non-gasboy',
+    showIssueOverlay: false,
+  },
+  'non-gasboy-manual-entry': {
     movementComplete: true,
     fuelComplete: false,
-    fuelStep: 'pump-unlocked',
-    pumpNumber: '4',
+    fuelStep: 'manual-entry',
+    pumpNumber: '',
     locationType: 'non-gasboy',
     showIssueOverlay: false,
   },
   'non-gasboy-pump-verified': {
     movementComplete: true,
     fuelComplete: false,
-    fuelStep: 'verify-pump',
+    fuelStep: 'pump-verified',
     pumpNumber: '4',
     locationType: 'non-gasboy',
     showIssueOverlay: false,
@@ -520,6 +561,14 @@ export function useFlow() {
     setContext((prev) => {
       switch (action) {
         case 'scan-complete':
+          if (isManualFueling(prev)) {
+            return {
+              ...prev,
+              fuelStep: 'pump-verified',
+              pumpNumber: prev.locationType === 'non-gasboy' ? '4' : '2',
+              screen: manualFuelingScreen('pump-verified', prev),
+            }
+          }
           return {
             ...prev,
             unlockMode: 'remote',
@@ -532,14 +581,14 @@ export function useFlow() {
             ...prev,
             fuelStep: 'manual-entry',
             pumpNumber: '',
-            screen: 'fueling-manual-entry',
+            screen: fuelManualEntryScreen(prev),
           }
         case 'back-to-scan':
           return {
             ...prev,
             fuelStep: 'verify-pump',
             pumpNumber: '',
-            screen: 'fueling-default',
+            screen: fuelVerifyScreen(prev),
           }
         case 'pump-change': {
           const pump = payload ?? ''
@@ -580,11 +629,11 @@ export function useFlow() {
           return {
             ...prev,
             unlockMode: 'on-site',
-            fuelStep: 'fueling-in-progress',
-            pumpNumber: prev.pumpNumber || '5',
-            fuelStartedAt: Date.now(),
+            fuelStep: 'verify-pump',
+            pumpNumber: '',
+            fuelStartedAt: null,
             fuelGallons: '',
-            screen: 'on-site-fueling-in-progress',
+            screen: 'on-site-default',
           }
         case 'unlock-pump': {
           if (prev.fuelStep === 'manual-entry-error') return prev
@@ -608,9 +657,9 @@ export function useFlow() {
           if (verifyingManualPump) {
             return {
               ...prev,
-              fuelStep: 'pump-unlocked',
+              fuelStep: 'pump-verified',
               pumpNumber: pump,
-              screen: manualFuelingScreen('pump-unlocked', prev),
+              screen: manualFuelingScreen('pump-verified', prev),
             }
           }
 
@@ -761,9 +810,6 @@ export function useFlow() {
             screen: 'fueling-default',
           }
         case 'complete':
-          if (prev.fuelComplete && !prev.stallComplete) {
-            return { ...prev, stallComplete: true, screen: 'stall-complete' }
-          }
           return prev
         default:
           return prev
@@ -929,7 +975,9 @@ export function useFlow() {
           return {
             ...prev,
             cleaningPumpNumber: pump,
-            cleaningStep: 'manual-entry-filled',
+            cleaningStep: isUnavailablePump(pump)
+              ? 'manual-entry-error'
+              : 'manual-entry-filled',
           }
         }
         case 'clear-pump':

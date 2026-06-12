@@ -1,6 +1,7 @@
-import { ChevronLeft, MapPin, Search, X } from 'lucide-react'
+import { ChevronLeft, MapPin, Search } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { StatusBar } from '../ui/StatusBar'
+import { TextField } from '../ui/TextField'
 
 const LOCATIONS = [
   'Albany AP QTA',
@@ -43,29 +44,16 @@ export function LocationSearchOverlay({ onClose, onSelect }: LocationSearchOverl
       </div>
 
       <div className="px-4 py-4">
-        <div className="flex items-center gap-2 rounded border border-[var(--color-border)] px-3 py-3 focus-within:border-[var(--color-brand-primary)]">
-          <Search className="h-5 w-5 shrink-0 text-[var(--color-text-secondary)]" />
-          <input
-            type="text"
-            role="searchbox"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search locations..."
-            autoComplete="off"
-            autoFocus
-            className="flex-1 bg-transparent text-base text-[var(--color-text-primary)] outline-none placeholder:text-[var(--color-text-secondary)]"
-          />
-          {query.length > 0 && (
-            <button
-              type="button"
-              onClick={() => setQuery('')}
-              className="field-target flex shrink-0 items-center justify-center"
-              aria-label="Clear search"
-            >
-              <X className="h-5 w-5 text-[var(--color-text-secondary)]" />
-            </button>
-          )}
-        </div>
+        <TextField
+          value={query}
+          onChange={setQuery}
+          placeholder="Search locations..."
+          startIcon={Search}
+          onClear={() => setQuery('')}
+          autoComplete="off"
+          autoFocus
+          role="searchbox"
+        />
       </div>
 
       <div className="flex-1 overflow-y-auto px-4 pb-4">
@@ -80,7 +68,7 @@ export function LocationSearchOverlay({ onClose, onSelect }: LocationSearchOverl
                 <button
                   type="button"
                   onClick={() => onSelect(location)}
-                  className="flex w-full items-center gap-3 border-b border-[var(--color-border-light)] py-4 text-left hover:bg-[var(--color-surface-muted)]"
+                  className="field-target flex w-full items-center gap-3 border-b border-[var(--color-border-light)] px-1 text-left hover:bg-[var(--color-surface-muted)]"
                 >
                   <MapPin className="h-6 w-6 shrink-0 text-[var(--color-text-secondary)]" />
                   <span className="text-base text-[var(--color-text-primary)]">{location}</span>

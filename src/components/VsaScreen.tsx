@@ -25,7 +25,6 @@ export function VsaScreen({
       subtitle="Vehicle Service Advisor"
       sections={[...VSA_SECTIONS]}
       defaultExpanded={null}
-      autoExpandFromScreen={false}
       vehicleProfile={VSA_VEHICLE}
       context={context}
       onAction={onAction}
