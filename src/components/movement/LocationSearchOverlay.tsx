@@ -28,7 +28,7 @@ export function LocationSearchOverlay({ onClose, onSelect }: LocationSearchOverl
   }, [query])
 
   return (
-    <div className="absolute inset-0 z-50 flex flex-col bg-white">
+    <div className="app-overlay bg-white">
       <StatusBar />
       <div className="flex items-center gap-2 border-b border-[var(--color-border-light)] px-2 py-2">
         <button
@@ -46,17 +46,20 @@ export function LocationSearchOverlay({ onClose, onSelect }: LocationSearchOverl
         <div className="flex items-center gap-2 rounded border border-[var(--color-border)] px-3 py-3 focus-within:border-[var(--color-brand-primary)]">
           <Search className="h-5 w-5 shrink-0 text-[var(--color-text-secondary)]" />
           <input
-            type="search"
+            type="text"
+            role="searchbox"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Search locations..."
+            autoComplete="off"
             autoFocus
             className="flex-1 bg-transparent text-base text-[var(--color-text-primary)] outline-none placeholder:text-[var(--color-text-secondary)]"
           />
-          {query && (
+          {query.length > 0 && (
             <button
               type="button"
               onClick={() => setQuery('')}
+              className="field-target flex shrink-0 items-center justify-center"
               aria-label="Clear search"
             >
               <X className="h-5 w-5 text-[var(--color-text-secondary)]" />

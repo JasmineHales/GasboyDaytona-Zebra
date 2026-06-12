@@ -1,10 +1,10 @@
 import type { SectionStatus } from '../../types/flow'
 
 const styles: Record<SectionStatus, string> = {
-  complete: 'bg-[var(--color-chip-complete-bg)] text-[var(--color-text-success)]',
-  'not-started': 'bg-[var(--color-chip-neutral-bg)] text-[var(--color-text-primary)]',
-  'in-progress': 'bg-[#dbeafe] text-[var(--color-brand-primary-dark)]',
-  missing: 'bg-[#fef3c7] text-[#92400e]',
+  complete: 'fleet-chip fleet-chip-success',
+  'not-started': 'fleet-chip fleet-chip-neutral',
+  'in-progress': 'fleet-chip fleet-chip-info',
+  missing: 'fleet-chip fleet-chip-warning',
 }
 
 const labels: Record<SectionStatus, string> = {
@@ -19,11 +19,5 @@ type StatusChipProps = {
 }
 
 export function StatusChip({ status }: StatusChipProps) {
-  return (
-    <span
-      className={`inline-flex min-h-6 max-h-6 items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${styles[status]}`}
-    >
-      {labels[status]}
-    </span>
-  )
+  return <span className={styles[status]}>{labels[status]}</span>
 }

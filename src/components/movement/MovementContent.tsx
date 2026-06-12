@@ -9,6 +9,9 @@ import {
 } from 'lucide-react'
 import { useState } from 'react'
 import type { MovementMode, MovementPhase } from '../../types/flow'
+import { PhotoAttachmentPreview } from '../ui/PhotoAttachmentPreview'
+import { ProgressIndicator } from '../ui/ProgressIndicator'
+import { getMovementProgress } from '../../utils/progress'
 
 type MovementContentProps = {
   mode: MovementMode
@@ -44,18 +47,11 @@ export function MovementContent({
   const stallSelected = phase === 'stall-selected' || phase === 'stall-issue-reported'
   const stallVerify = phase === 'stall-verify'
   const issueReported = phase === 'stall-issue-reported'
+  const progress = getMovementProgress(mode, phase)
 
   return (
     <div className="flex flex-col gap-2.5">
-      {isTransport ? (
-        <TransportProgress
-          selected={locationSelected}
-        />
-      ) : (
-        <StallProgress
-          phase={phase}
-        />
-      )}
+      <ProgressIndicator {...progress} />
 
       <div className="flex flex-col gap-2.5">
         <div className="flex gap-4">
@@ -86,7 +82,7 @@ export function MovementContent({
               <button
                 type="button"
                 onClick={onOpenLocationSearch}
-                className="flex w-full items-center rounded border border-[var(--color-border)] px-3 py-4 text-left"
+                className="field-target flex min-h-14 w-full items-center rounded border border-[var(--color-border)] px-3 text-left"
               >
                 <MapPin className="mr-2 h-6 w-6 shrink-0 text-[var(--color-text-primary)]" />
                 <span className="flex-1 text-base text-[var(--color-text-primary)]">
@@ -148,7 +144,7 @@ export function MovementContent({
                 <button
                   type="button"
                   onClick={onTakePhoto}
-                  className="flex h-12 w-full items-center justify-center gap-2 rounded bg-[var(--color-brand-primary)] px-6 text-sm font-semibold text-white shadow-[0_1px_5px_rgba(0,0,0,0.12),0_2px_2px_rgba(0,0,0,0.14),0_3px_1px_-2px_rgba(0,0,0,0.2)]"
+                  className="fleet-btn fleet-btn-lg fleet-btn-contained-info fleet-btn-elevated w-full"
                 >
                   <Camera className="h-6 w-6" />
                   Take Photo
@@ -171,18 +167,12 @@ export function MovementContent({
                     </div>
                   </div>
                   <div className="h-px bg-[var(--color-brand-info-border)]" />
-                  <div className="flex items-center gap-2">
-                    <div className="h-[100px] w-[150px] shrink-0 rounded bg-[#cbd5e1]" />
-                    <div className="flex flex-col gap-2 text-sm">
-                      <p className="font-semibold">IMG-26_256_2265_2563.jpog</p>
-                      <p>just now</p>
-                    </div>
-                  </div>
+                  <PhotoAttachmentPreview fileName="IMG-26_256_2265_2563.jpog" />
                 </div>
                 <button
                   type="button"
                   onClick={onRetakePhoto}
-                  className="flex h-12 w-full items-center justify-center gap-2 rounded border border-[var(--color-brand-primary)] bg-white px-6 text-sm font-semibold text-[var(--color-brand-primary-dark)]"
+                  className="fleet-btn fleet-btn-lg fleet-btn-outlined w-full"
                 >
                   <Camera className="h-6 w-6" />
                   Retake Photo
@@ -192,95 +182,6 @@ export function MovementContent({
           </>
         )}
       </div>
-    </div>
-  )
-}
-
-function TransportProgress({ selected }: { selected: boolean }) {
-  return (
-    <div className="flex flex-col gap-2">
-      <div className="flex items-start gap-3 p-0.5">
-        <StepBadge
-          number={selected ? 2 : 1}
-          variant={selected ? 'complete' : 'active'}
-        />
-        <p
-          className={`pt-1 text-sm leading-5 ${
-            selected
-              ? 'font-semibold text-[#085d48]'
-              : 'font-bold text-[#424548]'
-          }`}
-        >
-          {selected ? 'Location Selected' : 'Select Location'}
-        </p>
-      </div>
-      <div className="h-2 w-full overflow-hidden rounded-full bg-[#e2e8f0]">
-        <div
-          className={`h-full rounded-full ${selected ? 'w-full bg-[#14b8a6]' : 'w-1/2 bg-[#0d9488]'}`}
-        />
-      </div>
-      <p className="text-xs text-[var(--color-text-muted)]">Step 2 of 2</p>
-    </div>
-  )
-}
-
-function StallProgress({ phase }: { phase: MovementPhase }) {
-  const verify = phase === 'stall-verify'
-  const selected = phase === 'stall-selected' || phase === 'stall-issue-reported'
-
-  return (
-    <div className="flex flex-col gap-2">
-      <div className="flex items-start gap-3 p-0.5">
-        <StepBadge
-          number={selected || verify ? 2 : 1}
-          variant={verify ? 'warning' : selected ? 'complete' : 'active'}
-        />
-        <p
-          className={`pt-1 text-sm leading-5 ${
-            verify
-              ? 'font-bold text-[#f97306]'
-              : selected
-                ? 'font-semibold text-[#085d48]'
-                : 'font-bold text-[#424548]'
-          }`}
-        >
-          {verify
-            ? 'Stalling Selected - Verify Stall'
-            : selected
-              ? 'Stall Selected'
-              : 'Select Stall'}
-        </p>
-      </div>
-      {!verify && !selected && (
-        <>
-          <div className="h-2 w-full overflow-hidden rounded-full bg-[#e2e8f0]">
-            <div className="h-full w-1/2 rounded-full bg-[#0d9488]" />
-          </div>
-          <p className="text-xs text-[var(--color-text-muted)]">Step 2 of 2</p>
-        </>
-      )}
-    </div>
-  )
-}
-
-function StepBadge({
-  number,
-  variant,
-}: {
-  number: number
-  variant: 'active' | 'complete' | 'warning'
-}) {
-  const styles = {
-    active: 'border-2 border-[#2f7185] bg-white text-[#2f7185]',
-    complete: 'bg-[#0d9488] text-white',
-    warning: 'border-2 border-[#f97306] bg-white text-[#f97306]',
-  }[variant]
-
-  return (
-    <div
-      className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-bold ${styles}`}
-    >
-      {number}
     </div>
   )
 }
@@ -300,14 +201,14 @@ function ModeTab({
     <button
       type="button"
       onClick={onClick}
-      className={`flex h-14 flex-1 items-center justify-center gap-1 rounded border px-6 py-3 ${
+      className={`field-target flex min-h-14 flex-1 items-center justify-center gap-1 rounded border-2 px-6 py-3 ${
         active
           ? 'border-[#155dfc] bg-[#f0f9ff] text-[#155dfc]'
           : 'border-[#676e73] text-[var(--color-text-secondary)]'
       }`}
     >
       <Icon className="h-6 w-6 shrink-0" />
-      <span className="text-sm font-semibold">{label}</span>
+      <span className="text-base font-semibold">{label}</span>
     </button>
   )
 }
@@ -325,7 +226,12 @@ function FieldInput({
     <div className="flex items-center rounded border border-[var(--color-border)] px-3 py-4">
       {StartIcon && <StartIcon className="mr-2 h-6 w-6 shrink-0" />}
       <span className="flex-1 text-base">{value}</span>
-      <button type="button" onClick={onClear} aria-label="Clear">
+      <button
+        type="button"
+        onClick={onClear}
+        className="field-target flex shrink-0 items-center justify-center"
+        aria-label="Clear"
+      >
         <X className="h-6 w-6 text-[var(--color-text-secondary)]" />
       </button>
     </div>

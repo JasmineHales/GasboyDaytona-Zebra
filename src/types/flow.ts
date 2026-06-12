@@ -6,6 +6,7 @@ export type FuelStep =
   | 'pump-unlocked'
   | 'fueling-in-progress'
   | 'fueling-complete'
+  | 'fueling-complete-missing'
   | 'additional-fueling'
   | 'additional-fueling-complete'
   | 'pump-unavailable'
@@ -25,6 +26,7 @@ export type ScreenId =
   | 'stall-default'
   | 'stall-complete'
   | 'stall-missing'
+  | 'stall-issue-reported'
   | 'fueling-default'
   | 'fueling-unlocking'
   | 'fueling-scanner'
@@ -63,6 +65,29 @@ export type MovementPhase =
   | 'stall-verify'
   | 'stall-issue-reported'
 
+export type StallPhase =
+  | 'select-stall'
+  | 'stall-selected'
+  | 'stall-verify'
+  | 'stall-issue-reported'
+
+export type CleaningStep =
+  | 'verify-pump'
+  | 'manual-entry'
+  | 'manual-entry-filled'
+  | 'manual-entry-error'
+  | 'pump-verified'
+  | 'cleaning-in-progress'
+  | 'cleaning-complete'
+
+export type WorkflowSection = 'movement' | 'fuel' | 'stall' | 'cleaning'
+
+export type FuelTransaction = {
+  pump: string
+  gallons: string
+  status: 'complete' | 'issue'
+}
+
 export type FlowContext = {
   screen: ScreenId
   movementComplete: boolean
@@ -70,13 +95,27 @@ export type FlowContext = {
   movementPhase: MovementPhase
   location: string
   stallNumber: string
+  stallPhase: StallPhase
+  stallSectionNumber: string
   fuelComplete: boolean
   stallComplete: boolean
+  cleaningComplete: boolean
+  cleaningStep: CleaningStep
+  cleaningPumpNumber: string
+  cleaningStartedAt: number | null
+  cleaningFinalTime: string
   fuelStep: FuelStep
   pumpNumber: string
+  fuelGallons: string
+  fuelGallonsDispensed: string
+  fuelFinalTime: string
+  fuelStartedAt: number | null
+  isAdditionalFueling: boolean
+  fuelTransactions: FuelTransaction[]
   unavailablePumps: number[]
   showIssueOverlay: boolean
   issueDetails: string
+  issueReportSource: 'header' | 'fuel' | null
   unlockMode: 'remote' | 'on-site'
   locationType: 'gasboy' | 'non-gasboy'
 }

@@ -1,26 +1,70 @@
 @import "tailwindcss";
 
 @theme {
-  --font-sans: "Open Sans", "Inter", system-ui, sans-serif;
-  --color-brand-primary: #007bc3;
-  --color-brand-primary-dark: #0164a3;
-  --color-brand-secondary: #0b476f;
-  --color-brand-success: #088764;
-  --color-brand-warning: #fec310;
-  --color-brand-error: #ba1b21;
-  --color-brand-error-bg: #fef2f2;
-  --color-brand-error-border: #fca5a8;
+  --font-sans: "Open Sans", system-ui, sans-serif;
+
+  /* Fleet Component Library 2025 — palette */
+  --color-fleet-info: #007bc3;
+  --color-fleet-info-100: #e0f1fe;
+  --color-fleet-brand: #ffcc00;
+  --color-fleet-secondary: #2d2f31;
+  --color-fleet-secondary-light: #f5f6f6;
+  --color-fleet-secondary-border: #acb1b4;
+  --color-fleet-success: #088764;
+  --color-fleet-positive-100: #d2f9e6;
+  --color-fleet-positive-500: #14b586;
+  --color-fleet-error: #cd2026;
+  --color-fleet-error-500: #f04349;
+  --color-fleet-warning: #f97306;
+  --color-fleet-warning-100: #fff2d4;
+  --color-fleet-primary-500: #378fa3;
+  --color-fleet-primary-600: #2f7185;
+  --color-fleet-primary-200: #bae1e7;
+
+  /* Fleet — text */
+  --color-fleet-text: #2d2f31;
+  --color-fleet-text-secondary: #585e62;
+  --color-fleet-text-blue: #0164a3;
+  --color-fleet-text-blue-secondary: #0b476f;
+  --color-fleet-text-green: #07755a;
+  --color-fleet-text-red: #ba1b21;
+  --color-fleet-text-red-secondary: #801c1f;
+  --color-fleet-text-orange: #9e410e;
+  --color-fleet-text-white: #ffffff;
+  --color-fleet-neutral-970: #242424;
+
+  /* Fleet — surfaces */
+  --color-fleet-surface: #ffffff;
+  --color-fleet-surface-muted: #f5f6f6;
+  --color-fleet-alert-error-bg: #fef2f2;
+  --color-fleet-alert-error-border: #fca5a8;
+  --color-fleet-info-surface: #f0f9ff;
+  --color-fleet-info-ring: #e0f1fe;
+  --color-fleet-warning-surface: #fff9ec;
+  --color-fleet-positive-surface: #ecfdf6;
+
+  /* Legacy aliases — keeps existing components on Fleet tokens */
+  --color-brand-primary: var(--color-fleet-info);
+  --color-brand-primary-dark: var(--color-fleet-text-blue);
   --color-brand-info-border: #7ccffd;
-  --color-text-primary: #2d2f31;
-  --color-text-secondary: #585e62;
-  --color-text-muted: #64748b;
-  --color-text-success: #07755a;
-  --color-surface: #ffffff;
-  --color-surface-muted: #f5f6f6;
-  --color-border: #acb1b4;
-  --color-border-light: #e5e7eb;
-  --color-chip-complete-bg: #d2f9e6;
-  --color-chip-neutral-bg: #e8e8e8;
+  --color-brand-secondary: var(--color-fleet-text-blue-secondary);
+  --color-brand-success: var(--color-fleet-success);
+  --color-brand-warning: var(--color-fleet-brand);
+  --color-brand-error: var(--color-fleet-text-red);
+  --color-brand-error-bg: var(--color-fleet-alert-error-bg);
+  --color-brand-error-border: var(--color-fleet-alert-error-border);
+  --color-text-primary: var(--color-fleet-text);
+  --color-text-secondary: var(--color-fleet-text-secondary);
+  --color-text-muted: var(--color-fleet-text-secondary);
+  --color-text-success: var(--color-fleet-text-green);
+  --color-surface: var(--color-fleet-surface);
+  --color-surface-muted: var(--color-fleet-surface-muted);
+  --color-border: var(--color-fleet-secondary-border);
+  --color-border-light: var(--color-fleet-secondary-border);
+  --color-chip-complete-bg: var(--color-fleet-positive-100);
+  --color-chip-neutral-bg: var(--color-fleet-secondary-light);
+  --color-chip-info-bg: var(--color-fleet-info-100);
+  --color-chip-warning-bg: var(--color-fleet-warning-100);
   --color-status-bar: #0f0f0f;
 }
 
@@ -32,16 +76,230 @@ html,
 body,
 #root {
   height: 100%;
+  min-height: 100dvh;
   margin: 0;
 }
 
 body {
   font-family: var(--font-sans);
-  background: #e8eaed;
-  color: var(--color-text-primary);
+  background: var(--color-fleet-secondary-light);
+  color: var(--color-fleet-text);
   -webkit-font-smoothing: antialiased;
+}
+
+#root {
+  min-height: 0;
+}
+
+.app-viewport {
+  width: 100%;
+  height: 100dvh;
+  min-height: 0;
+  overflow: hidden;
+  padding-left: env(safe-area-inset-left);
+  padding-right: env(safe-area-inset-right);
+}
+
+.app-shell {
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  margin-inline: auto;
 }
 
 button {
   font-family: inherit;
+}
+
+.app-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  min-height: 0;
+  flex-direction: column;
+  padding:
+    env(safe-area-inset-top)
+    env(safe-area-inset-right)
+    env(safe-area-inset-bottom)
+    env(safe-area-inset-left);
+}
+
+.app-scroll {
+  overflow-y: auto;
+  overscroll-behavior-y: contain;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-gutter: stable;
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-fleet-secondary-border) transparent;
+}
+
+.app-scroll::-webkit-scrollbar {
+  width: 6px;
+}
+
+.app-scroll::-webkit-scrollbar-thumb {
+  background-color: var(--color-fleet-secondary-border);
+  border-radius: 999px;
+}
+
+.app-scroll::-webkit-scrollbar-track {
+  background-color: transparent;
+}
+
+/* Fleet Component Library 2025 — elevation */
+.fleet-shadow-1 {
+  box-shadow:
+    0px 2px 5px 0px rgba(45, 47, 49, 0.12),
+    0px 1px 1px 0px rgba(0, 0, 0, 0.14),
+    0px 2px 1px 0px rgba(0, 0, 0, 0.2);
+}
+
+.fleet-shadow-2 {
+  box-shadow:
+    0px 1px 5px 0px rgba(0, 0, 0, 0.12),
+    0px 2px 2px 0px rgba(0, 0, 0, 0.14),
+    0px 3px 1px -2px rgba(0, 0, 0, 0.2);
+}
+
+/* Fleet — buttons (14px SemiBold, 4px radius) */
+.fleet-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border-radius: 4px;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1;
+  transition: opacity 0.15s ease;
+}
+
+.fleet-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.fleet-btn-lg {
+  height: 56px;
+  padding: 14px 24px;
+  font-size: 16px;
+}
+
+.field-target {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 48px;
+  min-width: 48px;
+}
+
+.fleet-btn-md {
+  height: 40px;
+  padding: 8px 16px;
+}
+
+.fleet-btn-contained-info {
+  background: var(--color-fleet-info);
+  color: var(--color-fleet-text-white);
+}
+
+.fleet-btn-contained-success {
+  background: var(--color-fleet-success);
+  color: var(--color-fleet-text-white);
+}
+
+.fleet-btn-contained-brand {
+  background: var(--color-fleet-brand);
+  color: var(--color-fleet-neutral-970);
+}
+
+.fleet-btn-outlined {
+  background: var(--color-fleet-surface);
+  border: 1px solid var(--color-fleet-secondary);
+  color: var(--color-fleet-text);
+}
+
+.fleet-btn-elevated {
+  box-shadow:
+    0px 1px 5px 0px rgba(0, 0, 0, 0.12),
+    0px 2px 2px 0px rgba(0, 0, 0, 0.14),
+    0px 3px 1px -2px rgba(0, 0, 0, 0.2);
+}
+
+/* Fleet — chips (12px SemiBold, light variant) */
+.fleet-chip {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  border-radius: 999px;
+  padding: 4px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1;
+}
+
+.fleet-chip-success {
+  background: var(--color-fleet-positive-100);
+  color: var(--color-fleet-text-green);
+}
+
+.fleet-chip-info {
+  background: var(--color-fleet-info-100);
+  color: var(--color-fleet-text-blue);
+}
+
+.fleet-chip-warning {
+  background: var(--color-fleet-warning-100);
+  color: var(--color-fleet-text-orange);
+}
+
+.fleet-chip-neutral {
+  background: var(--color-fleet-secondary-light);
+  color: var(--color-fleet-text);
+}
+
+/* Fleet — alert (outlined error) */
+.fleet-alert-error {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border: 1px solid var(--color-fleet-alert-error-border);
+  border-radius: 4px;
+  background: var(--color-fleet-surface);
+  padding: 12px 16px;
+  color: var(--color-fleet-text-red);
+  font-size: 14px;
+}
+
+/* Fleet — fuel issue notification (title + description + optional action) */
+.fleet-issue-notification {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  border: 1px solid var(--color-fleet-alert-error-border);
+  border-radius: 12px;
+  background: var(--color-fleet-alert-error-bg);
+  padding: 20px 24px;
+}
+
+/* Pump QR scanner — full-bleed camera behind custom viewfinder */
+.scanner-region {
+  overflow: hidden;
+}
+
+.scanner-region video {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover;
+}
+
+.scanner-region img {
+  display: none !important;
+}
+
+.scanner-region #qr-shaded-region,
+.scanner-region div[style*='border'] {
+  border: none !important;
+  box-shadow: none !important;
 }
