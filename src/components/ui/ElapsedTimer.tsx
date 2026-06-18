@@ -32,18 +32,19 @@ export function ElapsedTimer({
     return () => window.clearInterval(id)
   }, [startedAt])
 
-  const announcementInterval = Math.floor(elapsed / 30)
+  const speech = formatElapsedSpeech(elapsed)
+  const announcementInterval = Math.floor(elapsed / 60)
 
   useEffect(() => {
     if (!startedAt) return
-    setAnnouncement(formatElapsedSpeech(elapsed))
-  }, [announcementInterval, elapsed, startedAt])
+    setAnnouncement(speech)
+  }, [announcementInterval, speech, startedAt])
 
   const { hours, minutes, seconds } = formatElapsed(elapsed)
 
   if (!startedAt) {
     return (
-      <p className="elapsed-timer elapsed-timer--empty" id={timerId}>
+      <p className="elapsed-timer elapsed-timer--empty" id={timerId} aria-label="Elapsed time unavailable">
         --
       </p>
     )
@@ -57,6 +58,7 @@ export function ElapsedTimer({
         role="timer"
         aria-live="off"
         aria-labelledby={labelId}
+        aria-valuetext={speech}
         aria-atomic="true"
       >
         <span className="elapsed-timer__segment" aria-hidden="true">

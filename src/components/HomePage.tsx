@@ -1,78 +1,98 @@
-import type { ReactNode } from 'react'
-import { ChevronRight, ClipboardList, Truck } from 'lucide-react'
+import { useEffect, useState } from 'react'
+import { useTutorial } from '../hooks/useTutorial'
+import {
+  HOME_TUTORIAL_STEPS,
+  HOME_TUTORIAL_STORAGE_KEY,
+} from '../utils/tutorialSteps'
+import { HomeWorkflowList } from './home/HomeWorkflowList'
 import { Header } from './ui/Header'
+import { WorkflowTutorial } from './ui/WorkflowTutorial'
 
 type HomePageProps = {
+  forceTutorial?: boolean
   onSelectVsa: () => void
   onSelectTransport: () => void
+  onOpenTracking: () => void
   onReportIssue?: () => void
   onSignOut?: () => void
 }
 
-type HomeOptionProps = {
-  title: string
-  action: string
-  icon: ReactNode
-  accentClass: string
-  onClick: () => void
-}
-
-function HomeOption({ title, action, icon, accentClass, onClick }: HomeOptionProps) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className="fleet-shadow-1 flex min-h-[72px] w-full items-center gap-4 rounded-[4px] border border-[var(--color-fleet-secondary-border)] bg-white p-5 text-left transition-colors hover:border-[var(--color-fleet-info)]"
-    >
-      <div
-        className={`flex h-14 w-14 shrink-0 items-center justify-center rounded-[4px] text-[var(--color-fleet-info)] ${accentClass}`}
-      >
-        {icon}
-      </div>
-      <div className="min-w-0 flex-1">
-        <p className="text-base font-bold text-[var(--color-fleet-text)]">{title}</p>
-        <p className="mt-0.5 text-sm font-semibold text-[var(--color-fleet-text-blue)]">{action}</p>
-      </div>
-      <ChevronRight className="h-6 w-6 shrink-0 text-[var(--color-fleet-text-secondary)]" />
-    </button>
-  )
-}
-
 export function HomePage({
+  forceTutorial = false,
   onSelectVsa,
   onSelectTransport,
+  onOpenTracking,
   onReportIssue,
   onSignOut,
 }: HomePageProps) {
+  const tutorial = useTutorial({
+    storageKey: HOME_TUTORIAL_STORAGE_KEY,
+    steps: HOME_TUTORIAL_STEPS,
+    forceStart: forceTutorial,
+  })
+  const [menuOpen, setMenuOpen] = useState(false)
+
+  useEffect(() => {
+    if (!tutorial.active || !tutorial.step) return
+
+    if (tutorial.step.openHeaderMenu) {
+      setMenuOpen(true)
+      return
+    }
+
+    if (tutorial.step.id === 'header-menu') {
+      setMenuOpen(false)
+    }
+  }, [tutorial.active, tutorial.step])
+
+  useEffect(() => {
+    if (!tutorial.active) {
+      setMenuOpen(false)
+    }
+  }, [tutorial.active])
+
   return (
     <div className="flex min-h-0 w-full flex-1 flex-col bg-white">
       <Header
-        title="Daytona"
-        subtitle="Select a workflow to get started"
+        brandLayout
+        title="Hertz"
+        subtitle="Daytona"
         showBack={false}
         showSessionTimer={false}
         onReportIssue={onReportIssue}
         onSignOut={onSignOut}
+        onReplayTutorial={tutorial.start}
+        menuOpen={menuOpen}
+        onMenuOpenChange={setMenuOpen}
+        elevateHeaderMenu={tutorial.active && Boolean(tutorial.step?.openHeaderMenu)}
+        lockHeaderMenu={tutorial.active && Boolean(tutorial.step?.openHeaderMenu)}
       />
 
-      <main className="app-scroll flex min-h-0 flex-1 flex-col px-4 py-6 sm:px-6">
-        <div className="mt-auto flex w-full flex-col gap-3">
-          <HomeOption
-            title="VSA"
-            action="Start service workflow"
-            accentClass="bg-[var(--color-fleet-surface-muted)]"
-            icon={<ClipboardList className="h-7 w-7" />}
-            onClick={onSelectVsa}
-          />
-          <HomeOption
-            title="Transport"
-            action="Start transport"
-            accentClass="bg-[var(--color-fleet-brand)]/30"
-            icon={<Truck className="h-7 w-7" />}
-            onClick={onSelectTransport}
-          />
-        </div>
+      <main
+        id="main-content"
+        className="app-scroll app-workflow-main flex min-h-0 flex-1 flex-col pb-[max(1.25rem,env(safe-area-inset-bottom))] pt-4"
+      >
+        <h1 className="fleet-sr-only">Hertz workflows</h1>
+        <HomeWorkflowList
+          onSelectVsa={onSelectVsa}
+          onSelectTransport={onSelectTransport}
+          onOpenTracking={onOpenTracking}
+        />
       </main>
+
+      <WorkflowTutorial
+        open={tutorial.active}
+        step={tutorial.step}
+        stepIndex={tutorial.stepIndex}
+        stepCount={tutorial.stepCount}
+        isFirst={tutorial.isFirst}
+        isLast={tutorial.isLast}
+        onNext={tutorial.next}
+        onBack={tutorial.back}
+        onSkip={tutorial.skip}
+        trackPrefix="home.tutorial"
+        trackView="home"
+      />
     </div>
   )
 }

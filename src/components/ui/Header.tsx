@@ -4,15 +4,23 @@ import { ExitConfirmDialog } from './ExitConfirmDialog'
 import { HeaderMenu } from './HeaderMenu'
 import { resetSessionTimer, SessionTimer } from './SessionTimer'
 import { StatusBar } from './StatusBar'
+import { trackProps } from '../../utils/tracking'
 
 type HeaderProps = {
   title: string
   subtitle: string
   showBack?: boolean
   showSessionTimer?: boolean
+  confirmOnExit?: boolean
   onBack?: () => void
   onReportIssue?: () => void
   onSignOut?: () => void
+  onReplayTutorial?: () => void
+  menuOpen?: boolean
+  onMenuOpenChange?: (open: boolean) => void
+  elevateHeaderMenu?: boolean
+  lockHeaderMenu?: boolean
+  brandLayout?: boolean
 }
 
 export function Header({
@@ -20,19 +28,35 @@ export function Header({
   subtitle,
   showBack,
   showSessionTimer = true,
+  confirmOnExit = true,
   onBack,
   onReportIssue,
   onSignOut,
+  onReplayTutorial,
+  menuOpen,
+  onMenuOpenChange,
+  elevateHeaderMenu,
+  lockHeaderMenu,
+  brandLayout = false,
 }: HeaderProps) {
   const [showExitConfirm, setShowExitConfirm] = useState(false)
+  const [exitMode, setExitMode] = useState<'logout' | 'navigate'>('navigate')
   const [pendingExit, setPendingExit] = useState<(() => void) | null>(null)
   const showBackButton = showBack ?? Boolean(onBack)
 
-  const requestExit = useCallback((action?: () => void) => {
-    if (!action) return
-    setPendingExit(() => action)
-    setShowExitConfirm(true)
-  }, [])
+  const requestExit = useCallback(
+    (action?: () => void, mode: 'logout' | 'navigate' = 'navigate') => {
+      if (!action) return
+      if (mode === 'navigate' && !confirmOnExit) {
+        action()
+        return
+      }
+      setExitMode(mode)
+      setPendingExit(() => action)
+      setShowExitConfirm(true)
+    },
+    [confirmOnExit],
+  )
 
   const handleContinue = useCallback(() => {
     setShowExitConfirm(false)
@@ -47,29 +71,44 @@ export function Header({
   }, [pendingExit])
 
   return (
-    <header className="shrink-0 border-b-2 border-[#fec310] bg-white">
+    <header className={`hertz-header shrink-0${brandLayout ? ' hertz-header--brand' : ''}`}>
       <StatusBar />
 
-      <div className="flex items-center justify-between bg-white px-4 py-2 shadow-[0_3px_2.5px_rgba(0,0,0,0.2)]">
-        <div className="flex min-w-0 items-center">
+      <div className="hertz-header__bar">
+        <div className="flex min-w-0 flex-1 items-center">
           {showBackButton && (
             <button
               type="button"
-              onClick={() => requestExit(onBack)}
-              className="field-target flex shrink-0 items-center justify-center rounded-full p-4 text-[var(--color-fleet-text)]"
+              onClick={() => requestExit(onBack, 'navigate')}
+              className="field-target flex shrink-0 items-center justify-center rounded-full"
               aria-label="Go back"
+              {...trackProps('header.back')}
             >
               <ChevronLeft className="h-6 w-6" />
             </button>
           )}
-          <div className={showBackButton ? '' : 'py-1'}>
-            <p className="text-lg font-bold leading-none text-[var(--color-fleet-text)]">{title}</p>
-            <p className="mt-0.5 text-xs font-medium text-[var(--color-fleet-text)]">{subtitle}</p>
+          <div className={showBackButton ? 'min-w-0' : 'min-w-0 py-0.5'}>
+            {brandLayout ? (
+              <>
+                <p className="hertz-header__brand-name">Hertz</p>
+                <p className="hertz-header__brand-site">{subtitle}</p>
+              </>
+            ) : (
+              <>
+                <h1 className="hertz-header__title">{title}</h1>
+                <p className="hertz-header__subtitle">{subtitle}</p>
+              </>
+            )}
           </div>
         </div>
         <HeaderMenu
           onReportIssue={onReportIssue}
-          onSignOut={() => requestExit(onSignOut)}
+          onSignOut={() => requestExit(onSignOut, 'logout')}
+          onReplayTutorial={onReplayTutorial}
+          menuOpen={menuOpen}
+          onMenuOpenChange={onMenuOpenChange}
+          elevateMenu={elevateHeaderMenu}
+          lockMenuOpen={lockHeaderMenu}
         />
       </div>
 
@@ -77,6 +116,7 @@ export function Header({
 
       <ExitConfirmDialog
         open={showExitConfirm}
+        mode={exitMode}
         onContinue={handleContinue}
         onLeave={handleLeave}
       />

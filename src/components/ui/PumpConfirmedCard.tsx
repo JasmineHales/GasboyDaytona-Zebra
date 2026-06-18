@@ -1,5 +1,6 @@
 import { CheckCircle2 } from 'lucide-react'
 import type { ReactNode } from 'react'
+import { trackProps } from '../../utils/tracking'
 
 type PumpConfirmedCardProps = {
   title: string
@@ -7,6 +8,7 @@ type PumpConfirmedCardProps = {
   actionLabel: string
   onAction: () => void
   actionIcon?: ReactNode
+  trackAction?: string
 }
 
 export function PumpConfirmedCard({
@@ -15,6 +17,7 @@ export function PumpConfirmedCard({
   actionLabel,
   onAction,
   actionIcon,
+  trackAction = 'pump.confirmed.action',
 }: PumpConfirmedCardProps) {
   return (
     <div className="pump-confirmed-card">
@@ -29,6 +32,7 @@ export function PumpConfirmedCard({
         type="button"
         onClick={onAction}
         className="fleet-btn fleet-btn-lg fleet-btn-contained-info fleet-btn-elevated w-full"
+        {...trackProps(trackAction)}
       >
         {actionIcon}
         {actionLabel}

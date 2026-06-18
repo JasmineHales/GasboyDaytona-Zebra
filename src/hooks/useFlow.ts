@@ -1,4 +1,8 @@
-import { useCallback, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
+import {
+  loadPersistedWorkflow,
+  savePersistedWorkflow,
+} from '../utils/workflowPersistence'
 import { isStallOccupied } from '../utils/movement'
 import type {
   FlowContext,
@@ -9,6 +13,11 @@ import type {
   ScreenId,
   StallPhase,
 } from '../types/flow'
+import {
+  MILEAGE_SCENARIOS,
+  TRUSTED_MILEAGE_STATE,
+} from '../utils/mileageScenarios'
+import { VSA_VEHICLE } from '../utils/vehicleSummary'
 
 function buildFuelTransaction(prev: FlowContext): FuelTransaction {
   return {
@@ -18,8 +27,57 @@ function buildFuelTransaction(prev: FlowContext): FuelTransaction {
   }
 }
 
+function isFuelCompleteStep(step: FuelStep): boolean {
+  return step === 'fueling-complete' || step === 'additional-fueling-complete'
+}
+
+function applyRemoteGallonSync(prev: FlowContext, gallons: string): FlowContext {
+  const pump = prev.pumpNumber || '8'
+  const syncedEntry: FuelTransaction = {
+    pump,
+    gallons,
+    status: 'complete',
+  }
+
+  let fuelTransactions: FuelTransaction[]
+  if (prev.fuelTransactions.length > 0) {
+    const lastIndex = prev.fuelTransactions.length - 1
+    const last = prev.fuelTransactions[lastIndex]
+    if (last.pump === pump && !last.gallons.trim()) {
+      fuelTransactions = [
+        ...prev.fuelTransactions.slice(0, lastIndex),
+        syncedEntry,
+      ]
+    } else {
+      fuelTransactions = prev.isAdditionalFueling
+        ? [...prev.fuelTransactions, syncedEntry]
+        : [syncedEntry]
+    }
+  } else {
+    fuelTransactions = [syncedEntry]
+  }
+
+  return {
+    ...prev,
+    fuelGallonsPending: false,
+    fuelGallonsDispensed: gallons,
+    fuelTransactions,
+  }
+}
+
 function isManualFueling(ctx: Pick<FlowContext, 'unlockMode' | 'locationType'>) {
   return ctx.unlockMode === 'on-site' || ctx.locationType === 'non-gasboy'
+}
+
+function isRemoteGasboy(ctx: Pick<FlowContext, 'unlockMode' | 'locationType'>) {
+  return ctx.locationType === 'gasboy' && ctx.unlockMode === 'remote'
+}
+
+function canCompleteRemoteFueling(ctx: FlowContext): boolean {
+  return (
+    isRemoteGasboy(ctx) &&
+    (ctx.fuelStep === 'fueling-in-progress' || ctx.fuelStep === 'pump-unlocked')
+  )
 }
 
 function formatFuelFinalTime(startedAt: number | null): string {
@@ -137,25 +195,76 @@ const INITIAL_CONTEXT: FlowContext = {
   issueReportSource: null,
   unlockMode: 'remote',
   locationType: 'gasboy',
+  odometerReading: '',
+  mileageState: TRUSTED_MILEAGE_STATE,
 }
+
+const TRANSPORT_WORKFLOW_BASE: Partial<FlowContext> = {
+  movementComplete: false,
+  movementMode: 'transport',
+  movementPhase: 'select-location',
+  location: '',
+  stallNumber: '',
+  fuelComplete: false,
+  stallComplete: false,
+  fuelStep: 'verify-pump',
+  pumpNumber: '',
+  fuelGallons: '',
+  fuelStartedAt: null,
+  isAdditionalFueling: false,
+  fuelTransactions: [],
+  unlockMode: 'remote',
+  locationType: 'gasboy',
+  showIssueOverlay: false,
+  issueDetails: '',
+  odometerReading: '',
+}
+
+const VSA_WORKFLOW_BASE: Partial<FlowContext> = {
+  movementComplete: true,
+  movementMode: 'transport',
+  movementPhase: 'location-selected',
+  location: 'Albany AP QTA',
+  stallNumber: '',
+  cleaningComplete: false,
+  cleaningStep: 'verify-pump',
+  cleaningPumpNumber: '',
+  cleaningStartedAt: null,
+  cleaningFinalTime: '',
+  fuelComplete: false,
+  fuelStep: 'verify-pump',
+  pumpNumber: '',
+  fuelGallons: '',
+  fuelStartedAt: null,
+  isAdditionalFueling: false,
+  fuelTransactions: [],
+  stallPhase: 'select-stall',
+  stallSectionNumber: '',
+  stallComplete: false,
+  unlockMode: 'remote',
+  locationType: 'gasboy',
+  showIssueOverlay: false,
+  issueDetails: '',
+  issueReportSource: null,
+  odometerReading: '',
+  mileageState: VSA_VEHICLE.mileageState,
+}
+
+const MILEAGE_SCREEN_PRESETS = Object.fromEntries(
+  Object.entries(MILEAGE_SCENARIOS).map(([id, scenario]) => [
+    id,
+    {
+      ...TRANSPORT_WORKFLOW_BASE,
+      mileageState: scenario.state,
+      odometerReading: '',
+    },
+  ]),
+) as Record<keyof typeof MILEAGE_SCENARIOS, Partial<FlowContext>>
 
 const SCREEN_PRESETS: Record<ScreenId, Partial<FlowContext>> = {
   'transport-default': {
-    movementComplete: false,
-    movementMode: 'transport',
-    movementPhase: 'select-location',
-    location: '',
-    stallNumber: '',
-    fuelComplete: false,
-    stallComplete: false,
-    fuelStep: 'verify-pump',
-    pumpNumber: '',
-    fuelGallons: '',
-    fuelStartedAt: null,
-    isAdditionalFueling: false,
-    fuelTransactions: [],
-    showIssueOverlay: false,
-    issueDetails: '',
+    ...TRANSPORT_WORKFLOW_BASE,
+    mileageState: TRUSTED_MILEAGE_STATE,
   },
   'transport-complete': {
     movementComplete: true,
@@ -167,6 +276,27 @@ const SCREEN_PRESETS: Record<ScreenId, Partial<FlowContext>> = {
     stallComplete: true,
     fuelStep: 'fueling-complete',
     showIssueOverlay: false,
+    mileageState: TRUSTED_MILEAGE_STATE,
+  },
+  'transport-issue-header': {
+    ...TRANSPORT_WORKFLOW_BASE,
+    mileageState: TRUSTED_MILEAGE_STATE,
+    movementComplete: true,
+    movementPhase: 'location-selected',
+    location: 'Albany AP QTA',
+    showIssueOverlay: true,
+    issueDetails: '',
+    issueReportSource: 'header',
+  },
+  'movement-transport-location-selected': {
+    ...TRANSPORT_WORKFLOW_BASE,
+    mileageState: TRUSTED_MILEAGE_STATE,
+    movementComplete: false,
+    movementPhase: 'location-selected',
+    location: 'Albany AP QTA',
+    fuelComplete: false,
+    fuelStep: 'verify-pump',
+    showIssueOverlay: false,
   },
   'movement-transport-complete': {
     movementComplete: true,
@@ -176,6 +306,18 @@ const SCREEN_PRESETS: Record<ScreenId, Partial<FlowContext>> = {
     stallNumber: '',
     fuelComplete: false,
     stallComplete: false,
+    fuelStep: 'verify-pump',
+    showIssueOverlay: false,
+  },
+  'movement-stall-select-stall': {
+    ...TRANSPORT_WORKFLOW_BASE,
+    mileageState: TRUSTED_MILEAGE_STATE,
+    movementComplete: false,
+    movementMode: 'stall',
+    movementPhase: 'select-stall',
+    location: '',
+    stallNumber: '',
+    fuelComplete: false,
     fuelStep: 'verify-pump',
     showIssueOverlay: false,
   },
@@ -190,6 +332,18 @@ const SCREEN_PRESETS: Record<ScreenId, Partial<FlowContext>> = {
     fuelStep: 'verify-pump',
     showIssueOverlay: false,
   },
+  'movement-stall-stall-verify': {
+    ...TRANSPORT_WORKFLOW_BASE,
+    mileageState: TRUSTED_MILEAGE_STATE,
+    movementComplete: false,
+    movementMode: 'stall',
+    movementPhase: 'stall-verify',
+    location: '',
+    stallNumber: '5',
+    fuelComplete: false,
+    fuelStep: 'verify-pump',
+    showIssueOverlay: false,
+  },
   'movement-stall-issue-reported': {
     movementComplete: true,
     movementMode: 'stall',
@@ -201,64 +355,91 @@ const SCREEN_PRESETS: Record<ScreenId, Partial<FlowContext>> = {
     fuelStep: 'verify-pump',
     showIssueOverlay: false,
   },
-  'stall-default': {
-    movementComplete: true,
-    movementMode: 'transport',
-    movementPhase: 'location-selected',
-    location: 'Albany AP QTA',
-    cleaningComplete: false,
-    cleaningStep: 'verify-pump',
-    cleaningPumpNumber: '',
-    cleaningStartedAt: null,
-    cleaningFinalTime: '',
-    fuelComplete: false,
-    fuelStep: 'verify-pump',
-    pumpNumber: '',
-    fuelGallons: '',
-    fuelStartedAt: null,
-    isAdditionalFueling: false,
-    fuelTransactions: [],
-    stallPhase: 'select-stall',
-    stallSectionNumber: '',
-    stallComplete: false,
-    showIssueOverlay: false,
-    issueDetails: '',
-  },
-  'stall-complete': {
-    movementComplete: true,
-    movementMode: 'transport',
-    movementPhase: 'location-selected',
-    location: 'Albany AP QTA',
+  'vsa-complete': {
+    ...VSA_WORKFLOW_BASE,
+    cleaningComplete: true,
+    cleaningStep: 'cleaning-complete',
+    cleaningFinalTime: '00:12:45',
     fuelComplete: true,
+    fuelStep: 'fueling-complete',
+    pumpNumber: '8',
+    fuelGallonsDispensed: '5',
+    fuelTransactions: [{ pump: '8', gallons: '5', status: 'complete' }],
     stallPhase: 'stall-selected',
     stallSectionNumber: '5',
     stallComplete: true,
+  },
+  'vsa-issue-header': {
+    ...VSA_WORKFLOW_BASE,
+    showIssueOverlay: true,
+    issueDetails: '',
+    issueReportSource: 'header',
+  },
+  'cleaning-default': {
+    ...VSA_WORKFLOW_BASE,
+    cleaningStep: 'verify-pump',
+    cleaningPumpNumber: '',
+  },
+  'cleaning-manual-entry': {
+    ...VSA_WORKFLOW_BASE,
+    cleaningStep: 'manual-entry',
+    cleaningPumpNumber: '',
+  },
+  'cleaning-manual-entry-filled': {
+    ...VSA_WORKFLOW_BASE,
+    cleaningStep: 'manual-entry-filled',
+    cleaningPumpNumber: '5',
+  },
+  'cleaning-manual-entry-error': {
+    ...VSA_WORKFLOW_BASE,
+    cleaningStep: 'manual-entry-error',
+    cleaningPumpNumber: '3',
+  },
+  'cleaning-pump-verified': {
+    ...VSA_WORKFLOW_BASE,
+    cleaningStep: 'pump-verified',
+    cleaningPumpNumber: '5',
+  },
+  'cleaning-in-progress': {
+    ...VSA_WORKFLOW_BASE,
+    cleaningStep: 'cleaning-in-progress',
+    cleaningPumpNumber: '5',
+    cleaningStartedAt: Date.now() - 120_000,
+  },
+  'cleaning-complete': {
+    ...VSA_WORKFLOW_BASE,
+    cleaningComplete: true,
+    cleaningStep: 'cleaning-complete',
+    cleaningPumpNumber: '5',
+    cleaningFinalTime: '00:12:45',
+    cleaningStartedAt: Date.now() - 765_000,
+  },
+  'stall-default': {
+    ...VSA_WORKFLOW_BASE,
+  },
+  'stall-complete': {
+    ...VSA_WORKFLOW_BASE,
+    fuelComplete: true,
     fuelStep: 'fueling-complete',
-    showIssueOverlay: false,
+    stallPhase: 'stall-selected',
+    stallSectionNumber: '5',
+    stallComplete: true,
   },
   'stall-missing': {
-    movementComplete: true,
-    movementMode: 'transport',
-    movementPhase: 'location-selected',
-    location: 'Albany AP QTA',
+    ...VSA_WORKFLOW_BASE,
     fuelComplete: true,
+    fuelStep: 'fueling-complete',
     stallPhase: 'stall-verify',
     stallSectionNumber: '5',
     stallComplete: false,
-    fuelStep: 'fueling-complete',
-    showIssueOverlay: false,
   },
   'stall-issue-reported': {
-    movementComplete: true,
-    movementMode: 'transport',
-    movementPhase: 'location-selected',
-    location: 'Albany AP QTA',
+    ...VSA_WORKFLOW_BASE,
     fuelComplete: true,
+    fuelStep: 'fueling-complete',
     stallPhase: 'stall-issue-reported',
     stallSectionNumber: '5',
     stallComplete: true,
-    fuelStep: 'fueling-complete',
-    showIssueOverlay: false,
   },
   'fueling-default': {
     movementComplete: true,
@@ -298,6 +479,8 @@ const SCREEN_PRESETS: Record<ScreenId, Partial<FlowContext>> = {
     fuelComplete: false,
     fuelStep: 'pump-unlocked',
     pumpNumber: '12',
+    fuelStartedAt: Date.now() - 15_000,
+    fuelPumpStatusReceived: false,
     showIssueOverlay: false,
   },
   'fueling-in-progress': {
@@ -305,6 +488,17 @@ const SCREEN_PRESETS: Record<ScreenId, Partial<FlowContext>> = {
     fuelComplete: false,
     fuelStep: 'fueling-in-progress',
     pumpNumber: '12',
+    fuelStartedAt: Date.now() - 15_000,
+    fuelPumpStatusReceived: false,
+    showIssueOverlay: false,
+  },
+  'fueling-in-progress-unconfirmed': {
+    movementComplete: true,
+    fuelComplete: false,
+    fuelStep: 'fueling-in-progress',
+    pumpNumber: '12',
+    fuelStartedAt: Date.now() - 75_000,
+    fuelPumpStatusReceived: false,
     showIssueOverlay: false,
   },
   'fueling-complete': {
@@ -529,6 +723,7 @@ const SCREEN_PRESETS: Record<ScreenId, Partial<FlowContext>> = {
     locationType: 'non-gasboy',
     showIssueOverlay: false,
   },
+  ...MILEAGE_SCREEN_PRESETS,
 }
 
 function withScreen(screen: ScreenId): FlowContext {
@@ -539,11 +734,28 @@ function withScreen(screen: ScreenId): FlowContext {
   }
 }
 
+function readInitialContext(): FlowContext {
+  const saved = loadPersistedWorkflow()
+  return saved?.context ?? withScreen('fueling-default')
+}
+
 export function useFlow() {
-  const [context, setContext] = useState<FlowContext>(withScreen('fueling-default'))
+  const [context, setContext] = useState<FlowContext>(readInitialContext)
+
+  useEffect(() => {
+    savePersistedWorkflow({ context })
+  }, [context])
 
   const goToScreen = useCallback((screen: ScreenId) => {
     setContext(withScreen(screen))
+  }, [])
+
+  const applyWidgetState = useCallback((screen: ScreenId) => {
+    setContext((prev) => ({
+      ...prev,
+      ...SCREEN_PRESETS[screen],
+      screen,
+    }))
   }, [])
 
   const updateFuelStep = useCallback((fuelStep: FuelStep, extra?: Partial<FlowContext>) => {
@@ -610,6 +822,37 @@ export function useFlow() {
             ...prev,
             pumpNumber: pump,
             fuelStep: 'manual-entry-filled',
+          }
+        }
+        case 'quick-select-pump': {
+          const pump = (payload ?? '').trim()
+          if (!pump || isUnavailablePump(pump, prev.unavailablePumps)) {
+            return {
+              ...prev,
+              fuelStep: 'manual-entry-error',
+              pumpNumber: pump,
+            }
+          }
+          if (isManualFueling(prev)) {
+            return {
+              ...prev,
+              fuelStep: 'fueling-in-progress',
+              pumpNumber: pump,
+              fuelStartedAt: Date.now(),
+              fuelPumpStatusReceived: false,
+              fuelGallons: '',
+              screen: manualFuelingScreen('fueling-in-progress', prev),
+            }
+          }
+          return {
+            ...prev,
+            unlockMode: 'remote',
+            fuelStep: 'fueling-in-progress',
+            pumpNumber: pump,
+            fuelStartedAt: Date.now(),
+            fuelPumpStatusReceived: false,
+            fuelGallons: '',
+            screen: 'fueling-in-progress',
           }
         }
         case 'clear-pump':
@@ -684,6 +927,7 @@ export function useFlow() {
             ...prev,
             fuelStep: 'fueling-in-progress',
             fuelStartedAt: Date.now(),
+            fuelPumpStatusReceived: false,
             fuelGallons: '',
             screen: isManualFueling(prev)
               ? manualFuelingScreen('fueling-in-progress', prev)
@@ -733,10 +977,39 @@ export function useFlow() {
             ...prev,
             fuelStep: completeStep,
             fuelComplete: true,
+            fuelGallonsPending: false,
             fuelGallonsDispensed: prev.fuelGallons || prev.fuelGallonsDispensed,
             fuelFinalTime:
               prev.fuelFinalTime || formatFuelFinalTime(prev.fuelStartedAt),
             fuelTransactions: appendFuelTransaction(prev),
+            screen: completeScreen,
+          }
+        }
+        case 'complete-remote-fueling': {
+          if (!canCompleteRemoteFueling(prev)) return prev
+
+          const completeStep = prev.isAdditionalFueling
+            ? 'additional-fueling-complete'
+            : 'fueling-complete'
+          const completeScreen = prev.isAdditionalFueling
+            ? 'fueling-additional-complete'
+            : 'fueling-complete'
+
+          return {
+            ...prev,
+            fuelStep: completeStep,
+            fuelComplete: true,
+            fuelGallonsPending: true,
+            fuelGallons: '',
+            fuelGallonsDispensed: '',
+            fuelFinalTime: formatFuelFinalTime(prev.fuelStartedAt),
+            fuelTransactions: [
+              {
+                pump: prev.pumpNumber || '8',
+                gallons: '',
+                status: 'complete',
+              },
+            ],
             screen: completeScreen,
           }
         }
@@ -809,6 +1082,11 @@ export function useFlow() {
             pumpNumber: '',
             screen: 'fueling-default',
           }
+        case 'odometer-change':
+          return {
+            ...prev,
+            odometerReading: (payload ?? '').replace(/\D/g, '').slice(0, 7),
+          }
         case 'complete':
           return prev
         default:
@@ -824,6 +1102,7 @@ export function useFlow() {
             ...prev,
             fuelStep: 'fueling-in-progress',
             fuelStartedAt: Date.now(),
+            fuelPumpStatusReceived: false,
             screen: 'fueling-in-progress',
           }
         })
@@ -831,26 +1110,46 @@ export function useFlow() {
 
       setTimeout(() => {
         setContext((prev) => {
-          if (prev.fuelStep !== 'fueling-in-progress' || prev.unlockMode !== 'remote') {
-            return prev
+          if (prev.unlockMode !== 'remote') return prev
+
+          const gallons = prev.fuelGallons || prev.fuelGallonsDispensed || '5'
+
+          if (prev.fuelGallonsPending && isFuelCompleteStep(prev.fuelStep)) {
+            return applyRemoteGallonSync(prev, gallons)
           }
+
+          if (prev.fuelStep !== 'fueling-in-progress') return prev
+
           const completeStep = prev.isAdditionalFueling
             ? 'additional-fueling-complete'
             : 'fueling-complete'
           const completeScreen = prev.isAdditionalFueling
             ? 'fueling-additional-complete'
             : 'fueling-complete'
-          const gallons = prev.fuelGallons || prev.fuelGallonsDispensed || '5'
           return {
             ...prev,
             fuelStep: completeStep,
             fuelComplete: true,
+            fuelGallonsPending: false,
             fuelGallonsDispensed: gallons,
             fuelTransactions: appendFuelTransaction(prev),
             screen: completeScreen,
           }
         })
       }, 5000)
+    }
+
+    if (action === 'complete-remote-fueling') {
+      setTimeout(() => {
+        setContext((prev) => {
+          if (!prev.fuelGallonsPending || !isFuelCompleteStep(prev.fuelStep)) {
+            return prev
+          }
+          if (!isRemoteGasboy(prev)) return prev
+          const gallons = prev.fuelGallons || prev.fuelGallonsDispensed || '5'
+          return applyRemoteGallonSync(prev, gallons)
+        })
+      }, 6000)
     }
   }, [])
 
@@ -980,6 +1279,21 @@ export function useFlow() {
               : 'manual-entry-filled',
           }
         }
+        case 'quick-select-pump': {
+          const pump = (payload ?? '').trim()
+          if (!pump || isUnavailablePump(pump)) {
+            return {
+              ...prev,
+              cleaningStep: 'manual-entry-error',
+              cleaningPumpNumber: pump,
+            }
+          }
+          return {
+            ...prev,
+            cleaningStep: 'pump-verified',
+            cleaningPumpNumber: pump,
+          }
+        }
         case 'clear-pump':
           return {
             ...prev,
@@ -1091,6 +1405,7 @@ export function useFlow() {
   return {
     context,
     goToScreen,
+    applyWidgetState,
     updateFuelStep,
     handleAction,
     handleMovementAction,

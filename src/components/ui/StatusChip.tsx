@@ -1,10 +1,10 @@
 import type { SectionStatus } from '../../types/flow'
 
-const styles: Record<SectionStatus, string> = {
-  complete: 'fleet-chip fleet-chip-success',
-  'not-started': 'fleet-chip fleet-chip-neutral',
-  'in-progress': 'fleet-chip fleet-chip-info',
-  missing: 'fleet-chip fleet-chip-warning',
+const statusClass: Record<SectionStatus, string> = {
+  complete: 'fleet-status-chip--complete',
+  'not-started': 'fleet-status-chip--not-started',
+  'in-progress': 'fleet-status-chip--in-progress',
+  missing: 'fleet-status-chip--missing',
 }
 
 const labels: Record<SectionStatus, string> = {
@@ -16,8 +16,19 @@ const labels: Record<SectionStatus, string> = {
 
 type StatusChipProps = {
   status: SectionStatus
+  label?: string
+  variant?: 'default' | 'optional'
 }
 
-export function StatusChip({ status }: StatusChipProps) {
-  return <span className={styles[status]}>{labels[status]}</span>
+export function StatusChip({ status, label, variant = 'default' }: StatusChipProps) {
+  const modifier =
+    variant === 'optional'
+      ? 'fleet-status-chip--optional'
+      : statusClass[status]
+
+  return (
+    <span className={`fleet-status-chip fleet-status-chip--inline ${modifier}`}>
+      {label ?? labels[status]}
+    </span>
+  )
 }

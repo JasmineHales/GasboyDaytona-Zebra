@@ -1,33 +1,50 @@
 import { ChevronLeft, ChevronRight } from 'lucide-react'
+import { useId } from 'react'
+import { FullScreenOverlay } from '../ui/FullScreenOverlay'
 import { StatusBar } from '../ui/StatusBar'
+import { trackProps } from '../../utils/tracking'
 
 type ScannerScreenProps = {
+  open?: boolean
   onBack: () => void
   onManualEntry: () => void
   onScanComplete?: () => void
   title?: string
+  trackPrefix?: string
 }
 
 export function ScannerScreen({
+  open = true,
   onBack,
   onManualEntry,
   onScanComplete,
-  title = 'Scan Pump QR',
+  title = 'Scan pump QR',
+  trackPrefix = 'scanner',
 }: ScannerScreenProps) {
+  const titleId = useId()
+
   return (
-    <div className="app-overlay scanner-screen">
+    <FullScreenOverlay
+      open={open}
+      onDismiss={onBack}
+      labelId={titleId}
+      className="scanner-screen"
+    >
       <StatusBar />
 
       <div className="scanner-screen__header">
         <button
           type="button"
           onClick={onBack}
-          className="field-target flex h-14 w-14 items-center justify-center rounded-full text-white"
+          className="field-target flex shrink-0 items-center justify-center rounded-full text-white"
           aria-label="Close scanner"
+          {...trackProps(`${trackPrefix}.back`)}
         >
           <ChevronLeft className="h-6 w-6" />
         </button>
-        <p className="text-base font-semibold text-white">{title}</p>
+        <h2 id={titleId} className="text-base font-semibold text-white">
+          {title}
+        </h2>
       </div>
 
       <button
@@ -35,6 +52,7 @@ export function ScannerScreen({
         onClick={onManualEntry}
         className="scanner-vehicle-strip"
         aria-label="Enter pump number manually"
+        {...trackProps(`${trackPrefix}.manual-entry`)}
       >
         <div className="scanner-vehicle-strip__copy">
           <p className="scanner-vehicle-strip__title">Having trouble scanning</p>
@@ -50,6 +68,7 @@ export function ScannerScreen({
         onClick={() => onScanComplete?.()}
         className="scanner-viewfinder-area"
         aria-label="Tap to scan pump QR code"
+        {...trackProps(`${trackPrefix}.scan-complete`)}
       >
         <div className="scanner-viewfinder" aria-hidden>
           <ScannerCorner position="tl" />
@@ -61,7 +80,7 @@ export function ScannerScreen({
       </button>
 
       <p className="scanner-screen__hint">Align the QR code within the frame</p>
-    </div>
+    </FullScreenOverlay>
   )
 }
 

@@ -1,4 +1,5 @@
 import type { FlowContext } from '../types/flow'
+import { VSA_TUTORIAL } from '../utils/tutorialSteps'
 import { VSA_VEHICLE } from '../utils/vehicleSummary'
 import { TransportScreen } from './TransportScreen'
 
@@ -10,6 +11,8 @@ type VsaScreenProps = {
   onMovementAction: (action: string, payload?: string) => void
   onStallAction: (action: string, payload?: string) => void
   onCleaningAction: (action: string, payload?: string) => void
+  onSignOut?: () => void
+  forceTutorial?: boolean
 }
 
 export function VsaScreen({
@@ -18,11 +21,13 @@ export function VsaScreen({
   onMovementAction,
   onStallAction,
   onCleaningAction,
+  onSignOut,
+  forceTutorial = false,
 }: VsaScreenProps) {
   return (
     <TransportScreen
       title="VSA"
-      subtitle="Vehicle Service Advisor"
+      subtitle="Vehicle Service Attendant"
       sections={[...VSA_SECTIONS]}
       defaultExpanded={null}
       vehicleProfile={VSA_VEHICLE}
@@ -31,6 +36,9 @@ export function VsaScreen({
       onMovementAction={onMovementAction}
       onStallAction={onStallAction}
       onCleaningAction={onCleaningAction}
+      onSignOut={onSignOut}
+      tutorial={VSA_TUTORIAL}
+      forceTutorial={forceTutorial}
     />
   )
 }

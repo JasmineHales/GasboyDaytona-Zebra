@@ -36,11 +36,12 @@ export function SessionTimer() {
   }, [])
 
   const { hours, minutes, seconds } = formatElapsed(elapsed)
+  const display = `${hours}:${minutes}:${seconds}`
 
   return (
-    <div className="flex w-full items-center justify-center gap-[7px] px-4 py-1">
-      <span className="text-xs text-[var(--color-fleet-text)]">Session Timer</span>
-      <span className="flex items-center gap-1 px-2.5 text-2xl font-bold tabular-nums text-[var(--color-fleet-text)]">
+    <div className="session-timer" aria-label={`Session timer ${display}`}>
+      <span className="session-timer__label">Session Timer</span>
+      <span className="session-timer__value" aria-hidden="true">
         <span>{hours}</span>
         <span>:</span>
         <span>{minutes}</span>

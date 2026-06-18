@@ -10,12 +10,12 @@ export function getMovementProgress(
     return {
       step: selected ? 2 : 1,
       label: selected ? 'Location Selected' : 'Select Location',
+      description: selected ? undefined : 'Search for a location and select one to continue',
       badgeVariant: selected ? 'complete' : 'active',
       labelVariant: selected ? 'complete' : 'default',
       showProgress: !selected,
       progressPercent: 50,
-      progressFillClass: 'bg-[var(--color-fleet-positive-500)]',
-      stepText: 'Step 2 of 2',
+      totalSteps: 2,
     }
   }
 
@@ -26,6 +26,7 @@ export function getMovementProgress(
       badgeVariant: 'warning',
       labelVariant: 'warning',
       showProgress: false,
+      totalSteps: 2,
     }
   }
 
@@ -36,18 +37,19 @@ export function getMovementProgress(
       badgeVariant: 'complete',
       labelVariant: 'complete',
       showProgress: false,
+      totalSteps: 2,
     }
   }
 
   return {
     step: 1,
     label: 'Select Stall',
+    description: 'Enter stall number, then confirm',
     badgeVariant: 'active',
     labelVariant: 'default',
     showProgress: true,
     progressPercent: 50,
-    progressFillClass: 'bg-[var(--color-fleet-positive-500)]',
-    stepText: 'Step 2 of 2',
+    totalSteps: 2,
   }
 }
 
@@ -55,11 +57,11 @@ const fuelProgress: Record<FuelStep, ProgressIndicatorProps> = {
   'verify-pump': {
     step: 1,
     label: 'Verify Pump',
+    description: 'Scan or enter the pump number to verify the pump',
     badgeVariant: 'active',
     labelVariant: 'default',
     showProgress: true,
     progressPercent: 0,
-    progressFillClass: 'bg-[var(--color-fleet-primary-200)]',
   },
   'manual-entry': {
     step: 1,
@@ -68,7 +70,6 @@ const fuelProgress: Record<FuelStep, ProgressIndicatorProps> = {
     labelVariant: 'default',
     showProgress: true,
     progressPercent: 0,
-    progressFillClass: 'bg-[var(--color-fleet-primary-200)]',
   },
   'manual-entry-error': {
     step: 1,
@@ -77,7 +78,6 @@ const fuelProgress: Record<FuelStep, ProgressIndicatorProps> = {
     labelVariant: 'default',
     showProgress: true,
     progressPercent: 0,
-    progressFillClass: 'bg-[var(--color-fleet-primary-200)]',
   },
   'manual-entry-filled': {
     step: 1,
@@ -86,7 +86,6 @@ const fuelProgress: Record<FuelStep, ProgressIndicatorProps> = {
     labelVariant: 'default',
     showProgress: true,
     progressPercent: 0,
-    progressFillClass: 'bg-[var(--color-fleet-primary-200)]',
   },
   'pump-unavailable': {
     step: 1,
@@ -95,7 +94,6 @@ const fuelProgress: Record<FuelStep, ProgressIndicatorProps> = {
     labelVariant: 'default',
     showProgress: true,
     progressPercent: 0,
-    progressFillClass: 'bg-[var(--color-fleet-primary-200)]',
   },
   'unlocking-pump': {
     step: 2,
@@ -104,7 +102,6 @@ const fuelProgress: Record<FuelStep, ProgressIndicatorProps> = {
     labelVariant: 'default',
     showProgress: true,
     progressPercent: 33,
-    progressFillClass: 'bg-[var(--color-fleet-positive-500)]',
   },
   'pump-unlocked': {
     step: 3,
@@ -113,7 +110,6 @@ const fuelProgress: Record<FuelStep, ProgressIndicatorProps> = {
     labelVariant: 'default',
     showProgress: true,
     progressPercent: 66,
-    progressFillClass: 'bg-[var(--color-fleet-positive-500)]',
   },
   'pump-verified': {
     step: 2,
@@ -122,7 +118,6 @@ const fuelProgress: Record<FuelStep, ProgressIndicatorProps> = {
     labelVariant: 'default',
     showProgress: true,
     progressPercent: 33,
-    progressFillClass: 'bg-[var(--color-fleet-positive-500)]',
   },
   'connection-lost': {
     step: 2,
@@ -131,7 +126,6 @@ const fuelProgress: Record<FuelStep, ProgressIndicatorProps> = {
     labelVariant: 'error',
     showProgress: true,
     progressPercent: 33,
-    progressFillClass: 'bg-[var(--color-fleet-text-red)]',
   },
   'no-response': {
     step: 2,
@@ -140,7 +134,6 @@ const fuelProgress: Record<FuelStep, ProgressIndicatorProps> = {
     labelVariant: 'error',
     showProgress: true,
     progressPercent: 33,
-    progressFillClass: 'bg-[var(--color-fleet-text-red)]',
   },
   'pump-timeout': {
     step: 2,
@@ -149,16 +142,15 @@ const fuelProgress: Record<FuelStep, ProgressIndicatorProps> = {
     labelVariant: 'error',
     showProgress: true,
     progressPercent: 33,
-    progressFillClass: 'bg-[var(--color-fleet-text-red)]',
   },
   'fueling-in-progress': {
     step: 3,
     label: 'Fueling In Progress',
+    description: 'Record gallons when you\'re done fueling',
     badgeVariant: 'active',
     labelVariant: 'default',
     showProgress: true,
     progressPercent: 66,
-    progressFillClass: 'bg-[var(--color-fleet-positive-500)]',
   },
   'fueling-complete': {
     step: 4,
@@ -181,7 +173,6 @@ const fuelProgress: Record<FuelStep, ProgressIndicatorProps> = {
     labelVariant: 'default',
     showProgress: true,
     progressPercent: 0,
-    progressFillClass: 'bg-[var(--color-fleet-primary-200)]',
   },
   'additional-fueling-complete': {
     step: 4,
@@ -193,19 +184,19 @@ const fuelProgress: Record<FuelStep, ProgressIndicatorProps> = {
 }
 
 export function getFuelProgress(step: FuelStep): ProgressIndicatorProps {
-  return fuelProgress[step]
+  return { totalSteps: 4, ...fuelProgress[step] }
 }
 
 const cleaningProgress: Record<CleaningStep, ProgressIndicatorProps> = {
   'verify-pump': {
     step: 1,
     label: 'Verify Pump',
+    description: 'Scan or enter the pump number to verify the pump',
     badgeVariant: 'active',
     labelVariant: 'default',
     showProgress: true,
     progressPercent: 0,
-    progressFillClass: 'bg-[var(--color-fleet-primary-200)]',
-    stepText: 'Step 1 of 4',
+    totalSteps: 4,
   },
   'manual-entry': {
     step: 1,
@@ -214,8 +205,7 @@ const cleaningProgress: Record<CleaningStep, ProgressIndicatorProps> = {
     labelVariant: 'default',
     showProgress: true,
     progressPercent: 0,
-    progressFillClass: 'bg-[var(--color-fleet-primary-200)]',
-    stepText: 'Step 1 of 4',
+    totalSteps: 4,
   },
   'manual-entry-filled': {
     step: 1,
@@ -224,8 +214,7 @@ const cleaningProgress: Record<CleaningStep, ProgressIndicatorProps> = {
     labelVariant: 'default',
     showProgress: true,
     progressPercent: 0,
-    progressFillClass: 'bg-[var(--color-fleet-primary-200)]',
-    stepText: 'Step 1 of 4',
+    totalSteps: 4,
   },
   'manual-entry-error': {
     step: 1,
@@ -234,8 +223,7 @@ const cleaningProgress: Record<CleaningStep, ProgressIndicatorProps> = {
     labelVariant: 'default',
     showProgress: true,
     progressPercent: 0,
-    progressFillClass: 'bg-[var(--color-fleet-primary-200)]',
-    stepText: 'Step 1 of 4',
+    totalSteps: 4,
   },
   'pump-verified': {
     step: 2,
@@ -244,18 +232,17 @@ const cleaningProgress: Record<CleaningStep, ProgressIndicatorProps> = {
     labelVariant: 'default',
     showProgress: true,
     progressPercent: 33,
-    progressFillClass: 'bg-[var(--color-fleet-positive-500)]',
-    stepText: 'Step 2 of 4',
+    totalSteps: 4,
   },
   'cleaning-in-progress': {
     step: 3,
     label: 'Cleaning In Progress',
+    description: 'Take your time — tap finish when you\'re done',
     badgeVariant: 'active',
     labelVariant: 'default',
     showProgress: true,
     progressPercent: 66,
-    progressFillClass: 'bg-[var(--color-fleet-positive-500)]',
-    stepText: 'Step 3 of 4',
+    totalSteps: 4,
   },
   'cleaning-complete': {
     step: 4,
@@ -267,7 +254,7 @@ const cleaningProgress: Record<CleaningStep, ProgressIndicatorProps> = {
 }
 
 export function getCleaningProgress(step: CleaningStep): ProgressIndicatorProps {
-  return cleaningProgress[step]
+  return { totalSteps: 4, ...cleaningProgress[step] }
 }
 
 export function getStallProgress(phase: StallPhase): ProgressIndicatorProps {
@@ -278,6 +265,7 @@ export function getStallProgress(phase: StallPhase): ProgressIndicatorProps {
       badgeVariant: 'warning',
       labelVariant: 'warning',
       showProgress: false,
+      totalSteps: 2,
     }
   }
 
@@ -288,17 +276,18 @@ export function getStallProgress(phase: StallPhase): ProgressIndicatorProps {
       badgeVariant: 'complete',
       labelVariant: 'complete',
       showProgress: false,
+      totalSteps: 2,
     }
   }
 
   return {
     step: 1,
     label: 'Select Stall',
+    description: 'Enter stall number, then confirm',
     badgeVariant: 'active',
     labelVariant: 'default',
     showProgress: true,
     progressPercent: 50,
-    progressFillClass: 'bg-[var(--color-fleet-positive-500)]',
-    stepText: 'Step 2 of 2',
+    totalSteps: 2,
   }
 }

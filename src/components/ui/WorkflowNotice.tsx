@@ -39,32 +39,34 @@ export function WorkflowNotice({
       aria-labelledby={titleId}
       aria-describedby={describedBy || undefined}
     >
-      <div className="workflow-notice__top">
-        <div className="workflow-notice__icon" aria-hidden="true">
-          {icon}
+      <div className="workflow-notice__body">
+        <div className="workflow-notice__top">
+          <div className="workflow-notice__icon" aria-hidden="true">
+            {icon}
+          </div>
+          <div className="workflow-notice__copy">
+            <h3 className="workflow-notice__title" id={titleId}>
+              {title}
+            </h3>
+            <p className="workflow-notice__description" id={descriptionId}>
+              {description}
+            </p>
+          </div>
         </div>
-        <div className="workflow-notice__copy">
-          <h3 className="workflow-notice__title" id={titleId}>
-            {title}
-          </h3>
-          <p className="workflow-notice__description" id={descriptionId}>
-            {description}
-          </p>
-        </div>
+
+        {requirements && requirements.length > 0 && (
+          <div className="workflow-notice__requirements">
+            <p className="workflow-notice__requirements-title">{requirementsTitle}</p>
+            <ul className="workflow-notice__requirements-list" id={requirementsId}>
+              {requirements.map((item) => (
+                <li key={item}>{item}</li>
+              ))}
+            </ul>
+          </div>
+        )}
       </div>
 
-      {requirements && requirements.length > 0 && (
-        <div className="workflow-notice__requirements">
-          <p className="workflow-notice__requirements-title">{requirementsTitle}</p>
-          <ul className="workflow-notice__requirements-list" id={requirementsId}>
-            {requirements.map((item) => (
-              <li key={item}>{item}</li>
-            ))}
-          </ul>
-        </div>
-      )}
-
-      {footer && <div className="workflow-notice__footer">{footer}</div>}
+      {footer && <div className="workflow-notice__action">{footer}</div>}
     </section>
   )
 }

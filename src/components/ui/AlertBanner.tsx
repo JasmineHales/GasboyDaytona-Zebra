@@ -6,8 +6,8 @@ type AlertBannerProps = {
 
 export function AlertBanner({ message }: AlertBannerProps) {
   return (
-    <div className="fleet-alert-error">
-      <AlertCircle className="h-[22px] w-[22px] shrink-0 text-[var(--color-fleet-error)]" />
+    <div className="fleet-alert-error" role="alert">
+      <AlertCircle className="h-[22px] w-[22px] shrink-0 text-[var(--color-fleet-error)]" aria-hidden />
       <p>{message}</p>
     </div>
   )

@@ -1,7 +1,14 @@
-import { ChevronLeft, MapPin, Search } from 'lucide-react'
-import { useMemo, useState } from 'react'
+import { ChevronLeft, Search } from 'lucide-react'
+import { useId, useMemo, useState } from 'react'
+import { FullScreenOverlay } from '../ui/FullScreenOverlay'
 import { StatusBar } from '../ui/StatusBar'
 import { TextField } from '../ui/TextField'
+import {
+  getRecentLocations,
+  recordRecentLocation,
+  sortLocationsByRecency,
+} from '../../utils/recentLocations'
+import { slugifyTrackValue, trackProps } from '../../utils/tracking'
 
 const LOCATIONS = [
   'Albany AP QTA',
@@ -15,32 +22,98 @@ const LOCATIONS = [
 ]
 
 type LocationSearchOverlayProps = {
+  open?: boolean
   onClose: () => void
   onSelect: (location: string) => void
 }
 
-export function LocationSearchOverlay({ onClose, onSelect }: LocationSearchOverlayProps) {
+type ListView =
+  | { kind: 'recent'; locations: string[] }
+  | { kind: 'browse'; locations: string[] }
+  | { kind: 'search'; locations: string[] }
+  | { kind: 'no-results'; query: string }
+
+function LocationResultsList({
+  locations,
+  onSelect,
+}: {
+  locations: string[]
+  onSelect: (location: string) => void
+}) {
+  return (
+    <ul className="flex flex-col">
+      {locations.map((location) => (
+        <li key={location}>
+          <button
+            type="button"
+            onClick={() => onSelect(location)}
+            className="field-target flex w-full items-center border-b border-[var(--color-border-light)] px-4 text-left hover:bg-[var(--color-surface-muted)]"
+            {...trackProps('movement.location.select', {
+              location: slugifyTrackValue(location),
+            })}
+          >
+            <span className="w-full text-base text-left text-[var(--color-text-primary)]">
+              {location}
+            </span>
+          </button>
+        </li>
+      ))}
+    </ul>
+  )
+}
+
+export function LocationSearchOverlay({
+  open = true,
+  onClose,
+  onSelect,
+}: LocationSearchOverlayProps) {
+  const titleId = useId()
   const [query, setQuery] = useState('')
 
-  const results = useMemo(() => {
+  const listView = useMemo((): ListView => {
     const trimmed = query.trim().toLowerCase()
-    if (!trimmed) return LOCATIONS
-    return LOCATIONS.filter((location) => location.toLowerCase().includes(trimmed))
+    const recent = getRecentLocations().filter((location) => LOCATIONS.includes(location))
+
+    if (!trimmed) {
+      if (recent.length > 0) {
+        return { kind: 'recent', locations: recent }
+      }
+      return { kind: 'browse', locations: [...LOCATIONS].sort((a, b) => a.localeCompare(b)) }
+    }
+
+    const matches = LOCATIONS.filter((location) =>
+      location.toLowerCase().includes(trimmed),
+    )
+    const sorted = sortLocationsByRecency(matches, recent)
+
+    if (sorted.length === 0) {
+      return { kind: 'no-results', query: query.trim() }
+    }
+
+    return { kind: 'search', locations: sorted }
   }, [query])
 
+  const handleSelect = (location: string) => {
+    recordRecentLocation(location)
+    onSelect(location)
+  }
+
   return (
-    <div className="app-overlay bg-white">
+    <FullScreenOverlay open={open} onDismiss={onClose} labelId={titleId}>
       <StatusBar />
       <div className="flex items-center gap-2 border-b border-[var(--color-border-light)] px-2 py-2">
         <button
           type="button"
           onClick={onClose}
-          className="flex h-14 w-14 items-center justify-center rounded-full"
+          className="field-target flex shrink-0 items-center justify-center rounded-full"
           aria-label="Close search"
+          {...trackProps('movement.location.search-close')}
         >
           <ChevronLeft className="h-6 w-6" />
         </button>
-        <p className="text-base font-semibold">Select Location</p>
+        <h2 id={titleId} className="text-base font-semibold">
+          Select Location
+        </h2>
       </div>
 
       <div className="px-4 py-4">
@@ -50,6 +123,7 @@ export function LocationSearchOverlay({ onClose, onSelect }: LocationSearchOverl
           placeholder="Search locations..."
           startIcon={Search}
           onClear={() => setQuery('')}
+          clearTrackTag="movement.location.search-clear"
           autoComplete="off"
           autoFocus
           role="searchbox"
@@ -57,27 +131,33 @@ export function LocationSearchOverlay({ onClose, onSelect }: LocationSearchOverl
       </div>
 
       <div className="flex-1 overflow-y-auto px-4 pb-4">
-        {results.length === 0 ? (
-          <p className="py-8 text-center text-sm text-[var(--color-text-secondary)]">
-            No locations found
-          </p>
-        ) : (
-          <ul className="flex flex-col">
-            {results.map((location) => (
-              <li key={location}>
-                <button
-                  type="button"
-                  onClick={() => onSelect(location)}
-                  className="field-target flex w-full items-center gap-3 border-b border-[var(--color-border-light)] px-1 text-left hover:bg-[var(--color-surface-muted)]"
-                >
-                  <MapPin className="h-6 w-6 shrink-0 text-[var(--color-text-secondary)]" />
-                  <span className="text-base text-[var(--color-text-primary)]">{location}</span>
-                </button>
-              </li>
-            ))}
-          </ul>
+        {listView.kind === 'no-results' && (
+          <div className="location-search-empty">
+            <p className="location-search-empty__title">No locations found</p>
+            <p className="location-search-empty__hint">
+              No matches for &ldquo;{listView.query}&rdquo;. Try a different search.
+            </p>
+          </div>
+        )}
+
+        {listView.kind === 'recent' && (
+          <>
+            <p className="location-search-section-label">Recent</p>
+            <LocationResultsList locations={listView.locations} onSelect={handleSelect} />
+          </>
+        )}
+
+        {listView.kind === 'browse' && (
+          <>
+            <p className="location-search-section-label">All locations</p>
+            <LocationResultsList locations={listView.locations} onSelect={handleSelect} />
+          </>
+        )}
+
+        {listView.kind === 'search' && (
+          <LocationResultsList locations={listView.locations} onSelect={handleSelect} />
         )}
       </div>
-    </div>
+    </FullScreenOverlay>
   )
 }

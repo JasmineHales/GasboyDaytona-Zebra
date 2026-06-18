@@ -10,14 +10,15 @@ const DEFAULT_PHOTO_SRC = '/stall-issue-photo.png'
 export function PhotoAttachmentPreview({
   fileName,
   timestamp = 'just now',
-  imageSrc = DEFAULT_PHOTO_SRC,
+  imageSrc,
   imageAlt = 'Attached stall photo',
 }: PhotoAttachmentPreviewProps) {
+  const src = imageSrc ?? DEFAULT_PHOTO_SRC
   return (
     <div className="flex w-full items-start gap-2">
-      <div className="h-[100px] w-[150px] shrink-0 overflow-hidden rounded bg-[#cbd5e1]">
+      <div className="h-[100px] w-[150px] shrink-0 overflow-hidden rounded bg-[var(--color-fleet-disabled-bg)]">
         <img
-          src={imageSrc}
+          src={src}
           alt={imageAlt}
           className="h-full w-full object-cover"
         />

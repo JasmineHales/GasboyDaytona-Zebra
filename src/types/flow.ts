@@ -1,3 +1,6 @@
+import type { VehicleMileageState } from '../utils/mileageResolution'
+import type { MileageScenarioId } from '../utils/mileageScenarios'
+
 export type SectionStatus = 'complete' | 'not-started' | 'in-progress' | 'missing'
 
 export type FuelStep =
@@ -21,9 +24,23 @@ export type FuelStep =
 export type ScreenId =
   | 'transport-default'
   | 'transport-complete'
+  | 'transport-issue-header'
+  | MileageScenarioId
+  | 'movement-transport-location-selected'
   | 'movement-transport-complete'
+  | 'movement-stall-select-stall'
   | 'movement-stall-complete'
+  | 'movement-stall-stall-verify'
   | 'movement-stall-issue-reported'
+  | 'vsa-complete'
+  | 'vsa-issue-header'
+  | 'cleaning-default'
+  | 'cleaning-manual-entry'
+  | 'cleaning-manual-entry-filled'
+  | 'cleaning-manual-entry-error'
+  | 'cleaning-pump-verified'
+  | 'cleaning-in-progress'
+  | 'cleaning-complete'
   | 'stall-default'
   | 'stall-complete'
   | 'stall-missing'
@@ -34,6 +51,7 @@ export type ScreenId =
   | 'fueling-manual-entry'
   | 'fueling-pump-unlocked'
   | 'fueling-in-progress'
+  | 'fueling-in-progress-unconfirmed'
   | 'fueling-complete'
   | 'fueling-additional'
   | 'fueling-additional-complete'
@@ -121,4 +139,10 @@ export type FlowContext = {
   issueReportSource: 'header' | 'fuel' | null
   unlockMode: 'remote' | 'on-site'
   locationType: 'gasboy' | 'non-gasboy'
+  odometerReading: string
+  mileageState: VehicleMileageState
+  /** Remote unlock: gallons not yet received from pump sync */
+  fuelGallonsPending?: boolean
+  /** Remote unlock: pump telemetry confirmed fueling activity */
+  fuelPumpStatusReceived?: boolean
 }

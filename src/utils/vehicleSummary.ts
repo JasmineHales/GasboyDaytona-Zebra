@@ -1,5 +1,15 @@
 import type { FlowContext, SectionStatus, WorkflowSection } from '../types/flow'
+import type { VehicleMileageState } from './mileageResolution'
+import { TRUSTED_MILEAGE_STATE } from './mileageScenarios'
 import { getCleaningProgress, getFuelProgress, getMovementProgress, getStallProgress } from './progress'
+import {
+  getOptionalSections,
+  getRequiredSections,
+  getVsaProgressCounts,
+  hasVsaCoreServiceComplete,
+  isStallSectionUnlocked,
+  isVsaWorkflow,
+} from './workflowProgress'
 
 export type VehiclePriority = 'high' | 'medium' | 'low'
 
@@ -12,6 +22,8 @@ export type VehicleProfile = {
   unitId: string
   name: string
   vehicleClass: string
+  odometerMiles: number
+  mileageState: VehicleMileageState
   holdWarning?: VehicleHoldWarning
   carPriority?: string
   carTier?: string
@@ -37,6 +49,8 @@ export const TRANSPORT_VEHICLE: VehicleProfile = {
   unitId: 'SIL',
   name: 'Jeep Compass',
   vehicleClass: '4WD SMALL 5 PASS SUV',
+  odometerMiles: 28432,
+  mileageState: TRUSTED_MILEAGE_STATE,
   carPriority: 'LOW',
   carTier: 'RESERVE',
 }
@@ -45,6 +59,17 @@ export const VSA_VEHICLE: VehicleProfile = {
   unitId: 'BLA',
   name: 'Tesla Model 3',
   vehicleClass: 'EV MIDSIZE',
+  odometerMiles: 15207,
+  mileageState: {
+    telematicsMiles: 15207,
+    telematicsStale: true,
+    telematicsVinConfident: true,
+    gasboyMiles: 15207,
+    gasboyDelayed: false,
+    mileageSource: 'telematics',
+    lookupStatus: 'resolved',
+    sourcesMismatch: false,
+  },
   holdWarning: {
     code: 'E',
     message: 'STOP TNC CAR - OK TO SERVICE',
@@ -114,10 +139,37 @@ function deriveOverallStatus(
   sectionStatus: Record<WorkflowSection, SectionStatus>,
   sections: WorkflowSection[],
 ): SectionStatus {
-  const statuses = sections.map((section) => sectionStatus[section])
-  if (statuses.every((status) => status === 'complete')) return 'complete'
-  if (statuses.some((status) => status === 'missing')) return 'missing'
-  if (statuses.some((status) => status === 'in-progress')) return 'in-progress'
+  if (isVsaWorkflow(sections)) {
+    const parallel = ['cleaning', 'fuel'] as const
+    if (parallel.some((section) => sectionStatus[section] === 'missing')) {
+      return 'missing'
+    }
+    if (sectionStatus.stall === 'missing') return 'missing'
+    if (
+      parallel.some((section) => sectionStatus[section] === 'in-progress') ||
+      sectionStatus.stall === 'in-progress'
+    ) {
+      return 'in-progress'
+    }
+    if (hasVsaCoreServiceComplete(sectionStatus)) return 'complete'
+    return 'not-started'
+  }
+
+  const required = getRequiredSections(sections)
+  const optional = getOptionalSections(sections)
+  const requiredStatuses = required.map((section) => sectionStatus[section])
+
+  if (requiredStatuses.every((status) => status === 'complete')) {
+    const optionalPending = optional.some(
+      (section) =>
+        sectionStatus[section] === 'in-progress' || sectionStatus[section] === 'missing',
+    )
+    if (optionalPending) return 'in-progress'
+    return 'complete'
+  }
+
+  if (requiredStatuses.some((status) => status === 'missing')) return 'missing'
+  if (requiredStatuses.some((status) => status === 'in-progress')) return 'in-progress'
   return 'not-started'
 }
 
@@ -127,10 +179,17 @@ export function getVehicleSummary(
   context: FlowContext,
   vehicle: VehicleProfile = TRANSPORT_VEHICLE,
 ): VehicleSummary {
-  const completedSections = sections.filter(
-    (section) => sectionStatus[section] === 'complete',
-  ).length
-  const totalSections = sections.length
+  const optionalSections = getOptionalSections(sections)
+  const progressCounts = isVsaWorkflow(sections)
+    ? getVsaProgressCounts(sectionStatus)
+    : {
+        completed: getRequiredSections(sections).filter(
+          (section) => sectionStatus[section] === 'complete',
+        ).length,
+        total: getRequiredSections(sections).length,
+      }
+  const completedSections = progressCounts.completed
+  const totalSections = progressCounts.total
   const progressPercent =
     totalSections === 0 ? 0 : Math.round((completedSections / totalSections) * 100)
 
@@ -139,7 +198,7 @@ export function getVehicleSummary(
     ? { priority: 'high' as const, priorityLabel: 'On Hold' }
     : derivePriority(sectionStatus, sections)
 
-  const stallUnlocked = context.fuelComplete || context.cleaningComplete
+  const stallUnlocked = isStallSectionUnlocked(context)
   const isActionableSection = (section: WorkflowSection) =>
     section !== 'stall' || stallUnlocked
 
@@ -159,8 +218,20 @@ export function getVehicleSummary(
 
   const nextAction =
     overallStatus === 'complete'
-      ? 'All workflow steps complete — ready to finish'
-      : sectionNextAction(activeSection, sectionStatus[activeSection], context)
+      ? 'All required steps complete — tap Complete to finish'
+      : isVsaWorkflow(sections) &&
+          sectionStatus.cleaning === 'complete' &&
+          sectionStatus.fuel === 'not-started'
+        ? 'Cleaning complete — tap Complete to finish (fuel optional)'
+        : isVsaWorkflow(sections) &&
+            sectionStatus.fuel === 'complete' &&
+            sectionStatus.cleaning === 'not-started'
+          ? 'Fueling complete — tap Complete to finish (cleaning optional)'
+          : sectionStatus.movement === 'complete' &&
+              optionalSections.includes('fuel') &&
+              sectionStatus.fuel === 'not-started'
+            ? 'Movement complete — tap Complete to finish (fuel optional)'
+            : sectionNextAction(activeSection, sectionStatus[activeSection], context)
 
   return {
     unitId: vehicle.unitId,

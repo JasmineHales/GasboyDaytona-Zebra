@@ -2,7 +2,6 @@ import {
   ArrowLeft,
   Flag,
   Play,
-  Sparkles,
 } from 'lucide-react'
 import type { CleaningStep } from '../../types/flow'
 import { ProgressIndicator } from '../ui/ProgressIndicator'
@@ -11,16 +10,24 @@ import { PumpVerifyDefault } from '../ui/PumpVerifyDefault'
 import { TextField } from '../ui/TextField'
 import { WorkflowInProgressStatus } from '../ui/WorkflowInProgressStatus'
 import { getCleaningProgress } from '../../utils/progress'
+import { isUnavailablePump } from '../../utils/pump'
+import { getFuelQuickSelectHint } from '../../utils/pumpQuickSelect'
+import { PumpQuickSelect } from '../ui/PumpQuickSelect'
+import { trackProps } from '../../utils/tracking'
 
 type CleaningContentProps = {
   step: CleaningStep
   pumpNumber: string
   finalTime: string
   startedAt: number | null
+  fuelActivePump?: string | null
+  fuelQuickSelectInProgress?: boolean
+  unavailablePumps?: number[]
   onScanPump: () => void
   onManualEntry: () => void
   onBackToScan: () => void
   onPumpChange: (value: string) => void
+  onQuickSelectPump: (pump: string) => void
   onClearPump: () => void
   onVerifyPump: () => void
   onWrongPump: () => void
@@ -38,20 +45,18 @@ export function CleaningContent({
   onManualEntry,
   onBackToScan,
   onPumpChange,
+  onQuickSelectPump,
   onClearPump,
   onVerifyPump,
   onWrongPump,
   onStartCleaning,
   onFinishCleaning,
   onContinueCleaning,
+  fuelActivePump = null,
+  fuelQuickSelectInProgress = false,
+  unavailablePumps = [],
 }: CleaningContentProps) {
-  const progress = {
-    ...getCleaningProgress(step),
-    ...(step === 'cleaning-in-progress' && {
-      tone: 'info' as const,
-      progressFillClass: 'bg-[var(--color-fleet-info)]',
-    }),
-  }
+  const progress = getCleaningProgress(step)
   const canVerify =
     step === 'manual-entry-filled' && pumpNumber.trim().length > 0
   const showManualEntry = [
@@ -59,17 +64,42 @@ export function CleaningContent({
     'manual-entry-filled',
     'manual-entry-error',
   ].includes(step)
+  const fuelQuickSelectPump = (() => {
+    const pump = fuelActivePump?.trim()
+    if (!pump) return null
+    if (isUnavailablePump(pump, unavailablePumps)) return null
+    if (step === 'verify-pump') return pump
+    if (showManualEntry && !pumpNumber.trim()) return pump
+    return null
+  })()
+  const fuelQuickSelectHint = getFuelQuickSelectHint(fuelQuickSelectInProgress)
 
   return (
     <div className="workflow-stack">
       <ProgressIndicator {...progress} />
 
       {step === 'verify-pump' && (
-        <PumpVerifyDefault onScanPump={onScanPump} onManualEntry={onManualEntry} />
+        <PumpVerifyDefault
+          onScanPump={onScanPump}
+          onManualEntry={onManualEntry}
+          quickSelectPump={fuelQuickSelectPump ?? undefined}
+          quickSelectHint={fuelQuickSelectHint}
+          onQuickSelectPump={onQuickSelectPump}
+          trackPrefix="cleaning.verify"
+        />
       )}
 
       {showManualEntry && (
         <>
+          {fuelQuickSelectPump && (
+            <PumpQuickSelect
+              pump={fuelQuickSelectPump}
+              hint={fuelQuickSelectHint}
+              onSelect={onQuickSelectPump}
+              trackTag="cleaning.verify.quick-select"
+            />
+          )}
+
           <TextField
             label="Manual Entry"
             hint="Enter the pump number displayed on the pump"
@@ -77,22 +107,19 @@ export function CleaningContent({
             placeholder="Enter pump no."
             inputMode="numeric"
             invalid={step === 'manual-entry-error'}
+            error={step === 'manual-entry-error' ? 'Select another pump' : undefined}
             onChange={onPumpChange}
             onClear={onClearPump}
+            clearTrackTag="cleaning.pump.clear"
           />
 
           <div className="workflow-stack">
-            {step === 'manual-entry-error' && (
-              <p className="px-3.5 text-sm text-[var(--color-brand-error)]">
-                Select another pump
-              </p>
-            )}
-
             <button
               type="button"
               onClick={onVerifyPump}
               disabled={!canVerify}
-              className="fleet-btn fleet-btn-lg fleet-btn-contained-info fleet-btn-elevated w-full disabled:cursor-not-allowed disabled:bg-[rgba(45,47,49,0.12)] disabled:text-[rgba(45,47,49,0.38)] disabled:shadow-none"
+              className="fleet-btn fleet-btn-lg fleet-btn-contained-info fleet-btn-elevated w-full"
+              {...trackProps('cleaning.verify-pump')}
             >
               Verify Pump
             </button>
@@ -102,6 +129,7 @@ export function CleaningContent({
             type="button"
             onClick={onBackToScan}
             className="fleet-btn fleet-btn-lg fleet-btn-outlined fleet-btn-start w-full"
+            {...trackProps('cleaning.back-to-scan')}
           >
             <ArrowLeft className="h-5 w-5" />
             Back to QR Scanning
@@ -116,14 +144,16 @@ export function CleaningContent({
             subtitle="Pump location confirmed. Begin cleaning when ready."
             actionLabel="Start Cleaning"
             onAction={onStartCleaning}
-            actionIcon={<Play className="h-5 w-5 fill-white" />}
+            actionIcon={<Play className="h-5 w-5 fill-current" />}
+            trackAction="cleaning.start"
           />
           <button
             type="button"
             onClick={onWrongPump}
-            className="fleet-btn fleet-btn-lg fleet-btn-outlined w-full text-[var(--color-brand-error)]"
+            className="fleet-btn fleet-btn-lg fleet-btn-outlined w-full"
+            {...trackProps('cleaning.wrong-pump')}
           >
-            Wrong Pump Selected
+            Cancel
           </button>
         </>
       )}
@@ -131,10 +161,6 @@ export function CleaningContent({
       {step === 'cleaning-in-progress' && (
         <>
           <WorkflowInProgressStatus
-            icon={<Sparkles className="h-6 w-6" />}
-            title="Cleaning in progress"
-            subtitle="Take your time — tap finish when you're done"
-            note="The timer tracks how long you've been cleaning at this pump"
             pumpNumber={pumpNumber}
             startedAt={startedAt}
           />
@@ -142,6 +168,7 @@ export function CleaningContent({
             type="button"
             onClick={onFinishCleaning}
             className="fleet-btn fleet-btn-lg fleet-btn-contained-info fleet-btn-elevated w-full"
+            {...trackProps('cleaning.finish')}
           >
             <Flag className="h-5 w-5" />
             Finish Cleaning
@@ -167,7 +194,7 @@ export function CleaningContent({
                 {pumpNumber}
               </p>
               <div className="px-4 py-4">
-                <span className="inline-flex rounded-full bg-[var(--color-chip-complete-bg)] px-1.5 py-0.5 text-xs font-semibold text-[var(--color-text-success)]">
+                <span className="inline-flex rounded-full bg-[var(--color-chip-complete-bg)] px-2 py-0.5 text-sm font-semibold text-[var(--color-text-success)]">
                   Complete
                 </span>
               </div>
@@ -181,13 +208,14 @@ export function CleaningContent({
             <p className="text-left text-sm font-semibold text-[var(--color-text-primary)]">
               Need more time?
             </p>
-            <p className="text-left text-xs text-[var(--color-text-primary)]">
+            <p className="text-left text-sm font-medium text-[var(--color-text-primary)]">
               Continue cleaning if you&apos;d like to extend the timer.
             </p>
             <button
               type="button"
               onClick={onContinueCleaning}
               className="fleet-btn fleet-btn-lg fleet-btn-contained-info fleet-btn-elevated w-full"
+              {...trackProps('cleaning.continue')}
             >
               Continue Cleaning
             </button>

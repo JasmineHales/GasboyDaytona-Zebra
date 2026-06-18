@@ -1,11 +1,12 @@
 import { Car, MapPin, ParkingCircle } from 'lucide-react'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import type { MovementMode, MovementPhase } from '../../types/flow'
 import { StallIssueReportedNotice } from '../stall/StallIssueReportedNotice'
 import { StallOccupiedNotice } from '../stall/StallOccupiedNotice'
 import { ProgressIndicator } from '../ui/ProgressIndicator'
 import { TextField, textFieldKeySubmit } from '../ui/TextField'
 import { getMovementProgress } from '../../utils/progress'
+import { trackProps } from '../../utils/tracking'
 
 type MovementContentProps = {
   mode: MovementMode
@@ -19,6 +20,11 @@ type MovementContentProps = {
   onTakePhoto: () => void
   onRetakePhoto: () => void
   onOpenLocationSearch: () => void
+}
+
+type CapturedPhoto = {
+  url: string
+  name: string
 }
 
 export function MovementContent({
@@ -35,6 +41,38 @@ export function MovementContent({
   onOpenLocationSearch,
 }: MovementContentProps) {
   const [stallDraft, setStallDraft] = useState('')
+  const [capturedPhoto, setCapturedPhoto] = useState<CapturedPhoto | null>(null)
+
+  useEffect(() => {
+    return () => {
+      if (capturedPhoto?.url) URL.revokeObjectURL(capturedPhoto.url)
+    }
+  }, [capturedPhoto?.url])
+
+  const handleTakePhoto = (file: File) => {
+    setCapturedPhoto((prev) => {
+      if (prev?.url) URL.revokeObjectURL(prev.url)
+      return { url: URL.createObjectURL(file), name: file.name }
+    })
+    onTakePhoto()
+  }
+
+  const handleRetakePhoto = () => {
+    setCapturedPhoto((prev) => {
+      if (prev?.url) URL.revokeObjectURL(prev.url)
+      return null
+    })
+    onRetakePhoto()
+  }
+
+  const handleStallClear = () => {
+    setCapturedPhoto((prev) => {
+      if (prev?.url) URL.revokeObjectURL(prev.url)
+      return null
+    })
+    setStallDraft('')
+    onStallClear()
+  }
 
   const isTransport = mode === 'transport'
   const locationSelected = phase === 'location-selected'
@@ -43,22 +81,29 @@ export function MovementContent({
   const issueReported = phase === 'stall-issue-reported'
   const progress = getMovementProgress(mode, phase)
 
+  const submitStallDraft = () => {
+    const value = stallDraft.trim()
+    if (value) onStallSelect(value)
+  }
+
   return (
     <div className="workflow-stack">
       <ProgressIndicator {...progress} />
 
       <div className="workflow-stack">
-        <div className="flex gap-4">
+        <div className="fleet-mode-tab-group" role="group" aria-label="Movement mode">
           <ModeTab
             active={isTransport}
             icon={Car}
             label="Transport"
+            trackTag="movement.mode.transport"
             onClick={() => onModeChange('transport')}
           />
           <ModeTab
             active={!isTransport}
             icon={ParkingCircle}
             label="Stall"
+            trackTag="movement.mode.stall"
             onClick={() => onModeChange('stall')}
           />
         </div>
@@ -72,21 +117,21 @@ export function MovementContent({
                 readOnly
                 startIcon={MapPin}
                 onClear={onLocationClear}
+                clearTrackTag="movement.location.clear"
               />
             ) : (
-              <div className="flex flex-col gap-2">
-                <p className="fleet-field__label">Location</p>
-                <button
-                  type="button"
-                  onClick={onOpenLocationSearch}
-                  className="fleet-field w-full text-left"
-                >
-                  <MapPin className="h-5 w-5 shrink-0 text-[var(--color-fleet-text-secondary)]" />
-                  <span className="fleet-field__value text-[var(--color-fleet-text-secondary)]">
-                    Select Location
-                  </span>
-                </button>
-              </div>
+              <button
+                type="button"
+                onClick={onOpenLocationSearch}
+                className="fleet-field w-full text-left"
+                aria-label="Search location"
+                {...trackProps('movement.location.search-open')}
+              >
+                <MapPin className="h-5 w-5 shrink-0 text-[var(--color-fleet-text-secondary)]" />
+                <span className="fleet-field__value text-[var(--color-fleet-text-secondary)]">
+                  Search location
+                </span>
+              </button>
             )}
           </>
         ) : (
@@ -97,31 +142,46 @@ export function MovementContent({
                 value={stallNumber}
                 readOnly
                 onClear={() => {
-                  setStallDraft('')
-                  onStallClear()
+                  handleStallClear()
                 }}
+                clearTrackTag="movement.stall.clear"
               />
             ) : (
-              <TextField
-                label="Stall No."
-                value={stallDraft}
-                placeholder="Stall Number"
-                inputMode="numeric"
-                onChange={setStallDraft}
-                onBlur={() => {
-                  const value = stallDraft.trim()
-                  if (value) onStallSelect(value)
-                }}
-                onKeyDown={(event) =>
-                  textFieldKeySubmit(event, (value) => onStallSelect(value))
-                }
+              <>
+                <TextField
+                  value={stallDraft}
+                  placeholder="Stall Number"
+                  aria-label="Stall number"
+                  inputMode="numeric"
+                  onChange={setStallDraft}
+                  onKeyDown={(event) => textFieldKeySubmit(event, onStallSelect)}
+                />
+                <button
+                  type="button"
+                  onClick={submitStallDraft}
+                  disabled={!stallDraft.trim()}
+                  className="fleet-btn fleet-btn-lg fleet-btn-contained-info fleet-btn-elevated w-full"
+                  {...trackProps('movement.stall.confirm')}
+                >
+                  Confirm Stall
+                </button>
+              </>
+            )}
+
+            {stallVerify && (
+              <StallOccupiedNotice
+                onTakePhoto={handleTakePhoto}
+                trackPrefix="movement.stall"
               />
             )}
 
-            {stallVerify && <StallOccupiedNotice onTakePhoto={onTakePhoto} />}
-
             {issueReported && (
-              <StallIssueReportedNotice onRetakePhoto={onRetakePhoto} />
+              <StallIssueReportedNotice
+                onRetakePhoto={handleRetakePhoto}
+                photoUrl={capturedPhoto?.url}
+                photoName={capturedPhoto?.name}
+                trackPrefix="movement.stall"
+              />
             )}
           </>
         )}
@@ -134,24 +194,24 @@ function ModeTab({
   active,
   icon: Icon,
   label,
+  trackTag,
   onClick,
 }: {
   active: boolean
   icon: typeof Car
   label: string
+  trackTag: string
   onClick: () => void
 }) {
   return (
     <button
       type="button"
       onClick={onClick}
-      className={`field-target flex min-h-[60px] flex-1 items-center justify-center gap-2 rounded border-2 px-6 py-3 ${
-        active
-          ? 'border-[#155dfc] bg-[#f0f9ff] text-[#155dfc]'
-          : 'border-[#676e73] text-[var(--color-text-secondary)]'
-      }`}
+      aria-pressed={active}
+      className={`fleet-mode-tab ${active ? 'fleet-mode-tab--active' : ''}`}
+      {...trackProps(trackTag, { active })}
     >
-      <Icon className="h-6 w-6 shrink-0" />
+      <Icon className="h-6 w-6 shrink-0" aria-hidden />
       <span className="text-base font-semibold">{label}</span>
     </button>
   )

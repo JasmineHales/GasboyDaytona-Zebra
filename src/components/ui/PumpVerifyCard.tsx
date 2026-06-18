@@ -1,4 +1,5 @@
 import { QrCode } from 'lucide-react'
+import { trackProps } from '../../utils/tracking'
 
 type PumpVerifyCardProps = {
   title?: string
@@ -8,7 +9,13 @@ type PumpVerifyCardProps = {
   onClick: () => void
   manualEntryLabel?: string
   onManualEntry?: () => void
+  quickSelectPump?: string
+  quickSelectHint?: string
+  onQuickSelectPump?: (pump: string) => void
   unlockMode?: 'remote' | 'on-site'
+  trackScan?: string
+  trackManual?: string
+  trackQuickSelect?: string
 }
 
 function ScanCorner({ position }: { position: 'tl' | 'tr' | 'bl' | 'br' }) {
@@ -23,14 +30,20 @@ function ScanCorner({ position }: { position: 'tl' | 'tr' | 'bl' | 'br' }) {
 }
 
 export function PumpVerifyCard({
-  title = 'Scan pump QR',
-  subtitle = 'Point at the QR on your pump',
+  title,
+  subtitle,
   buttonLabel = 'Scan Pump',
-  scanHint = 'Point at the QR on your pump',
+  scanHint,
   onClick,
   manualEntryLabel = 'Enter pump number',
   onManualEntry,
+  quickSelectPump,
+  quickSelectHint = 'Cleaning in progress at this pump',
+  onQuickSelectPump,
   unlockMode,
+  trackScan = 'pump.verify.scan',
+  trackManual = 'pump.verify.manual-entry',
+  trackQuickSelect = 'pump.verify.quick-select',
 }: PumpVerifyCardProps) {
   return (
     <div
@@ -48,6 +61,7 @@ export function PumpVerifyCard({
         onClick={onClick}
         className={`pump-verify-scan-graphic${unlockMode === 'remote' ? ' pump-verify-scan-graphic--remote' : ''}`}
         aria-label={buttonLabel}
+        {...trackProps(trackScan)}
       >
         <div className="pump-verify-scan-graphic__frame" aria-hidden>
           <ScanCorner position="tl" />
@@ -56,15 +70,44 @@ export function PumpVerifyCard({
           <ScanCorner position="br" />
           <div className="pump-verify-scan-graphic__ring" />
           <QrCode className="pump-verify-scan-graphic__icon" />
+          <div className="pump-verify-scan-graphic__line" />
         </div>
-        <span className="pump-verify-scan-graphic__label">{buttonLabel}</span>
-        <span className="pump-verify-scan-graphic__hint">{scanHint}</span>
+        <div className="pump-verify-scan-graphic__copy">
+          <span className="pump-verify-scan-graphic__label">{buttonLabel}</span>
+          {scanHint && (
+            <span className="pump-verify-scan-graphic__hint">{scanHint}</span>
+          )}
+        </div>
       </button>
 
       {onManualEntry && (
-        <button type="button" onClick={onManualEntry} className="pump-verify-manual">
+        <button
+          type="button"
+          onClick={onManualEntry}
+          className="pump-verify-manual"
+          {...trackProps(trackManual)}
+        >
           {manualEntryLabel}
         </button>
+      )}
+
+      {quickSelectPump && onQuickSelectPump && (
+        <div className="pump-verify-quick-select">
+          <p className="pump-verify-quick-select__label">Quick select</p>
+          <button
+            type="button"
+            onClick={() => onQuickSelectPump(quickSelectPump)}
+            className={`pump-verify-quick-select__option${unlockMode === 'remote' ? ' pump-verify-quick-select__option--remote' : ''}`}
+            {...trackProps(trackQuickSelect)}
+          >
+            <span className="pump-verify-quick-select__pump">
+              Pump {quickSelectPump}
+            </span>
+            {quickSelectHint && (
+              <span className="pump-verify-quick-select__hint">{quickSelectHint}</span>
+            )}
+          </button>
+        </div>
       )}
     </div>
   )
