@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
 import type { TutorialStep } from '../utils/tutorialSteps'
-import { isFigmaPreviewMode } from '../utils/figmaCapture'
 
 export function hasCompletedTutorial(storageKey: string): boolean {
   try {
@@ -39,9 +38,7 @@ export function useTutorial({
   autoStart = true,
   forceStart = false,
 }: UseTutorialOptions) {
-  const skipTutorials = isFigmaPreviewMode()
   const [active, setActive] = useState(() => {
-    if (skipTutorials) return false
     if (forceStart) {
       clearTutorialCompletion(storageKey)
       return true
@@ -52,10 +49,6 @@ export function useTutorial({
   const [stepIndex, setStepIndex] = useState(0)
 
   useEffect(() => {
-    if (skipTutorials) {
-      setActive(false)
-      return
-    }
     if (forceStart) {
       clearTutorialCompletion(storageKey)
       setActive(true)
@@ -68,7 +61,7 @@ export function useTutorial({
       setActive(true)
       setStepIndex(0)
     }
-  }, [autoStart, forceStart, skipTutorials, storageKey])
+  }, [autoStart, forceStart, storageKey])
 
   const step = steps[stepIndex] ?? null
   const isFirst = stepIndex === 0

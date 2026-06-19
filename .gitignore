@@ -4,4 +4,6 @@ dist/
 .env.local
 .env.*.local
 *.local
-figma-exports/
+.DS_Store
+*.zip
+Gasboy-Daytona-MVP-upload/

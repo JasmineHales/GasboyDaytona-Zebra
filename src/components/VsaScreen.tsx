@@ -1,9 +1,8 @@
+import { useMemo } from 'react'
 import type { FlowContext } from '../types/flow'
-import { VSA_TUTORIAL } from '../utils/tutorialSteps'
+import { getVsaSections, getVsaTutorial } from '../utils/vsaStall'
 import { VSA_VEHICLE } from '../utils/vehicleSummary'
 import { TransportScreen } from './TransportScreen'
-
-const VSA_SECTIONS = ['cleaning', 'fuel', 'stall'] as const
 
 type VsaScreenProps = {
   context: FlowContext
@@ -24,11 +23,14 @@ export function VsaScreen({
   onSignOut,
   forceTutorial = false,
 }: VsaScreenProps) {
+  const sections = useMemo(() => getVsaSections(context), [context.vsaStallEnabled])
+  const tutorial = useMemo(() => getVsaTutorial(context), [context.vsaStallEnabled])
+
   return (
     <TransportScreen
       title="VSA"
       subtitle="Vehicle Service Attendant"
-      sections={[...VSA_SECTIONS]}
+      sections={sections}
       defaultExpanded={null}
       vehicleProfile={VSA_VEHICLE}
       context={context}
@@ -37,7 +39,7 @@ export function VsaScreen({
       onStallAction={onStallAction}
       onCleaningAction={onCleaningAction}
       onSignOut={onSignOut}
-      tutorial={VSA_TUTORIAL}
+      tutorial={tutorial}
       forceTutorial={forceTutorial}
     />
   )

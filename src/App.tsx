@@ -7,7 +7,6 @@ import {
   clearAllTutorialCompletions,
   clearPendingTutorialForceParam,
   consumeTutorialForceParam,
-  markAllTutorialsComplete,
   shouldForceTutorial,
   type TutorialForceTarget,
 } from './utils/tutorialSteps'
@@ -41,11 +40,6 @@ import {
   type WidgetStateItem,
   type WorkflowView,
 } from './utils/flowNavigation'
-import {
-  isFigmaPreviewMode,
-  parseFigmaPreviewParams,
-  type FigmaPreviewParams,
-} from './utils/figmaCapture'
 
 type LoginPreview = 'device' | 'browser' | null
 
@@ -53,11 +47,7 @@ function shouldForceLoginScreen() {
   return new URLSearchParams(window.location.search).has('login')
 }
 
-function initialView(force: TutorialForceTarget | null, preview: FigmaPreviewParams | null): AppView {
-  if (preview) {
-    if (preview.view === 'login') return 'home'
-    return preview.view
-  }
+function initialView(force: TutorialForceTarget | null): AppView {
   if (force === 'transport') return 'transport'
   if (force === 'vsa') return 'vsa'
   if (force === 'tracking') return 'tracking'
@@ -67,92 +57,47 @@ function initialView(force: TutorialForceTarget | null, preview: FigmaPreviewPar
 }
 
 export default function App() {
-  const figmaPreview = parseFigmaPreviewParams()
-  const figmaPreviewMode = isFigmaPreviewMode()
   const [runtimeMode] = useState(() => getRuntimeMode())
   const isHertzDevice = runtimeMode === 'hertz-device'
   const [tutorialForce] = useState(() => {
-    if (figmaPreviewMode) return null
     const force = consumeTutorialForceParam()
     if (force === 'all') {
       clearAllTutorialCompletions()
     }
     return force
   })
-  const [isAuthenticated, setIsAuthenticated] = useState(() => {
-    if (figmaPreview && !figmaPreview.skipAuth) return true
-    return !shouldForceLoginScreen() && readAuthenticated()
-  })
-  const [loginPreview, setLoginPreview] = useState<LoginPreview>(() => {
-    if (figmaPreview?.view === 'login') {
-      return figmaPreview.loginVariant
-    }
-    return null
-  })
-  const [ssoUser, setSsoUser] = useState<SsoUser | null>(() => {
-    if (figmaPreview && !figmaPreview.skipAuth && figmaPreview.loginVariant === 'browser') {
-      return MOCK_SSO_USER
-    }
-    return readSsoUser()
-  })
-  const [view, setView] = useState<AppView>(() => initialView(tutorialForce, figmaPreview))
+  const [isAuthenticated, setIsAuthenticated] = useState(
+    () => !shouldForceLoginScreen() && readAuthenticated(),
+  )
+  const [loginPreview, setLoginPreview] = useState<LoginPreview>(null)
+  const [devExperience, setDevExperience] = useState<'device' | 'browser'>(() =>
+    isHertzDevice ? 'device' : 'browser',
+  )
+  const [ssoUser, setSsoUser] = useState<SsoUser | null>(() => readSsoUser())
+  const [view, setView] = useState<AppView>(() => initialView(tutorialForce))
   const [activeWidgetKey, setActiveWidgetKey] = useState<string | null>(null)
   useClickTracking()
   const {
     context,
     goToScreen,
     applyWidgetState,
+    patchDevContext,
     handleAction,
     handleMovementAction,
     handleStallAction,
     handleCleaningAction,
   } = useFlow()
 
-  useEffect(() => {
-    if (!figmaPreview) return
-
-    markAllTutorialsComplete()
-
-    if (!figmaPreview.skipAuth) {
-      if (figmaPreview.loginVariant === 'browser') {
-        persistAuth('browser-sso', MOCK_SSO_USER)
-        setSsoUser(MOCK_SSO_USER)
-      } else {
-        persistAuth('device')
-      }
-      setIsAuthenticated(true)
-    }
-
-    if (figmaPreview.view === 'login') {
-      setIsAuthenticated(false)
-      setLoginPreview(figmaPreview.loginVariant)
-      return
-    }
-
-    setLoginPreview(null)
-    setView(figmaPreview.view)
-
-    if (
-      figmaPreview.screen &&
-      (figmaPreview.view === 'transport' || figmaPreview.view === 'vsa')
-    ) {
-      applyWidgetState(figmaPreview.screen)
-      setActiveWidgetKey(
-        resolveActiveWidgetKey(figmaPreview.view, figmaPreview.screen) ??
-          `${figmaPreview.view}:${figmaPreview.screen}`,
-      )
-    }
-  }, [figmaPreview, applyWidgetState])
-
   const showLogin = !isAuthenticated || loginPreview != null
-  const loginVariant =
-    loginPreview ?? (isHertzDevice ? 'device' : 'browser')
+  const loginVariant = loginPreview ?? devExperience
   const workflowView: WorkflowView | null =
     !showLogin && view === 'transport'
       ? 'transport'
       : !showLogin && view === 'vsa'
         ? 'vsa'
-        : null
+        : !showLogin && view === 'fuel'
+          ? 'fuel'
+          : null
 
   useEffect(() => {
     if (tutorialForce === 'transport') {
@@ -173,8 +118,7 @@ export default function App() {
   }, [tutorialForce])
 
   useEffect(() => {
-    if (figmaPreviewMode) return
-    if (view === 'transport' || view === 'vsa') {
+    if (view === 'transport' || view === 'vsa' || view === 'fuel') {
       savePersistedWorkflow({ activeView: view })
       return
     }
@@ -192,16 +136,34 @@ export default function App() {
     }
   }, [isAuthenticated, isHertzDevice])
 
-  const ensureDevAuth = (variant: 'device' | 'browser' = isHertzDevice ? 'device' : 'browser') => {
-    if (isAuthenticated) return
+  const applyDevExperience = (variant: 'device' | 'browser') => {
     if (variant === 'device') {
       persistAuth('device')
       setIsAuthenticated(true)
+      setSsoUser(null)
       return
     }
     persistAuth('browser-sso', MOCK_SSO_USER)
     setSsoUser(MOCK_SSO_USER)
     setIsAuthenticated(true)
+  }
+
+  const ensureDevAuth = (variant: 'device' | 'browser' = devExperience) => {
+    if (isAuthenticated) return
+    applyDevExperience(variant)
+  }
+
+  const handleExperienceChange = (variant: 'device' | 'browser') => {
+    setDevExperience(variant)
+    if (showLogin) {
+      setIsAuthenticated(false)
+      setLoginPreview(variant)
+      return
+    }
+    if (view === 'home') {
+      setLoginPreview(null)
+      applyDevExperience(variant)
+    }
   }
 
   const handleDeviceSignIn = () => {
@@ -234,6 +196,9 @@ export default function App() {
     } else if (workflow === 'vsa') {
       goToScreen('stall-default')
       setActiveWidgetKey('vsa:default')
+    } else if (workflow === 'fuel') {
+      goToScreen('fueling-default')
+      setActiveWidgetKey('fuel-remote:fueling-default')
     }
     setView(workflow)
   }
@@ -241,23 +206,25 @@ export default function App() {
   const handlePageSelect = (item: PageNavItem) => {
     if (item.view === 'login') {
       setIsAuthenticated(false)
-      setLoginPreview(item.loginVariant ?? 'device')
+      setLoginPreview(devExperience)
       return
     }
 
     setLoginPreview(null)
-    ensureDevAuth(item.loginVariant ?? (isHertzDevice ? 'device' : 'browser'))
+    ensureDevAuth(devExperience)
 
-    if (item.view === 'home' || item.view === 'tracking' || item.view === 'transport' || item.view === 'vsa') {
-      if (item.view === 'transport') {
-        goToScreen('transport-default')
-        setActiveWidgetKey('transport:default')
-      } else if (item.view === 'vsa') {
-        goToScreen('stall-default')
-        setActiveWidgetKey('vsa:default')
-      }
-      setView(item.view)
+    if (item.view === 'transport') {
+      goToScreen('transport-default')
+      setActiveWidgetKey('transport:default')
+    } else if (item.view === 'vsa') {
+      goToScreen('stall-default')
+      setActiveWidgetKey('vsa:default')
+    } else if (item.view === 'fuel') {
+      goToScreen('fueling-default')
+      setActiveWidgetKey('fuel-remote:fueling-default')
     }
+
+    setView(item.view)
   }
 
   const handleWidgetSelect = (item: WidgetStateItem) => {
@@ -269,8 +236,20 @@ export default function App() {
     if (action === 'workflow-finish') {
       handleAction('complete', payload)
       clearPersistedWorkflow()
-      goToScreen(payload === 'vsa' ? 'stall-default' : 'transport-default')
-      setActiveWidgetKey(payload === 'vsa' ? 'vsa:default' : 'transport:default')
+      goToScreen(
+        payload === 'vsa'
+          ? 'stall-default'
+          : payload === 'fuel'
+            ? 'fueling-default'
+            : 'transport-default',
+      )
+      setActiveWidgetKey(
+        payload === 'vsa'
+          ? 'vsa:default'
+          : payload === 'fuel'
+            ? 'fuel-remote:fueling-default'
+            : 'transport:default',
+      )
       setView('home')
       return
     }
@@ -290,8 +269,6 @@ export default function App() {
   const activePageKey = resolveActivePageKey({
     view,
     showLogin,
-    loginPreview,
-    runtimeMode,
   })
 
   const resolvedWidgetKey =
@@ -301,36 +278,26 @@ export default function App() {
   const browserUser = ssoUser ?? readSsoUser()
 
   return (
-    <div
-      className="app-viewport flex h-dvh min-h-0"
-      data-runtime={runtimeMode}
-      data-figma-preview={figmaPreviewMode ? 'true' : undefined}
-    >
+    <div className="app-viewport flex h-dvh min-h-0" data-runtime={runtimeMode}>
       <a href="#main-content" className="fleet-sr-only">
         Skip to main content
       </a>
-      {!figmaPreviewMode && (
-        <FlowNavigator
-          activePageKey={activePageKey}
-          activeWidgetKey={resolvedWidgetKey}
-          workflowView={workflowView}
-          onSelectPage={handlePageSelect}
-          onSelectWidget={handleWidgetSelect}
-        />
-      )}
-      <div
-        className={
-          figmaPreviewMode
-            ? 'flex min-h-0 min-w-0 flex-1 flex-col bg-white'
-            : 'flex min-h-0 min-w-0 flex-1 flex-col bg-[var(--color-hertz-page)] p-0 sm:p-3 md:p-4 lg:p-6'
-        }
-      >
+      <FlowNavigator
+        activePageKey={activePageKey}
+        activeWidgetKey={resolvedWidgetKey}
+        workflowView={workflowView}
+        context={context}
+        view={view}
+        showLogin={showLogin}
+        loginVariant={loginVariant}
+        onSelectPage={handlePageSelect}
+        onSelectWidget={handleWidgetSelect}
+        onLoginVariantChange={handleExperienceChange}
+        onPatchContext={patchDevContext}
+      />
+      <div className="flex min-h-0 min-w-0 flex-1 flex-col bg-[var(--color-hertz-page)] p-0 sm:p-3 md:p-4 lg:p-6">
         <div
-          className={
-            figmaPreviewMode
-              ? 'app-shell relative flex h-[800px] w-[360px] flex-col overflow-hidden bg-white'
-              : 'app-shell relative flex min-h-0 flex-1 flex-col overflow-hidden bg-white sm:max-w-xl sm:rounded-xl sm:shadow-lg md:max-w-2xl md:rounded-2xl lg:max-w-3xl xl:max-w-4xl'
-          }
+          className="app-shell relative flex min-h-0 flex-1 flex-col overflow-hidden bg-white sm:max-w-xl sm:rounded-xl sm:shadow-lg md:max-w-2xl md:rounded-2xl lg:max-w-3xl xl:max-w-4xl"
           data-current-view={showLogin ? 'login' : view}
           data-current-screen={context.screen}
         >
@@ -348,6 +315,7 @@ export default function App() {
               forceTutorial={shouldForceTutorial(tutorialForce, 'home')}
               onSelectVsa={() => enterWorkflow('vsa')}
               onSelectTransport={() => enterWorkflow('transport')}
+              onSelectFuel={() => enterWorkflow('fuel')}
               onReportIssue={() => handleAction('report-issue')}
               onSignOut={handleSignOut}
               onOpenTracking={() => setView('tracking')}
@@ -359,6 +327,7 @@ export default function App() {
               forceTutorial={shouldForceTutorial(tutorialForce, 'home')}
               onSelectVsa={() => enterWorkflow('vsa')}
               onSelectTransport={() => enterWorkflow('transport')}
+              onSelectFuel={() => enterWorkflow('fuel')}
               onReportIssue={() => handleAction('report-issue')}
               onSignOut={handleSignOut}
               onOpenTracking={() => setView('tracking')}
@@ -396,6 +365,22 @@ export default function App() {
               onSignOut={handleSignOut}
             />
           )}
+          {!showLogin && view === 'fuel' && (
+            <TransportScreen
+              key="fuel"
+              title="Fuel"
+              subtitle="Remote Fueling"
+              sections={['fuel']}
+              defaultExpanded="fuel"
+              workflowFinishId="fuel"
+              context={context}
+              onAction={handleFlowAction}
+              onMovementAction={handleMovementAction}
+              onStallAction={handleStallAction}
+              onCleaningAction={handleCleaningAction}
+              onSignOut={handleSignOut}
+            />
+          )}
           {!showLogin && context.showIssueOverlay && (
             <IssueOverlay
               defaultPumpNumber={context.pumpNumber}
@@ -403,7 +388,7 @@ export default function App() {
               vehicle={
                 view === 'vsa'
                   ? { unitId: VSA_VEHICLE.unitId, name: VSA_VEHICLE.name }
-                  : view === 'transport'
+                  : view === 'transport' || view === 'fuel'
                     ? { unitId: TRANSPORT_VEHICLE.unitId, name: TRANSPORT_VEHICLE.name }
                     : undefined
               }

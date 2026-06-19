@@ -1,113 +1,164 @@
+import { useState } from 'react'
+import type { FlowContext } from '../types/flow'
 import {
   PAGE_NAV_ITEMS,
   widgetGroupsForView,
+  type AppView,
   type PageNavItem,
   type WidgetStateItem,
   type WorkflowView,
 } from '../utils/flowNavigation'
+import { formatDevScenarioSummary } from '../utils/devPanel'
 import { trackProps } from '../utils/tracking'
+import { DevScenarioPanel } from './dev/DevScenarioPanel'
+import { DevWidgetStatesPanel } from './dev/DevWidgetStatesPanel'
+
+type DevPanelTab = 'navigate' | 'scenario' | 'states'
 
 type FlowNavigatorProps = {
   activePageKey: string
   activeWidgetKey: string | null
   workflowView: WorkflowView | null
+  context: FlowContext
+  view: AppView
+  showLogin: boolean
+  loginVariant: 'device' | 'browser'
   onSelectPage: (item: PageNavItem) => void
   onSelectWidget: (item: WidgetStateItem) => void
+  onLoginVariantChange: (variant: 'device' | 'browser') => void
+  onPatchContext: (patch: Partial<FlowContext>) => void
+}
+
+const TAB_ITEMS: { id: DevPanelTab; label: string }[] = [
+  { id: 'navigate', label: 'Pages' },
+  { id: 'scenario', label: 'Scenario' },
+  { id: 'states', label: 'States' },
+]
+
+function activePageLabel(activePageKey: string): string {
+  return PAGE_NAV_ITEMS.find((item) => item.key === activePageKey)?.label ?? 'Unknown'
 }
 
 export function FlowNavigator({
   activePageKey,
   activeWidgetKey,
   workflowView,
+  context,
+  view,
+  showLogin,
+  loginVariant,
   onSelectPage,
   onSelectWidget,
+  onLoginVariantChange,
+  onPatchContext,
 }: FlowNavigatorProps) {
+  const [tab, setTab] = useState<DevPanelTab>('navigate')
   const widgetGroups = workflowView ? widgetGroupsForView(workflowView) : []
+  const summary = formatDevScenarioSummary(context, {
+    showLogin,
+    loginVariant,
+    view,
+  })
+
+  const handlePageSelect = (item: PageNavItem) => {
+    onSelectPage(item)
+    if (['transport', 'fuel', 'vsa'].includes(item.view)) {
+      setTab('states')
+    }
+  }
 
   return (
-    <aside
-      className="hidden w-64 shrink-0 overflow-y-auto border-r border-[var(--color-border-light)] bg-white p-3 md:block md:w-72 md:p-4 lg:w-80"
-      aria-label="Developer screen navigator"
-    >
-      <p className="mb-4 text-xs font-semibold uppercase tracking-wide text-[var(--color-text-muted)]">
-        Transporter Flow
-      </p>
+    <aside className="dev-flow-nav hidden shrink-0 md:flex" aria-label="Dev panel">
+      <div className="dev-flow-nav__sticky">
+        <header className="dev-flow-nav__header">
+          <p className="dev-flow-nav__eyebrow">Daytona prototype</p>
+          <div className="dev-flow-nav__context">
+            <p className="dev-flow-nav__context-page">{activePageLabel(activePageKey)}</p>
+            {!showLogin && workflowView && (
+              <p className="dev-flow-nav__context-screen">{context.screen}</p>
+            )}
+          </div>
+        </header>
 
-      <section className="mb-5" aria-labelledby="dev-nav-pages">
-        <h2
-          id="dev-nav-pages"
-          className="mb-2 text-sm font-bold text-[var(--color-text-primary)]"
-        >
-          Page
-        </h2>
-        <p className="mb-2 text-[length:var(--text-ui-sm)] leading-snug text-[var(--color-text-muted)]">
-          Switch screens without resetting widget state.
-        </p>
-        <div className="flex flex-col gap-1">
-          {PAGE_NAV_ITEMS.map((item) => (
+        <div className="dev-context-chips" aria-label="Current scenario">
+          {summary.map((line) => (
+            <span key={line} className="dev-context-chip">
+              {line}
+            </span>
+          ))}
+        </div>
+
+        <div className="dev-tabs" role="tablist" aria-label="Dev panel sections">
+          {TAB_ITEMS.map((item) => (
             <button
-              key={item.key}
+              key={item.id}
               type="button"
-              onClick={() => onSelectPage(item)}
-              className={`min-h-[var(--touch-target)] rounded px-3 py-2 text-left text-[length:var(--text-ui-sm)] transition-colors ${
-                activePageKey === item.key
-                  ? 'bg-[var(--color-brand-primary)] font-semibold text-white'
-                  : 'text-[var(--color-text-primary)] hover:bg-[var(--color-surface-muted)]'
-              }`}
-              aria-current={activePageKey === item.key ? 'true' : undefined}
-              {...trackProps('dev.flow-nav.page', { page: item.key })}
+              role="tab"
+              aria-selected={tab === item.id}
+              className={`dev-tabs__tab${tab === item.id ? ' dev-tabs__tab--active' : ''}`}
+              onClick={() => setTab(item.id)}
+              {...trackProps('dev.flow-nav.tab', { tab: item.id })}
             >
               {item.label}
+              {item.id === 'states' && widgetGroups.length > 0 && (
+                <span className="dev-tabs__badge">{widgetGroups.length}</span>
+              )}
             </button>
           ))}
         </div>
-      </section>
+      </div>
 
-      <section aria-labelledby="dev-nav-widgets">
-        <h2
-          id="dev-nav-widgets"
-          className="mb-2 text-sm font-bold text-[var(--color-text-primary)]"
-        >
-          Widget state
-        </h2>
-        <p className="mb-3 text-[length:var(--text-ui-sm)] leading-snug text-[var(--color-text-muted)]">
-          Patch workflow widgets on the current page.
-        </p>
-        {workflowView == null ? (
-          <p className="rounded-lg bg-[var(--color-surface-muted)] px-3 py-2 text-[length:var(--text-ui-sm)] text-[var(--color-text-muted)]">
-            Open Transport or VSA to set widget states.
-          </p>
-        ) : (
-          widgetGroups.map((group) => (
-            <div key={group.label} className="mb-4">
-              <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-[var(--color-text-muted)]">
-                {group.label}
-              </p>
-              <div className="flex flex-col gap-1">
-                {group.items.map((item) => (
-                  <button
-                    key={item.key}
-                    type="button"
-                    onClick={() => onSelectWidget(item)}
-                    className={`min-h-[var(--touch-target)] rounded px-3 py-2 text-left text-[length:var(--text-ui-sm)] transition-colors ${
-                      activeWidgetKey === item.key
-                        ? 'bg-[var(--color-hertz-black)] font-semibold text-white'
-                        : 'text-[var(--color-text-primary)] hover:bg-[var(--color-surface-muted)]'
-                    }`}
-                    aria-current={activeWidgetKey === item.key ? 'true' : undefined}
-                    {...trackProps('dev.flow-nav.widget', {
-                      widget: item.key,
-                      screen: item.screen,
-                    })}
-                  >
-                    {item.label}
-                  </button>
-                ))}
-              </div>
+      <div className="dev-flow-nav__body">
+        {tab === 'navigate' && (
+          <section aria-label="Pages">
+            <p className="dev-panel-section__intro">
+              Jump to a prototype page. Workflow pages open the States tab automatically.
+            </p>
+            <div className="dev-page-grid">
+              {PAGE_NAV_ITEMS.map((item) => (
+                <button
+                  key={item.key}
+                  type="button"
+                  onClick={() => handlePageSelect(item)}
+                  className={`dev-page-button${
+                    activePageKey === item.key ? ' dev-page-button--active' : ''
+                  }`}
+                  aria-current={activePageKey === item.key ? 'true' : undefined}
+                  {...trackProps('dev.flow-nav.page', { page: item.key })}
+                >
+                  {item.label}
+                </button>
+              ))}
             </div>
-          ))
+          </section>
         )}
-      </section>
+
+        {tab === 'scenario' && (
+          <section aria-label="Scenario toggles">
+            <p className="dev-panel-section__intro">
+              Location and experience settings for the current page.
+            </p>
+            <DevScenarioPanel
+              context={context}
+              view={view}
+              showLogin={showLogin}
+              loginVariant={loginVariant}
+              onLoginVariantChange={onLoginVariantChange}
+              onPatchContext={onPatchContext}
+            />
+          </section>
+        )}
+
+        {tab === 'states' && (
+          <section aria-label="Widget states">
+            <DevWidgetStatesPanel
+              groups={widgetGroups}
+              activeWidgetKey={activeWidgetKey}
+              onSelectWidget={onSelectWidget}
+            />
+          </section>
+        )}
+      </div>
     </aside>
   )
 }

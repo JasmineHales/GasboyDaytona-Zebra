@@ -1,9 +1,10 @@
-import { BarChart3, ClipboardList, Truck } from 'lucide-react'
+import { BarChart3, ClipboardList, Fuel, Truck } from 'lucide-react'
 import { WorkflowCard } from './WorkflowCard'
 
 type HomeWorkflowListProps = {
   onSelectVsa: () => void
   onSelectTransport: () => void
+  onSelectFuel: () => void
   onOpenTracking?: () => void
   showTracking?: boolean
 }
@@ -11,6 +12,7 @@ type HomeWorkflowListProps = {
 export function HomeWorkflowList({
   onSelectVsa,
   onSelectTransport,
+  onSelectFuel,
   onOpenTracking,
   showTracking = import.meta.env.DEV,
 }: HomeWorkflowListProps) {
@@ -29,6 +31,13 @@ export function HomeWorkflowList({
         description="Start transport"
         icon={<Truck className="h-7 w-7" />}
         onClick={onSelectTransport}
+      />
+      <WorkflowCard
+        variant="fuel"
+        title="Fuel"
+        description="Start remote fueling"
+        icon={<Fuel className="h-7 w-7" />}
+        onClick={onSelectFuel}
       />
       {showTracking && onOpenTracking && (
         <WorkflowCard

@@ -162,11 +162,13 @@ function deriveOverallStatus(
     if (parallel.some((section) => sectionStatus[section] === 'missing')) {
       return 'missing'
     }
-    if (sectionStatus.stall === 'missing') return 'missing'
     if (
-      parallel.some((section) => sectionStatus[section] === 'in-progress') ||
-      sectionStatus.stall === 'in-progress'
+      sections.includes('stall') &&
+      (sectionStatus.stall === 'missing' || sectionStatus.stall === 'in-progress')
     ) {
+      return sectionStatus.stall === 'missing' ? 'missing' : 'in-progress'
+    }
+    if (parallel.some((section) => sectionStatus[section] === 'in-progress')) {
       return 'in-progress'
     }
     if (hasVsaCoreServiceComplete(sectionStatus)) return 'complete'

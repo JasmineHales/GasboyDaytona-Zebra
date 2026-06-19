@@ -128,7 +128,7 @@ function isVsaFuelSectionSatisfiedForFinish(
 /** Transport: fuel can be skipped when never started. VSA: stall is always skippable. */
 export function getOptionalSections(sections: WorkflowSection[]): WorkflowSection[] {
   if (isVsaWorkflow(sections)) {
-    return ['stall']
+    return sections.includes('stall') ? ['stall'] : []
   }
 
   const isTransport =
@@ -140,11 +140,7 @@ export function getOptionalSections(sections: WorkflowSection[]): WorkflowSectio
 }
 
 export function isVsaWorkflow(sections: WorkflowSection[]): boolean {
-  return (
-    sections.includes('cleaning') &&
-    sections.includes('fuel') &&
-    sections.includes('stall')
-  )
+  return sections.includes('cleaning') && sections.includes('fuel')
 }
 
 /** Cleaning and fuel can be acknowledged independently on VSA. */
@@ -416,7 +412,9 @@ export function getCompleteDisabledReason(
       return 'Finish Movement to continue.'
     }
     if (isVsaWorkflow(sections)) {
-      return 'Finish Cleaning or Fuel to continue. Other services are optional.'
+      return sections.includes('stall')
+        ? 'Finish Cleaning or Fuel to continue. Other services are optional.'
+        : 'Finish Cleaning or Fuel to continue.'
     }
     const optional = getOptionalSections(sections)
     if (optional.includes('fuel')) {

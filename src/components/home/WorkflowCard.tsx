@@ -3,7 +3,7 @@ import { ChevronRight } from 'lucide-react'
 import { trackProps } from '../../utils/tracking'
 
 type WorkflowCardProps = {
-  variant: 'vsa' | 'transport' | 'tracking'
+  variant: 'vsa' | 'transport' | 'fuel' | 'tracking'
   title: string
   description: string
   icon: ReactNode

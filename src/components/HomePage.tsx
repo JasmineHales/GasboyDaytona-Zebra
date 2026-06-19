@@ -12,6 +12,7 @@ type HomePageProps = {
   forceTutorial?: boolean
   onSelectVsa: () => void
   onSelectTransport: () => void
+  onSelectFuel: () => void
   onOpenTracking: () => void
   onReportIssue?: () => void
   onSignOut?: () => void
@@ -21,6 +22,7 @@ export function HomePage({
   forceTutorial = false,
   onSelectVsa,
   onSelectTransport,
+  onSelectFuel,
   onOpenTracking,
   onReportIssue,
   onSignOut,
@@ -76,6 +78,7 @@ export function HomePage({
         <HomeWorkflowList
           onSelectVsa={onSelectVsa}
           onSelectTransport={onSelectTransport}
+          onSelectFuel={onSelectFuel}
           onOpenTracking={onOpenTracking}
         />
       </main>

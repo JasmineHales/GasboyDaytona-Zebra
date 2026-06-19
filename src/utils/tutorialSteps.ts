@@ -312,29 +312,15 @@ export function clearPendingTutorialForceParam() {
   }
 }
 
-const TUTORIAL_STORAGE_KEYS = [
-  HOME_TUTORIAL_STORAGE_KEY,
-  TRANSPORT_TUTORIAL_STORAGE_KEY,
-  VSA_TUTORIAL_STORAGE_KEY,
-  TRACKING_TUTORIAL_STORAGE_KEY,
-] as const
-
-export { TUTORIAL_STORAGE_KEYS }
-
 export function clearAllTutorialCompletions() {
-  for (const key of TUTORIAL_STORAGE_KEYS) {
+  for (const key of [
+    HOME_TUTORIAL_STORAGE_KEY,
+    TRANSPORT_TUTORIAL_STORAGE_KEY,
+    VSA_TUTORIAL_STORAGE_KEY,
+    TRACKING_TUTORIAL_STORAGE_KEY,
+  ]) {
     try {
       localStorage.removeItem(key)
-    } catch {
-      // ignore
-    }
-  }
-}
-
-export function markAllTutorialsComplete() {
-  for (const key of TUTORIAL_STORAGE_KEYS) {
-    try {
-      localStorage.setItem(key, 'done')
     } catch {
       // ignore
     }

@@ -42,6 +42,7 @@ export type ScreenId =
   | 'cleaning-in-progress'
   | 'cleaning-complete'
   | 'stall-default'
+  | 'vsa-no-stall-default'
   | 'stall-complete'
   | 'stall-missing'
   | 'stall-issue-reported'
@@ -145,4 +146,6 @@ export type FlowContext = {
   fuelGallonsPending?: boolean
   /** Remote unlock: pump telemetry confirmed fueling activity */
   fuelPumpStatusReceived?: boolean
+  /** When false, VSA workflow shows a VSA section instead of stall assignment. */
+  vsaStallEnabled?: boolean
 }

@@ -243,6 +243,7 @@ const VSA_WORKFLOW_BASE: Partial<FlowContext> = {
   stallComplete: false,
   unlockMode: 'remote',
   locationType: 'gasboy',
+  vsaStallEnabled: true,
   showIssueOverlay: false,
   issueDetails: '',
   issueReportSource: null,
@@ -416,6 +417,13 @@ const SCREEN_PRESETS: Record<ScreenId, Partial<FlowContext>> = {
   },
   'stall-default': {
     ...VSA_WORKFLOW_BASE,
+  },
+  'vsa-no-stall-default': {
+    ...VSA_WORKFLOW_BASE,
+    vsaStallEnabled: false,
+    locationType: 'non-gasboy',
+    unlockMode: 'on-site',
+    fuelStep: 'verify-pump',
   },
   'stall-complete': {
     ...VSA_WORKFLOW_BASE,
@@ -755,6 +763,13 @@ export function useFlow() {
       ...prev,
       ...SCREEN_PRESETS[screen],
       screen,
+    }))
+  }, [])
+
+  const patchDevContext = useCallback((patch: Partial<FlowContext>) => {
+    setContext((prev) => ({
+      ...prev,
+      ...patch,
     }))
   }, [])
 
@@ -1406,6 +1421,7 @@ export function useFlow() {
     context,
     goToScreen,
     applyWidgetState,
+    patchDevContext,
     updateFuelStep,
     handleAction,
     handleMovementAction,

@@ -5,7 +5,7 @@ const STORAGE_KEY = 'remote-off.workflow.v3'
 export type PersistedWorkflow = {
   context: FlowContext
   acknowledgedSections: WorkflowSection[]
-  activeView: 'transport' | 'vsa' | null
+  activeView: 'transport' | 'vsa' | 'fuel' | null
 }
 
 export function loadPersistedWorkflow(): PersistedWorkflow | null {
@@ -24,7 +24,9 @@ export function loadPersistedWorkflow(): PersistedWorkflow | null {
           )
         : [],
       activeView:
-        record.activeView === 'transport' || record.activeView === 'vsa'
+        record.activeView === 'transport' ||
+        record.activeView === 'vsa' ||
+        record.activeView === 'fuel'
           ? record.activeView
           : null,
     }
