@@ -6,4 +6,7 @@ dist/
 *.local
 .DS_Store
 *.zip
-Gasboy-Daytona-MVP-upload/
+
+# Local upload/staging copies — never commit duplicates of this repo
+*-upload/
+GitHuub*/
