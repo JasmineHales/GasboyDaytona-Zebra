@@ -12,7 +12,7 @@ Hertz **Daytona** field-app prototype for transport, VSA, and remote fueling wor
 ## Folder layout
 
 ```
-remote-off/                 ← upload this folder (repo root only)
+remote-off/                 ← repo root (do not drag the whole folder to GitHub — see Upload)
 ├── public/                 Static assets
 ├── scripts/                Dev helpers (emulator, phone link)
 ├── src/
@@ -31,6 +31,26 @@ remote-off/                 ← upload this folder (repo root only)
 ```
 
 Do **not** add duplicate copies of this project (e.g. `*-upload/` folders or `.zip` exports) inside the repo.
+
+## Upload to GitHub
+
+**If GitHub says the folder is too big**, you are probably uploading the whole project including `node_modules/` (~120 MB). GitHub’s web uploader is meant for source only.
+
+**Option A — Git (recommended)**
+
+```bash
+git push origin refs/heads/v2:refs/heads/v2
+```
+
+**Option B — Web upload (source only, ~3 MB)**
+
+```bash
+./scripts/prepare-github-upload.sh
+```
+
+That creates `../remote-off-github-upload.zip` next to this folder. Upload the zip on GitHub, or drag only the **source files** (not `node_modules/`, `dist/`, or `.git/`).
+
+After upload, recipients run `npm install` then `npm run dev`.
 
 ## Quick start
 

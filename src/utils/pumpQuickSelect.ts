@@ -1,4 +1,5 @@
 import type { FlowContext } from '../types/flow'
+import type { Messages } from '../i18n/types'
 
 export type PumpQuickSelectSource = {
   pump: string
@@ -45,14 +46,16 @@ export function getFuelQuickSelectSource(
   return null
 }
 
-export function getCleaningQuickSelectHint(inProgress: boolean): string {
-  return inProgress
-    ? 'Cleaning in progress at this pump'
-    : 'Finished cleaning at this pump'
+export function getCleaningQuickSelectHint(
+  inProgress: boolean,
+  copy: Messages['fuel']['quickSelect'],
+): string {
+  return inProgress ? copy.cleaningInProgress : copy.cleaningFinished
 }
 
-export function getFuelQuickSelectHint(inProgress: boolean): string {
-  return inProgress
-    ? 'Fueling in progress at this pump'
-    : 'Finished fueling at this pump'
+export function getFuelQuickSelectHint(
+  inProgress: boolean,
+  copy: Messages['fuel']['quickSelect'],
+): string {
+  return inProgress ? copy.fuelingInProgress : copy.fuelingFinished
 }

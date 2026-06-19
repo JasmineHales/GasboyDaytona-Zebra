@@ -1,5 +1,10 @@
 import type { ScreenId } from '../types/flow'
-import { MILEAGE_SCENARIO_IDS, MILEAGE_SCENARIOS } from './mileageScenarios'
+import {
+  ODOMETER_WIDGET_STATES,
+  patchForOdometerWidgetState,
+  resolveOdometerWidgetState,
+  type OdometerWidgetStateId,
+} from './devPanel'
 
 export type AppView = 'home' | 'vsa' | 'transport' | 'fuel' | 'tracking'
 
@@ -19,6 +24,8 @@ export type WidgetStateItem = {
   screen: ScreenId
   /** Workflow pages where this widget preset applies. */
   scopes: WorkflowView[]
+  /** When set, patch context instead of applying a full screen preset. */
+  patch?: Partial<import('../types/flow').FlowContext>
 }
 
 export type WidgetStateGroup = {
@@ -65,7 +72,7 @@ const FUEL_NON_GASBOY: { id: ScreenId; label: string; detail?: string }[] = [
   { id: 'non-gasboy-missing-filled', label: 'Missing gallons filled', detail: 'Gallons entered' },
 ]
 
-const BOTH: WorkflowView[] = ['transport', 'vsa']
+const ODOMETER_SCOPES: WorkflowView[] = ['transport', 'vsa', 'fuel']
 const FUEL_SCOPES: WorkflowView[] = ['transport', 'vsa', 'fuel']
 const TRANSPORT_ONLY: WorkflowView[] = ['transport']
 const VSA_ONLY: WorkflowView[] = ['vsa']
@@ -96,14 +103,15 @@ export const PAGE_NAV_ITEMS: PageNavItem[] = [
 
 export const WIDGET_STATE_GROUPS: WidgetStateGroup[] = [
   {
-    label: 'Mileage scenarios',
-    description: 'Odometer trust, mismatch, and manual entry cases',
-    items: MILEAGE_SCENARIO_IDS.map((id) => ({
-      key: `mileage:${id}`,
-      label: MILEAGE_SCENARIOS[id].label,
-      detail: id,
-      screen: id,
-      scopes: BOTH,
+    label: 'Odometer widget',
+    description: 'Verified chip vs manual entry field — keeps current workflow step',
+    items: (Object.keys(ODOMETER_WIDGET_STATES) as OdometerWidgetStateId[]).map((id) => ({
+      key: `odometer:${id}`,
+      label: ODOMETER_WIDGET_STATES[id].label,
+      detail: ODOMETER_WIDGET_STATES[id].hint,
+      screen: 'transport-default',
+      scopes: ODOMETER_SCOPES,
+      patch: patchForOdometerWidgetState(id),
     })),
   },
   {
@@ -353,9 +361,19 @@ export function resolveActivePageKey(input: {
 export function resolveActiveWidgetKey(
   view: WorkflowView,
   screen: ScreenId,
+  context?: import('../types/flow').FlowContext,
 ): string | null {
+  if (context) {
+    const odometerId = resolveOdometerWidgetState(context)
+    const odometerKey = `odometer:${odometerId}`
+    const odometerItem = WIDGET_STATE_ITEMS.find(
+      (item) => item.key === odometerKey && item.scopes.includes(view),
+    )
+    if (odometerItem) return odometerKey
+  }
+
   const matches = WIDGET_STATE_ITEMS.filter(
-    (item) => item.screen === screen && item.scopes.includes(view),
+    (item) => item.screen === screen && item.scopes.includes(view) && !item.patch,
   )
   return matches[0]?.key ?? null
 }

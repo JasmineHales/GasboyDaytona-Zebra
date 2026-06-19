@@ -1,5 +1,6 @@
 import { useState, type Ref } from 'react'
-import { AlertTriangle, ChevronDown } from 'lucide-react'
+import { AlertCircle, AlertTriangle, ChevronDown } from 'lucide-react'
+import { useI18n } from '../../i18n/I18nProvider'
 import type { VehicleSummary } from '../../utils/vehicleSummary'
 import { trackProps } from '../../utils/tracking'
 import { VehicleOdometerField } from './VehicleOdometerField'
@@ -16,6 +17,7 @@ type VehicleOdometerProps = {
 type VehicleCardProps = {
   summary: VehicleSummary
   odometer?: VehicleOdometerProps
+  onReportVehicle?: () => void
 }
 
 function DetailRow({
@@ -35,8 +37,17 @@ function DetailRow({
   )
 }
 
-export function VehicleCard({ summary, odometer }: VehicleCardProps) {
+export function VehicleCard({ summary, odometer, onReportVehicle }: VehicleCardProps) {
+  const { messages, t } = useI18n()
   const [expanded, setExpanded] = useState(false)
+  const vehicleClass =
+    messages.vehicle.classes[summary.vehicleClass as keyof typeof messages.vehicle.classes] ??
+    summary.vehicleClass
+  const holdMessage = summary.holdWarning
+    ? messages.vehicle.holdMessages[
+        summary.holdWarning.message as keyof typeof messages.vehicle.holdMessages
+      ] ?? summary.holdWarning.message
+    : undefined
   const hasDetails = Boolean(
     summary.holdWarning || summary.carPriority || summary.carTier,
   )
@@ -56,14 +67,14 @@ export function VehicleCard({ summary, odometer }: VehicleCardProps) {
             <span className="vehicle-card__unit">{summary.unitId}</span>
             <span className="vehicle-card__name">{summary.name}</span>
           </div>
-          <p className="vehicle-card__class">{summary.vehicleClass}</p>
+          <p className="vehicle-card__class">{vehicleClass}</p>
         </div>
 
         <div className="vehicle-card__header-meta">
           {!expanded && summary.holdWarning && (
             <span className="vehicle-card__hold-badge">
               <AlertTriangle className="h-4 w-4" aria-hidden />
-              On hold
+              {t('vehicle.onHold')}
             </span>
           )}
 
@@ -93,6 +104,23 @@ export function VehicleCard({ summary, odometer }: VehicleCardProps) {
         />
       )}
 
+      {onReportVehicle && (
+        <button
+          type="button"
+          onClick={onReportVehicle}
+          className="vehicle-card__report field-target"
+          aria-label={t('vehicle.reportVehicleAria', {
+            unitId: summary.unitId,
+            name: summary.name,
+          })}
+          data-tutorial="vehicle-report"
+          {...trackProps('vehicle.report', { unitId: summary.unitId })}
+        >
+          <AlertCircle className="vehicle-card__report-icon" aria-hidden />
+          <span className="vehicle-card__report-label">{t('vehicle.reportVehicle')}</span>
+        </button>
+      )}
+
       {expanded && hasDetails && (
         <div className="vehicle-card__details">
           {summary.holdWarning && (
@@ -100,9 +128,9 @@ export function VehicleCard({ summary, odometer }: VehicleCardProps) {
               <AlertTriangle className="h-5 w-5 shrink-0" aria-hidden />
               <div className="min-w-0 flex-1">
                 <p className="vehicle-card__hold-title">
-                  Hold warning: {summary.holdWarning.code}
+                  {t('vehicle.holdWarning', { code: summary.holdWarning.code })}
                 </p>
-                <p className="vehicle-card__hold-message">{summary.holdWarning.message}</p>
+                <p className="vehicle-card__hold-message">{holdMessage}</p>
               </div>
             </div>
           )}
@@ -111,7 +139,7 @@ export function VehicleCard({ summary, odometer }: VehicleCardProps) {
             <div className="vehicle-card__details-panel">
               {summary.carPriority && (
                 <DetailRow
-                  label="Car priority"
+                  label={t('vehicle.carPriority')}
                   value={summary.carPriority}
                   chipClass="fleet-chip-neutral"
                 />
@@ -121,7 +149,7 @@ export function VehicleCard({ summary, odometer }: VehicleCardProps) {
               )}
               {summary.carTier && (
                 <DetailRow
-                  label="Car tier"
+                  label={t('vehicle.carTier')}
                   value={summary.carTier}
                   chipClass="fleet-chip-info"
                 />

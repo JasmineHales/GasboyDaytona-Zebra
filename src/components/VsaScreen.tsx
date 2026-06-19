@@ -1,5 +1,6 @@
 import { useMemo } from 'react'
 import type { FlowContext } from '../types/flow'
+import { useI18n } from '../i18n/I18nProvider'
 import { getVsaSections, getVsaTutorial } from '../utils/vsaStall'
 import { VSA_VEHICLE } from '../utils/vehicleSummary'
 import { TransportScreen } from './TransportScreen'
@@ -23,16 +24,18 @@ export function VsaScreen({
   onSignOut,
   forceTutorial = false,
 }: VsaScreenProps) {
+  const { messages } = useI18n()
   const sections = useMemo(() => getVsaSections(context), [context.vsaStallEnabled])
   const tutorial = useMemo(() => getVsaTutorial(context), [context.vsaStallEnabled])
 
   return (
     <TransportScreen
-      title="VSA"
-      subtitle="Vehicle Service Attendant"
+      title={messages.workflow.vsa.title}
+      subtitle={messages.workflow.vsa.subtitle}
       sections={sections}
       defaultExpanded={null}
       vehicleProfile={VSA_VEHICLE}
+      workflowFinishId="vsa"
       context={context}
       onAction={onAction}
       onMovementAction={onMovementAction}

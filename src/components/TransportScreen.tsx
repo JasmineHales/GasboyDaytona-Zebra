@@ -1,7 +1,17 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import type { FlowContext, SectionStatus, WorkflowSection } from '../types/flow'
 import { useTutorial } from '../hooks/useTutorial'
-import { TRANSPORT_TUTORIAL, type TutorialConfig } from '../utils/tutorialSteps'
+import { useI18n } from '../i18n/I18nProvider'
+import { localeForLanguage } from '../i18n/localeFormat'
+import {
+  TRANSPORT_TUTORIAL_STORAGE_KEY,
+  VSA_TUTORIAL_STORAGE_KEY,
+  type TutorialConfig,
+} from '../utils/tutorialSteps'
+import {
+  getTransportTutorialSteps,
+  getVsaTutorialSteps,
+} from '../utils/tutorialCopy'
 import {
   loadPersistedWorkflow,
   savePersistedWorkflow,
@@ -9,6 +19,7 @@ import {
 import {
   getCompleteDisabledReason,
   getCompletableSection,
+  getSectionNeedingAttention,
   hasBlockingSectionInProgress,
   hasWorkflowProgress,
   isSectionOptional,
@@ -20,7 +31,6 @@ import {
   getMileageReliabilityIssues,
   getTelematicsOdometerFloor,
   getTrustedMileageMiles,
-  hasOdometerReading,
   hasResolvedOdometer,
   requiresManualMileageEntry,
 } from '../utils/mileageResolution'
@@ -47,13 +57,6 @@ import {
 } from '../utils/pumpQuickSelect'
 
 const DEFAULT_SECTIONS: WorkflowSection[] = ['movement', 'fuel']
-
-const SECTION_TITLES: Record<WorkflowSection, string> = {
-  movement: 'Movement',
-  fuel: 'Fuel',
-  stall: 'Stall',
-  cleaning: 'Cleaning',
-}
 
 function initialExpanded(
   sections: WorkflowSection[],
@@ -82,8 +85,8 @@ type TransportScreenProps = {
 }
 
 export function TransportScreen({
-  title = 'Transport',
-  subtitle = 'Fuel Island',
+  title,
+  subtitle,
   sections = DEFAULT_SECTIONS,
   defaultExpanded,
   vehicleProfile = TRANSPORT_VEHICLE,
@@ -94,11 +97,41 @@ export function TransportScreen({
   onStallAction,
   onCleaningAction,
   onSignOut,
-  tutorial: tutorialConfig = TRANSPORT_TUTORIAL,
+  tutorial: tutorialConfig,
   forceTutorial = false,
 }: TransportScreenProps) {
+  const { messages, t, language } = useI18n()
+  const sectionTitles = messages.workflow.sections
+  const resolvedTitle =
+    title ??
+    (workflowFinishId === 'fuel'
+      ? messages.workflow.fuelOnly.title
+      : workflowFinishId === 'vsa'
+        ? messages.workflow.vsa.title
+        : messages.workflow.transport.title)
+  const resolvedSubtitle =
+    subtitle ??
+    (workflowFinishId === 'fuel'
+      ? messages.workflow.fuelOnly.subtitle
+      : workflowFinishId === 'vsa'
+        ? messages.workflow.vsa.subtitle
+        : messages.workflow.transport.subtitle)
+
+  const tutorialSteps = useMemo(() => {
+    if (tutorialConfig?.storageKey === VSA_TUTORIAL_STORAGE_KEY) {
+      return getVsaTutorialSteps(messages.tutorials.vsa)
+    }
+    return getTransportTutorialSteps(messages.tutorials.transport)
+  }, [messages, tutorialConfig?.storageKey])
+
+  const tutorialStorageKey =
+    tutorialConfig?.storageKey ?? TRANSPORT_TUTORIAL_STORAGE_KEY
+
   const finishWorkflowId =
-    workflowFinishId ?? (title.toLowerCase() === 'vsa' ? 'vsa' : 'transport')
+    workflowFinishId ??
+    (resolvedTitle.toLowerCase() === messages.workflow.vsa.title.toLowerCase()
+      ? 'vsa'
+      : 'transport')
   const [expandedSection, setExpandedSection] = useState<WorkflowSection | null>(() =>
     initialExpanded(sections, defaultExpanded),
   )
@@ -112,8 +145,8 @@ export function TransportScreen({
   const odometerRef = useRef<HTMLDivElement>(null)
   const sectionRefs = useRef<Partial<Record<WorkflowSection, HTMLDivElement | null>>>({})
   const tutorial = useTutorial({
-    storageKey: tutorialConfig.storageKey,
-    steps: tutorialConfig.steps,
+    storageKey: tutorialStorageKey,
+    steps: tutorialSteps,
     forceStart: forceTutorial,
   })
 
@@ -206,6 +239,26 @@ export function TransportScreen({
     const input = odometerRef.current?.querySelector('input')
     if (input instanceof HTMLInputElement) {
       window.setTimeout(() => input.focus(), 300)
+    }
+  }
+
+  const focusWorkflowSection = (section: WorkflowSection) => {
+    if (isSectionDisabled(section)) return
+
+    const wasExpanded = expandedSection === section
+    setExpandedSection(section)
+
+    if (wasExpanded) {
+      const mainEl = mainRef.current
+      const sectionEl = sectionRefs.current[section]
+      if (mainEl && sectionEl) {
+        requestAnimationFrame(() => {
+          applyWorkflowScroll(mainEl, {
+            expandedSection: section,
+            expandedSectionEl: sectionEl,
+          })
+        })
+      }
     }
   }
 
@@ -372,7 +425,7 @@ export function TransportScreen({
   const trustedMileageMiles = getTrustedMileageMiles(mileageState, mileageOptions)
   const mileageIssues = getMileageReliabilityIssues(mileageState, mileageOptions)
   const odometerHint = manualMileageRequired
-    ? getMileageIssueLabel(mileageIssues[0])
+    ? getMileageIssueLabel(mileageIssues[0], messages.vehicle.mileageIssues)
     : undefined
   const odometerMinimumMiles = manualMileageRequired
     ? getTelematicsOdometerFloor(mileageState)
@@ -398,14 +451,17 @@ export function TransportScreen({
     (completableSection !== undefined || workflowReady)
   const completeDisabledReason = getCompleteDisabledReason(
     completableSection,
-    SECTION_TITLES,
+    sectionTitles,
     sections,
     sectionStatus,
+    messages.workflow.complete,
     context.odometerReading,
     fuelWorkflowContext,
     workflowReady,
     mileageState,
     mileageOptions,
+    messages.vehicle,
+    localeForLanguage(language),
   )
   const confirmOnExit = hasWorkflowProgress(
     context,
@@ -414,19 +470,53 @@ export function TransportScreen({
     mileageState,
     mileageOptions,
   )
-  const vehicleSummary = getVehicleSummary(sections, sectionStatus, context, vehicleProfile)
+  const vehicleSummary = getVehicleSummary(
+    sections,
+    sectionStatus,
+    context,
+    vehicleProfile,
+    messages,
+  )
 
   const handleStallAction = (action: string, payload?: string) => {
     if (!isStallSectionUnlocked(context)) return
     onStallAction(action, payload)
   }
 
-  const handleCompletePress = () => {
-    if (manualMileageRequired && !hasOdometerReading(context.odometerReading)) {
+  const focusBlockedCompleteTarget = () => {
+    const odometerBlocked = !hasResolvedOdometer(
+      context.odometerReading,
+      mileageState,
+      mileageOptions,
+    )
+
+    if (odometerBlocked) {
       scrollToOdometer()
       return
     }
-    if (!canComplete) return
+
+    const section = getSectionNeedingAttention(
+      sections,
+      sectionStatus,
+      acknowledgedSections,
+      {
+        completableSection,
+        workflowReady,
+        fuelContext: fuelWorkflowContext,
+        isSectionDisabled,
+      },
+    )
+
+    if (section) {
+      focusWorkflowSection(section)
+    }
+  }
+
+  const handleCompletePress = () => {
+    if (!canComplete) {
+      focusBlockedCompleteTarget()
+      return
+    }
     handleComplete()
   }
 
@@ -527,8 +617,8 @@ export function TransportScreen({
   return (
     <div className="relative flex min-h-0 w-full flex-1 flex-col bg-white">
       <Header
-        title={title}
-        subtitle={subtitle}
+        title={resolvedTitle}
+        subtitle={resolvedSubtitle}
         onBack={() => onAction('back')}
         onReportIssue={() => onAction('report-issue')}
         onSignOut={onSignOut}
@@ -539,11 +629,12 @@ export function TransportScreen({
       <main
         id="main-content"
         ref={mainRef}
-        className="app-scroll app-workflow-main flex min-h-0 flex-1 flex-col py-2 md:py-3"
+        className="app-scroll app-workflow-main flex min-h-0 flex-1 flex-col py-2"
       >
         <div className="app-main-bottom" data-workflow-widget="stack">
           <VehicleCard
             summary={vehicleSummary}
+            onReportVehicle={() => onAction('report-issue', 'vehicle')}
             odometer={{
               odometerReading: odometerDisplayValue,
               onOdometerChange: (value) => onAction('odometer-change', value),
@@ -553,58 +644,46 @@ export function TransportScreen({
               odometerRef,
             }}
           />
-          {sections.length === 1 ? (
-            <div
-              data-workflow-widget="section"
-              data-tutorial={sections[0]}
-              ref={(el) => {
-                sectionRefs.current[sections[0]] = el
-              }}
-            >
-              {renderSectionContent(sections[0])}
-            </div>
-          ) : (
-            <AccordionGroup>
-              {sections.map((section, index) => {
-                const sectionOptional = isSectionOptional(
-                  section,
-                  sections,
-                  sectionStatus,
-                  fuelWorkflowContext,
-                )
-                const sectionAwaiting =
-                  expandedSection !== section &&
-                  !isSectionDisabled(section) &&
-                  !sectionOptional &&
-                  (sectionStatus[section] === 'not-started' ||
-                    sectionStatus[section] === 'in-progress' ||
-                    sectionStatus[section] === 'missing')
+          <AccordionGroup>
+            {sections.map((section, index) => {
+              const sectionOptional = isSectionOptional(
+                section,
+                sections,
+                sectionStatus,
+                fuelWorkflowContext,
+              )
+              const sectionAwaiting =
+                expandedSection !== section &&
+                !isSectionDisabled(section) &&
+                !sectionOptional &&
+                (sectionStatus[section] === 'not-started' ||
+                  sectionStatus[section] === 'in-progress' ||
+                  sectionStatus[section] === 'missing')
 
-                return (
-                  <AccordionSection
-                    key={section}
-                    title={SECTION_TITLES[section]}
-                    status={sectionStatus[section]}
-                    statusLabel={sectionOptional ? 'Optional' : undefined}
-                    chipVariant={sectionOptional ? 'optional' : 'default'}
-                    highlighted={sectionAwaiting}
-                    expanded={expandedSection === section}
-                    disabled={isSectionDisabled(section)}
-                    onToggle={() => toggleSection(section)}
-                    isLast={index === sections.length - 1}
-                    trackTag={`workflow.accordion.${section}`}
-                    headerTimerStartedAt={getSectionTimerStartedAt(section)}
-                    dataTutorial={section}
-                    sectionRef={(el) => {
-                      sectionRefs.current[section] = el
-                    }}
-                  >
-                    {renderSectionContent(section)}
-                  </AccordionSection>
-                )
-              })}
-            </AccordionGroup>
-          )}
+              return (
+                <AccordionSection
+                  key={section}
+                  title={sectionTitles[section]}
+                  status={sectionStatus[section]}
+                  statusLabel={sectionOptional ? t('common.optional') : undefined}
+                  chipVariant={sectionOptional ? 'optional' : 'default'}
+                  highlighted={sectionAwaiting}
+                  expanded={expandedSection === section}
+                  disabled={isSectionDisabled(section)}
+                  onToggle={() => toggleSection(section)}
+                  isLast={index === sections.length - 1}
+                  trackTag={`workflow.accordion.${section}`}
+                  headerTimerStartedAt={getSectionTimerStartedAt(section)}
+                  dataTutorial={section}
+                  sectionRef={(el) => {
+                    sectionRefs.current[section] = el
+                  }}
+                >
+                  {renderSectionContent(section)}
+                </AccordionSection>
+              )
+            })}
+          </AccordionGroup>
         </div>
       </main>
 
@@ -630,7 +709,7 @@ export function TransportScreen({
         onNext={tutorial.next}
         onBack={tutorial.back}
         onSkip={tutorial.skip}
-        trackPrefix={tutorialConfig.trackPrefix}
+        trackPrefix={tutorialConfig?.trackPrefix ?? 'transport.tutorial'}
         trackView={finishWorkflowId}
         trackScreen={context.screen}
       />

@@ -137,7 +137,7 @@ export type FlowContext = {
   unavailablePumps: number[]
   showIssueOverlay: boolean
   issueDetails: string
-  issueReportSource: 'header' | 'fuel' | null
+  issueReportSource: 'header' | 'fuel' | 'vehicle' | null
   unlockMode: 'remote' | 'on-site'
   locationType: 'gasboy' | 'non-gasboy'
   odometerReading: string

@@ -2,6 +2,7 @@ import { AlertTriangle, Camera, ChevronLeft, ChevronRight } from 'lucide-react'
 import { createPortal } from 'react-dom'
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from 'react'
 import { useOverlayFocus } from '../../hooks/useOverlayFocus'
+import { useTranslate } from '../../i18n/I18nProvider'
 import type { TutorialPlacement, TutorialStep } from '../../utils/tutorialSteps'
 import {
   estimateMobileSheetHeight,
@@ -178,6 +179,7 @@ export function WorkflowTutorial({
   trackView,
   trackScreen,
 }: WorkflowTutorialProps) {
+  const t = useTranslate()
   const cardRef = useRef<HTMLDivElement>(null)
   const focusTrapRef = useOverlayFocus(open, onSkip)
   const [spotlight, setSpotlight] = useState<SpotlightRect | null>(null)
@@ -449,7 +451,7 @@ export function WorkflowTutorial({
           </div>
 
           <p className="tutorial-card__eyebrow">
-            Step {stepIndex + 1} of {stepCount}
+            {t('common.stepOf', { current: stepIndex + 1, total: stepCount })}
           </p>
           <h2 id="tutorial-title" className="tutorial-card__title">
             {step.title}
@@ -470,7 +472,7 @@ export function WorkflowTutorial({
               {...trackProps(`${trackPrefix}.back`, trackStepMeta)}
             >
               <ChevronLeft className="h-4 w-4" />
-              Back
+              {t('common.back')}
             </button>
           )}
           <button
@@ -479,7 +481,7 @@ export function WorkflowTutorial({
             className="tutorial-card__skip"
             {...trackProps(`${trackPrefix}.skip`, trackStepMeta)}
           >
-            Skip tour
+            {t('common.skipTour')}
           </button>
           <button
             type="button"
@@ -487,7 +489,7 @@ export function WorkflowTutorial({
             className="fleet-btn fleet-btn-md fleet-btn-contained-info tutorial-card__next"
             {...trackProps(`${trackPrefix}.${isLast ? 'finish' : 'next'}`, trackStepMeta)}
           >
-            {isLast ? 'Get started' : 'Next'}
+            {isLast ? t('common.getStarted') : t('common.next')}
             {!isLast && <ChevronRight className="h-4 w-4" />}
           </button>
         </div>

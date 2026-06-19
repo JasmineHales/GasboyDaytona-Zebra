@@ -1,9 +1,6 @@
 import type { FlowContext } from '../../types/flow'
 import type { AppView } from '../../utils/flowNavigation'
-import {
-  isGasboyLocation,
-  patchForGasboyEnabled,
-} from '../../utils/devPanel'
+import { isGasboyLocation, patchForGasboyEnabled } from '../../utils/devPanel'
 import { isVsaStallEnabled } from '../../utils/vsaStall'
 import { DevToggleGroup } from './DevToggleGroup'
 
@@ -29,16 +26,6 @@ export function DevScenarioPanel({
   const showUnlockMode = showFuelLocation && isGasboyLocation(context)
   const showExperienceToggle = showLogin || view === 'home'
   const showStallToggle = !showLogin && view === 'vsa'
-
-  const hasToggles = showExperienceToggle || showFuelLocation || showStallToggle
-
-  if (!hasToggles) {
-    return (
-      <p className="dev-empty-note">
-        Scenario toggles appear on Login, Home, Transport, Fueling, and VSA pages.
-      </p>
-    )
-  }
 
   return (
     <div className="dev-scenario-panel">

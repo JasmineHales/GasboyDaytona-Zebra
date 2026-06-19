@@ -1,9 +1,8 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useTutorial } from '../hooks/useTutorial'
-import {
-  HOME_TUTORIAL_STEPS,
-  HOME_TUTORIAL_STORAGE_KEY,
-} from '../utils/tutorialSteps'
+import { useI18n } from '../i18n/I18nProvider'
+import { HOME_TUTORIAL_STORAGE_KEY } from '../utils/tutorialSteps'
+import { getHomeTutorialSteps } from '../utils/tutorialCopy'
 import { HomeWorkflowList } from './home/HomeWorkflowList'
 import { Header } from './ui/Header'
 import { WorkflowTutorial } from './ui/WorkflowTutorial'
@@ -13,7 +12,6 @@ type HomePageProps = {
   onSelectVsa: () => void
   onSelectTransport: () => void
   onSelectFuel: () => void
-  onOpenTracking: () => void
   onReportIssue?: () => void
   onSignOut?: () => void
 }
@@ -23,13 +21,17 @@ export function HomePage({
   onSelectVsa,
   onSelectTransport,
   onSelectFuel,
-  onOpenTracking,
   onReportIssue,
   onSignOut,
 }: HomePageProps) {
+  const { messages, t } = useI18n()
+  const tutorialSteps = useMemo(
+    () => getHomeTutorialSteps(messages.tutorials.home),
+    [messages],
+  )
   const tutorial = useTutorial({
     storageKey: HOME_TUTORIAL_STORAGE_KEY,
-    steps: HOME_TUTORIAL_STEPS,
+    steps: tutorialSteps,
     forceStart: forceTutorial,
   })
   const [menuOpen, setMenuOpen] = useState(false)
@@ -58,7 +60,7 @@ export function HomePage({
       <Header
         brandLayout
         title="Hertz"
-        subtitle="Daytona"
+        subtitle={t('auth.device.tagline')}
         showBack={false}
         showSessionTimer={false}
         onReportIssue={onReportIssue}
@@ -72,14 +74,13 @@ export function HomePage({
 
       <main
         id="main-content"
-        className="app-scroll app-workflow-main flex min-h-0 flex-1 flex-col pb-[max(1.25rem,env(safe-area-inset-bottom))] pt-4"
+        className="app-scroll app-workflow-main home-workflow-main flex min-h-0 flex-1 flex-col pb-[max(1.25rem,env(safe-area-inset-bottom))] pt-3"
       >
-        <h1 className="fleet-sr-only">Hertz workflows</h1>
+        <h1 className="fleet-sr-only">{t('home.srTitle')}</h1>
         <HomeWorkflowList
           onSelectVsa={onSelectVsa}
           onSelectTransport={onSelectTransport}
           onSelectFuel={onSelectFuel}
-          onOpenTracking={onOpenTracking}
         />
       </main>
 

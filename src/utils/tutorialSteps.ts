@@ -54,7 +54,7 @@ export const HOME_TUTORIAL_STEPS: TutorialStep[] = [
     id: 'workflows',
     title: 'Choose a workflow',
     target: '[data-tutorial="workflows"]',
-    body: 'VSA, Transport, and Click Tracking each open a dedicated screen. A separate guided tour runs the first time you enter each one.',
+    body: 'Turnaround workflows open dedicated screens. More actions can be added as your location needs them.',
     placement: 'top',
   },
   {

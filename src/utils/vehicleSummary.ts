@@ -1,4 +1,5 @@
 import type { FlowContext, SectionStatus, WorkflowSection } from '../types/flow'
+import type { Messages } from '../i18n/types'
 import type { VehicleMileageState } from './mileageResolution'
 import { TRUSTED_MILEAGE_STATE } from './mileageScenarios'
 import { getCleaningProgress, getFuelProgress, getMovementProgress, getStallProgress } from './progress'
@@ -94,63 +95,65 @@ export const ISSUE_VEHICLE_OPTIONS: IssueVehicleOption[] = [
   { unitId: 'BLU', name: 'Chevrolet Malibu', vehicleClass: 'MIDSIZE 4 DOOR' },
 ]
 
-const SECTION_LABELS: Record<WorkflowSection, string> = {
-  movement: 'Movement',
-  fuel: 'Fuel',
-  stall: 'Stall',
-  cleaning: 'Cleaning',
-}
-
 function sectionNextAction(
   section: WorkflowSection,
   status: SectionStatus,
   context: FlowContext,
+  copy: Messages,
 ): string {
-  if (status === 'complete') return `${SECTION_LABELS[section]} complete`
+  const sectionLabels = copy.workflow.sections
+  if (status === 'complete') {
+    return copy.workflow.complete.sectionComplete.replace('{section}', sectionLabels[section])
+  }
 
   switch (section) {
     case 'movement': {
-      const progress = getMovementProgress(context.movementMode, context.movementPhase)
-      if (status === 'missing') return 'Verify stall before continuing transport'
+      const progress = getMovementProgress(
+        context.movementMode,
+        context.movementPhase,
+        copy.progress,
+      )
+      if (status === 'missing') return copy.vehicle.verifyStallBeforeTransport
       if (context.movementPhase === 'location-selected' && context.location) {
-        return `Confirm transport to ${context.location}`
+        return copy.vehicle.confirmTransportTo.replace('{location}', context.location)
       }
       return progress.label
     }
     case 'fuel': {
-      const progress = getFuelProgress(context.fuelStep)
-      if (status === 'missing') return 'Resolve fuel issue to continue'
+      const progress = getFuelProgress(context.fuelStep, copy.progress)
+      if (status === 'missing') return copy.vehicle.resolveFuelIssue
       return progress.label
     }
     case 'stall': {
-      const progress = getStallProgress(context.stallPhase)
-      if (status === 'missing') return 'Verify stall availability and report if needed'
+      const progress = getStallProgress(context.stallPhase, copy.progress)
+      if (status === 'missing') return copy.vehicle.verifyStallAvailability
       return progress.label
     }
     case 'cleaning': {
-      const progress = getCleaningProgress(context.cleaningStep)
+      const progress = getCleaningProgress(context.cleaningStep, copy.progress)
       return progress.label
     }
     default:
-      return `Complete ${SECTION_LABELS[section]}`
+      return copy.vehicle.completeSection.replace('{section}', sectionLabels[section])
   }
 }
 
 function derivePriority(
   sectionStatus: Record<WorkflowSection, SectionStatus>,
   sections: WorkflowSection[],
+  copy: Messages,
 ): { priority: VehiclePriority; priorityLabel: string } {
   const statuses = sections.map((section) => sectionStatus[section])
   if (statuses.some((status) => status === 'missing')) {
-    return { priority: 'high', priorityLabel: 'High Priority' }
+    return { priority: 'high', priorityLabel: copy.vehicle.status.highPriority }
   }
   if (statuses.some((status) => status === 'in-progress')) {
-    return { priority: 'medium', priorityLabel: 'Active' }
+    return { priority: 'medium', priorityLabel: copy.vehicle.status.active }
   }
   if (statuses.every((status) => status === 'complete')) {
-    return { priority: 'low', priorityLabel: 'Complete' }
+    return { priority: 'low', priorityLabel: copy.vehicle.status.complete }
   }
-  return { priority: 'medium', priorityLabel: 'Awaiting Action' }
+  return { priority: 'medium', priorityLabel: copy.vehicle.status.awaitingAction }
 }
 
 function deriveOverallStatus(
@@ -198,6 +201,7 @@ export function getVehicleSummary(
   sectionStatus: Record<WorkflowSection, SectionStatus>,
   context: FlowContext,
   vehicle: VehicleProfile = TRANSPORT_VEHICLE,
+  copy: Messages,
 ): VehicleSummary {
   const optionalSections = getOptionalSections(sections)
   const progressCounts = isVsaWorkflow(sections)
@@ -215,8 +219,8 @@ export function getVehicleSummary(
 
   const overallStatus = deriveOverallStatus(sectionStatus, sections)
   const { priority, priorityLabel } = vehicle.holdWarning
-    ? { priority: 'high' as const, priorityLabel: 'On Hold' }
-    : derivePriority(sectionStatus, sections)
+    ? { priority: 'high' as const, priorityLabel: copy.vehicle.status.onHold }
+    : derivePriority(sectionStatus, sections, copy)
 
   const stallUnlocked = isStallSectionUnlocked(context)
   const isActionableSection = (section: WorkflowSection) =>
@@ -238,20 +242,20 @@ export function getVehicleSummary(
 
   const nextAction =
     overallStatus === 'complete'
-      ? 'All required steps complete — tap Complete to finish'
+      ? copy.vehicle.allStepsComplete
       : isVsaWorkflow(sections) &&
           sectionStatus.cleaning === 'complete' &&
           sectionStatus.fuel === 'not-started'
-        ? 'Cleaning complete — tap Complete to finish (fuel optional)'
+        ? copy.vehicle.cleaningCompleteOptional
         : isVsaWorkflow(sections) &&
             sectionStatus.fuel === 'complete' &&
             sectionStatus.cleaning === 'not-started'
-          ? 'Fueling complete — tap Complete to finish (cleaning optional)'
+          ? copy.vehicle.fuelingCompleteOptional
           : sectionStatus.movement === 'complete' &&
               optionalSections.includes('fuel') &&
               sectionStatus.fuel === 'not-started'
-            ? 'Movement complete — tap Complete to finish (fuel optional)'
-            : sectionNextAction(activeSection, sectionStatus[activeSection], context)
+            ? copy.vehicle.movementCompleteOptional
+            : sectionNextAction(activeSection, sectionStatus[activeSection], context, copy)
 
   return {
     unitId: vehicle.unitId,

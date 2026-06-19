@@ -1,16 +1,20 @@
 import type { CleaningStep, FuelStep, MovementPhase, StallPhase } from '../types/flow'
 import type { ProgressIndicatorProps } from '../components/ui/ProgressIndicator'
+import type { Messages } from '../i18n/types'
+
+type ProgressMessages = Messages['progress']
 
 export function getMovementProgress(
   mode: 'transport' | 'stall',
   phase: MovementPhase,
+  p: ProgressMessages,
 ): ProgressIndicatorProps {
   if (mode === 'transport') {
     const selected = phase === 'location-selected'
     return {
       step: selected ? 2 : 1,
-      label: selected ? 'Location Selected' : 'Select Location',
-      description: selected ? undefined : 'Search for a location and select one to continue',
+      label: selected ? p.locationSelected : p.selectLocation,
+      description: selected ? undefined : p.selectLocationDesc,
       badgeVariant: selected ? 'complete' : 'active',
       labelVariant: selected ? 'complete' : 'default',
       showProgress: !selected,
@@ -22,7 +26,7 @@ export function getMovementProgress(
   if (phase === 'stall-verify') {
     return {
       step: 2,
-      label: 'Stalling Selected - Verify Stall',
+      label: p.stallVerify,
       badgeVariant: 'warning',
       labelVariant: 'warning',
       showProgress: false,
@@ -33,7 +37,7 @@ export function getMovementProgress(
   if (phase === 'stall-selected' || phase === 'stall-issue-reported') {
     return {
       step: 2,
-      label: 'Stall Selected',
+      label: p.stallSelected,
       badgeVariant: 'complete',
       labelVariant: 'complete',
       showProgress: false,
@@ -43,8 +47,8 @@ export function getMovementProgress(
 
   return {
     step: 1,
-    label: 'Select Stall',
-    description: 'Enter stall number, then confirm',
+    label: p.selectStall,
+    description: p.selectStallDesc,
     badgeVariant: 'active',
     labelVariant: 'default',
     showProgress: true,
@@ -53,215 +57,150 @@ export function getMovementProgress(
   }
 }
 
-const fuelProgress: Record<FuelStep, ProgressIndicatorProps> = {
-  'verify-pump': {
+function fuelProgressForStep(step: FuelStep, p: ProgressMessages): ProgressIndicatorProps {
+  const verifyPump = {
     step: 1,
-    label: 'Verify Pump',
-    description: 'Scan or enter the pump number to verify the pump',
-    badgeVariant: 'active',
-    labelVariant: 'default',
+    label: p.verifyPump,
+    description: p.verifyPumpDesc,
+    badgeVariant: 'active' as const,
+    labelVariant: 'default' as const,
     showProgress: true,
     progressPercent: 0,
-  },
-  'manual-entry': {
-    step: 1,
-    label: 'Verify Pump',
-    badgeVariant: 'active',
-    labelVariant: 'default',
-    showProgress: true,
-    progressPercent: 0,
-  },
-  'manual-entry-error': {
-    step: 1,
-    label: 'Verify Pump',
-    badgeVariant: 'active',
-    labelVariant: 'default',
-    showProgress: true,
-    progressPercent: 0,
-  },
-  'manual-entry-filled': {
-    step: 1,
-    label: 'Verify Pump',
-    badgeVariant: 'active',
-    labelVariant: 'default',
-    showProgress: true,
-    progressPercent: 0,
-  },
-  'pump-unavailable': {
-    step: 1,
-    label: 'Verify Pump',
-    badgeVariant: 'active',
-    labelVariant: 'default',
-    showProgress: true,
-    progressPercent: 0,
-  },
-  'unlocking-pump': {
+  }
+
+  const unlockingPump = {
     step: 2,
-    label: 'Unlocking Pump',
-    badgeVariant: 'active',
-    labelVariant: 'default',
+    label: p.unlockingPump,
+    badgeVariant: 'active' as const,
+    labelVariant: 'default' as const,
     showProgress: true,
     progressPercent: 33,
-  },
-  'pump-unlocked': {
+  }
+
+  const unlockingPumpError = { ...unlockingPump, badgeVariant: 'error' as const, labelVariant: 'error' as const }
+
+  const fuelingInProgress = {
     step: 3,
-    label: 'Fueling In Progress',
-    badgeVariant: 'active',
-    labelVariant: 'default',
+    label: p.fuelingInProgress,
+    description: p.fuelingInProgressDesc,
+    badgeVariant: 'active' as const,
+    labelVariant: 'default' as const,
     showProgress: true,
     progressPercent: 66,
-  },
-  'pump-verified': {
-    step: 2,
-    label: 'Start Fueling',
-    badgeVariant: 'active',
-    labelVariant: 'default',
-    showProgress: true,
-    progressPercent: 33,
-  },
-  'connection-lost': {
-    step: 2,
-    label: 'Unlocking Pump',
-    badgeVariant: 'error',
-    labelVariant: 'error',
-    showProgress: true,
-    progressPercent: 33,
-  },
-  'no-response': {
-    step: 2,
-    label: 'Unlocking Pump',
-    badgeVariant: 'error',
-    labelVariant: 'error',
-    showProgress: true,
-    progressPercent: 33,
-  },
-  'pump-timeout': {
-    step: 2,
-    label: 'Unlocking Pump',
-    badgeVariant: 'error',
-    labelVariant: 'error',
-    showProgress: true,
-    progressPercent: 33,
-  },
-  'fueling-in-progress': {
-    step: 3,
-    label: 'Fueling In Progress',
-    description: 'Record gallons when you\'re done fueling',
-    badgeVariant: 'active',
-    labelVariant: 'default',
-    showProgress: true,
-    progressPercent: 66,
-  },
-  'fueling-complete': {
-    step: 4,
-    label: 'Fueling Complete',
-    badgeVariant: 'complete',
-    labelVariant: 'complete',
-    showProgress: false,
-  },
-  'fueling-complete-missing': {
-    step: 4,
-    label: 'Fueling Complete - Missing Information',
-    badgeVariant: 'warning',
-    labelVariant: 'warning',
-    showProgress: false,
-  },
-  'additional-fueling': {
-    step: 1,
-    label: 'Verify Pump',
-    badgeVariant: 'active',
-    labelVariant: 'default',
-    showProgress: true,
-    progressPercent: 0,
-  },
-  'additional-fueling-complete': {
-    step: 4,
-    label: 'Fueling Complete',
-    badgeVariant: 'complete',
-    labelVariant: 'complete',
-    showProgress: false,
-  },
+  }
+
+  const map: Partial<Record<FuelStep, ProgressIndicatorProps>> = {
+    'verify-pump': verifyPump,
+    'manual-entry': { ...verifyPump, description: undefined },
+    'manual-entry-error': { ...verifyPump, description: undefined },
+    'manual-entry-filled': { ...verifyPump, description: undefined },
+    'pump-unavailable': { ...verifyPump, description: undefined },
+    'unlocking-pump': unlockingPump,
+    'pump-unlocked': fuelingInProgress,
+    'pump-verified': {
+      step: 2,
+      label: p.startFueling,
+      badgeVariant: 'active',
+      labelVariant: 'default',
+      showProgress: true,
+      progressPercent: 33,
+    },
+    'connection-lost': unlockingPumpError,
+    'no-response': unlockingPumpError,
+    'pump-timeout': unlockingPumpError,
+    'fueling-in-progress': fuelingInProgress,
+    'fueling-complete': {
+      step: 4,
+      label: p.fuelingComplete,
+      badgeVariant: 'complete',
+      labelVariant: 'complete',
+      showProgress: false,
+    },
+    'fueling-complete-missing': {
+      step: 4,
+      label: p.fuelingCompleteMissing,
+      badgeVariant: 'warning',
+      labelVariant: 'warning',
+      showProgress: false,
+    },
+    'additional-fueling': { ...verifyPump, description: undefined },
+    'additional-fueling-complete': {
+      step: 4,
+      label: p.fuelingComplete,
+      badgeVariant: 'complete',
+      labelVariant: 'complete',
+      showProgress: false,
+    },
+  }
+
+  return map[step] ?? verifyPump
 }
 
-export function getFuelProgress(step: FuelStep): ProgressIndicatorProps {
-  return { totalSteps: 4, ...fuelProgress[step] }
+export function getFuelProgress(step: FuelStep, p: ProgressMessages): ProgressIndicatorProps {
+  return { totalSteps: 4, ...fuelProgressForStep(step, p) }
 }
 
-const cleaningProgress: Record<CleaningStep, ProgressIndicatorProps> = {
-  'verify-pump': {
+function cleaningProgressForStep(
+  step: CleaningStep,
+  p: ProgressMessages,
+): ProgressIndicatorProps {
+  const verifyPump = {
     step: 1,
-    label: 'Verify Pump',
-    description: 'Scan or enter the pump number to verify the pump',
-    badgeVariant: 'active',
-    labelVariant: 'default',
+    label: p.verifyPump,
+    description: p.verifyPumpDesc,
+    badgeVariant: 'active' as const,
+    labelVariant: 'default' as const,
     showProgress: true,
     progressPercent: 0,
     totalSteps: 4,
-  },
-  'manual-entry': {
-    step: 1,
-    label: 'Verify Pump',
-    badgeVariant: 'active',
-    labelVariant: 'default',
-    showProgress: true,
-    progressPercent: 0,
-    totalSteps: 4,
-  },
-  'manual-entry-filled': {
-    step: 1,
-    label: 'Verify Pump',
-    badgeVariant: 'active',
-    labelVariant: 'default',
-    showProgress: true,
-    progressPercent: 0,
-    totalSteps: 4,
-  },
-  'manual-entry-error': {
-    step: 1,
-    label: 'Verify Pump',
-    badgeVariant: 'active',
-    labelVariant: 'default',
-    showProgress: true,
-    progressPercent: 0,
-    totalSteps: 4,
-  },
-  'pump-verified': {
-    step: 2,
-    label: 'Start Cleaning',
-    badgeVariant: 'active',
-    labelVariant: 'default',
-    showProgress: true,
-    progressPercent: 33,
-    totalSteps: 4,
-  },
-  'cleaning-in-progress': {
-    step: 3,
-    label: 'Cleaning In Progress',
-    description: 'Take your time — tap finish when you\'re done',
-    badgeVariant: 'active',
-    labelVariant: 'default',
-    showProgress: true,
-    progressPercent: 66,
-    totalSteps: 4,
-  },
-  'cleaning-complete': {
-    step: 4,
-    label: 'Cleaning Complete',
-    badgeVariant: 'complete',
-    labelVariant: 'complete',
-    showProgress: false,
-  },
+  }
+
+  const map: Partial<Record<CleaningStep, ProgressIndicatorProps>> = {
+    'verify-pump': verifyPump,
+    'manual-entry': { ...verifyPump, description: undefined },
+    'manual-entry-filled': { ...verifyPump, description: undefined },
+    'manual-entry-error': { ...verifyPump, description: undefined },
+    'pump-verified': {
+      step: 2,
+      label: p.startCleaning,
+      badgeVariant: 'active',
+      labelVariant: 'default',
+      showProgress: true,
+      progressPercent: 33,
+      totalSteps: 4,
+    },
+    'cleaning-in-progress': {
+      step: 3,
+      label: p.cleaningInProgress,
+      description: p.cleaningInProgressDesc,
+      badgeVariant: 'active',
+      labelVariant: 'default',
+      showProgress: true,
+      progressPercent: 66,
+      totalSteps: 4,
+    },
+    'cleaning-complete': {
+      step: 4,
+      label: p.cleaningComplete,
+      badgeVariant: 'complete',
+      labelVariant: 'complete',
+      showProgress: false,
+      totalSteps: 4,
+    },
+  }
+
+  return map[step] ?? verifyPump
 }
 
-export function getCleaningProgress(step: CleaningStep): ProgressIndicatorProps {
-  return { totalSteps: 4, ...cleaningProgress[step] }
+export function getCleaningProgress(step: CleaningStep, p: ProgressMessages): ProgressIndicatorProps {
+  return cleaningProgressForStep(step, p)
 }
 
-export function getStallProgress(phase: StallPhase): ProgressIndicatorProps {
+export function getStallProgress(phase: StallPhase, p: ProgressMessages): ProgressIndicatorProps {
   if (phase === 'stall-verify') {
     return {
       step: 2,
-      label: 'Stalling Selected - Verify Stall',
+      label: p.stallVerify,
       badgeVariant: 'warning',
       labelVariant: 'warning',
       showProgress: false,
@@ -272,7 +211,7 @@ export function getStallProgress(phase: StallPhase): ProgressIndicatorProps {
   if (phase === 'stall-selected' || phase === 'stall-issue-reported') {
     return {
       step: 2,
-      label: 'Stall Selected',
+      label: p.stallSelected,
       badgeVariant: 'complete',
       labelVariant: 'complete',
       showProgress: false,
@@ -282,8 +221,8 @@ export function getStallProgress(phase: StallPhase): ProgressIndicatorProps {
 
   return {
     step: 1,
-    label: 'Select Stall',
-    description: 'Enter stall number, then confirm',
+    label: p.selectStall,
+    description: p.selectStallDesc,
     badgeVariant: 'active',
     labelVariant: 'default',
     showProgress: true,

@@ -1,9 +1,10 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useTutorial } from '../hooks/useTutorial'
+import { useI18n } from '../i18n/I18nProvider'
 import {
-  HOME_TUTORIAL_STEPS,
   HOME_TUTORIAL_STORAGE_KEY,
 } from '../utils/tutorialSteps'
+import { getHomeTutorialSteps } from '../utils/tutorialCopy'
 import type { SsoUser } from '../utils/auth'
 import { HomeWorkflowList } from './home/HomeWorkflowList'
 import { Header } from './ui/Header'
@@ -15,7 +16,6 @@ type BrowserHomePageProps = {
   onSelectVsa: () => void
   onSelectTransport: () => void
   onSelectFuel: () => void
-  onOpenTracking: () => void
   onReportIssue?: () => void
   onSignOut?: () => void
 }
@@ -26,13 +26,17 @@ export function BrowserHomePage({
   onSelectVsa,
   onSelectTransport,
   onSelectFuel,
-  onOpenTracking,
   onReportIssue,
   onSignOut,
 }: BrowserHomePageProps) {
+  const { messages, t } = useI18n()
+  const tutorialSteps = useMemo(
+    () => getHomeTutorialSteps(messages.tutorials.home),
+    [messages],
+  )
   const tutorial = useTutorial({
     storageKey: HOME_TUTORIAL_STORAGE_KEY,
-    steps: HOME_TUTORIAL_STEPS,
+    steps: tutorialSteps,
     forceStart: forceTutorial,
   })
   const [menuOpen, setMenuOpen] = useState(false)
@@ -75,12 +79,12 @@ export function BrowserHomePage({
 
       <main
         id="main-content"
-        className="app-scroll app-workflow-main flex min-h-0 flex-1 flex-col gap-3 pb-[max(1.25rem,env(safe-area-inset-bottom))] pt-4"
+        className="app-scroll app-workflow-main home-workflow-main flex min-h-0 flex-1 flex-col gap-3 pb-[max(1.25rem,env(safe-area-inset-bottom))] pt-3"
       >
-        <h1 className="fleet-sr-only">Hertz workflows</h1>
+        <h1 className="fleet-sr-only">{t('home.srTitle')}</h1>
 
-        <section className="browser-home__session" aria-label="Signed in user">
-          <p className="browser-home__welcome">Welcome back, {user.name}</p>
+        <section className="browser-home__session" aria-label={t('home.signedInLabel')}>
+          <p className="browser-home__welcome">{t('home.welcomeBack', { name: user.name })}</p>
           <p className="browser-home__email">{user.email}</p>
         </section>
 
@@ -88,7 +92,6 @@ export function BrowserHomePage({
           onSelectVsa={onSelectVsa}
           onSelectTransport={onSelectTransport}
           onSelectFuel={onSelectFuel}
-          onOpenTracking={onOpenTracking}
         />
       </main>
 

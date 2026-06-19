@@ -6,6 +6,7 @@ import {
   Search,
   X,
 } from 'lucide-react'
+import { useI18n } from '../../i18n/I18nProvider'
 import { BottomSheetOverlay } from '../ui/BottomSheetOverlay'
 import { PumpVerifyCard } from '../ui/PumpVerifyCard'
 import { ScannerScreen } from './ScannerScreen'
@@ -16,6 +17,7 @@ import {
   type IssueVehicleOption,
 } from '../../utils/vehicleSummary'
 import type { VehicleSummary } from '../../utils/vehicleSummary'
+import type { Messages } from '../../i18n/types'
 
 type Step =
   | 'category'
@@ -30,9 +32,6 @@ type IssueCategory = 'vehicle' | 'pump'
 type ScannerContext = 'pump' | 'vehicle'
 
 const VEHICLE_SCAN = {
-  title: 'Scan vehicle',
-  hint: 'Scan the car QR, VIN barcode, or license plate within the frame',
-  manualEntryDescription: 'Search vehicles manually',
   resolveUnitId: 'SIL',
   trackPrefix: 'issue.select-vehicle.scan',
 } as const
@@ -50,12 +49,26 @@ type IssueOverlayProps = {
   onClose: () => void
   onComplete: (data: IssueReportData) => void
   defaultPumpNumber?: string
-  source?: 'header' | 'fuel'
+  source?: 'header' | 'fuel' | 'vehicle'
   vehicle?: Pick<VehicleSummary, 'unitId' | 'name'>
 }
 
+function resolveIssueVehicle(
+  vehicle?: Pick<VehicleSummary, 'unitId' | 'name'>,
+): IssueVehicleOption | null {
+  if (!vehicle) return null
+
+  return (
+    ISSUE_VEHICLE_OPTIONS.find((option) => option.unitId === vehicle.unitId) ?? {
+      unitId: vehicle.unitId,
+      name: vehicle.name,
+      vehicleClass: '',
+    }
+  )
+}
+
 function initialOverlayState(
-  source: 'header' | 'fuel',
+  source: 'header' | 'fuel' | 'vehicle',
   defaultPumpNumber: string,
 ): { step: Step; category: IssueCategory | null } {
   if (source === 'fuel') {
@@ -64,16 +77,11 @@ function initialOverlayState(
       step: defaultPumpNumber.trim().length > 0 ? 'issue-type' : 'select-pump',
     }
   }
+  if (source === 'vehicle') {
+    return { category: 'vehicle', step: 'details' }
+  }
   return { step: 'category', category: null }
 }
-
-const PUMP_ISSUES = [
-  "Pump won't unlock",
-  "Pump won't start fueling",
-  'Pump stopped fueling',
-  'Pump is damaged',
-  'Other',
-] as const
 
 type CategoryOption = {
   id: IssueCategory
@@ -83,27 +91,28 @@ type CategoryOption = {
 }
 
 function getCategoryOptions(
-  source: 'header' | 'fuel',
-  vehicle?: Pick<VehicleSummary, 'unitId' | 'name'>,
+  source: 'header' | 'fuel' | 'vehicle',
+  vehicle: Pick<VehicleSummary, 'unitId' | 'name'> | undefined,
+  issue: Messages['issue'],
 ): CategoryOption[] {
   const vehicleDescription = vehicle
-    ? `Report an issue for ${vehicle.unitId} · ${vehicle.name}, or choose another vehicle.`
-    : 'Damage, warning light, or other problem with a vehicle.'
+    ? issue.vehicleReportFor
+        .replace('{unitId}', vehicle.unitId)
+        .replace('{name}', vehicle.name)
+    : issue.vehicleIssueDesc
 
   const pumpDescription =
-    source === 'fuel'
-      ? 'Report a pump problem during this fuelling session.'
-      : "Pump won't unlock, stopped fueling, or other dispenser problems."
+    source === 'fuel' ? issue.pumpIssueDuringSession : issue.pumpGeneralDesc
 
   return [
     {
       id: 'vehicle',
-      label: 'Vehicle Issue',
+      label: issue.vehicleIssue,
       description: vehicleDescription,
     },
     {
       id: 'pump',
-      label: 'Pump Issue',
+      label: issue.pumpIssue,
       description: pumpDescription,
     },
   ]
@@ -268,6 +277,7 @@ function OverlayHeader({
   onBack?: () => void
   onClose: () => void
 }) {
+  const { t } = useI18n()
   const toolbar =
     !showBack && !centered ? (
       <div className="flex w-full items-center">
@@ -281,7 +291,7 @@ function OverlayHeader({
           type="button"
           onClick={onClose}
           className="field-target flex shrink-0 items-center justify-center rounded-full p-2"
-          aria-label="Close"
+          aria-label={t('common.close')}
           {...trackProps('issue.close')}
         >
           <X className="h-6 w-6 text-[var(--color-fleet-text)]" />
@@ -294,7 +304,7 @@ function OverlayHeader({
             type="button"
             onClick={onBack}
             className="field-target flex shrink-0 items-center justify-center rounded-full p-2"
-            aria-label="Go back"
+            aria-label={t('header.goBack')}
             {...trackProps('issue.back')}
           >
             <ArrowLeft className="h-6 w-6 text-[var(--color-fleet-text)]" />
@@ -312,7 +322,7 @@ function OverlayHeader({
           type="button"
           onClick={onClose}
           className="field-target flex shrink-0 items-center justify-center rounded-full p-2"
-          aria-label="Close"
+          aria-label={t('common.close')}
           {...trackProps('issue.close')}
         >
           <X className="h-6 w-6 text-[var(--color-fleet-text)]" />
@@ -360,6 +370,7 @@ export function IssueOverlay({
   source = 'header',
   vehicle,
 }: IssueOverlayProps) {
+  const { messages, t } = useI18n()
   const titleId = useId()
   const fuelPumpPrefilled =
     source === 'fuel' && defaultPumpNumber.trim().length > 0
@@ -367,20 +378,33 @@ export function IssueOverlay({
   const [step, setStep] = useState<Step>(initial.step)
   const [category, setCategory] = useState<IssueCategory | null>(initial.category)
   const [pumpNumber, setPumpNumber] = useState(defaultPumpNumber)
-  const [selectedVehicle, setSelectedVehicle] = useState<IssueVehicleOption | null>(null)
+  const [selectedVehicle, setSelectedVehicle] = useState<IssueVehicleOption | null>(() =>
+    source === 'vehicle' ? resolveIssueVehicle(vehicle) : null,
+  )
   const [vehicleQuery, setVehicleQuery] = useState('')
-  const [issueType, setIssueType] = useState('')
+  const [issueType, setIssueType] = useState(
+    source === 'vehicle' ? messages.issue.vehicleIssue : '',
+  )
   const [details, setDetails] = useState('')
   const [scannerContext, setScannerContext] = useState<ScannerContext | null>(null)
 
   const isPumpFlow = category === 'pump' || source === 'fuel'
-  const headerTitle = isPumpFlow ? 'Report Fuelling Issue' : 'Report Issue'
+  const headerTitle =
+    source === 'vehicle'
+      ? messages.issue.reportVehicleIssue
+      : isPumpFlow
+        ? messages.issue.reportFuellingIssue
+        : messages.issue.reportIssue
   const overlaySubtitle =
-    source === 'fuel'
-      ? 'Your fuelling session stays open behind this form. Tap outside or Cancel to go back.'
-      : step === 'category'
-        ? 'Choose whether this is a vehicle or pump problem.'
-        : 'Your workflow stays open behind this form. Tap outside or Cancel to go back.'
+    source === 'vehicle'
+      ? vehicle
+        ? t('issue.reportingFor', { unitId: vehicle.unitId, name: vehicle.name })
+        : messages.issue.workflowStaysOpen
+      : source === 'fuel'
+        ? messages.issue.fuellingStaysOpen
+        : step === 'category'
+          ? messages.issue.chooseCategory
+          : messages.issue.workflowStaysOpen
   const showPumpSubtitle =
     isPumpFlow && pumpNumber.trim().length > 0 && step !== 'select-pump'
 
@@ -414,6 +438,10 @@ export function IssueOverlay({
         }
         break
       case 'details':
+        if (source === 'vehicle') {
+          onClose()
+          break
+        }
         if (isPumpFlow) setStep('issue-type')
         else setStep('select-vehicle')
         break
@@ -430,7 +458,7 @@ export function IssueOverlay({
     if (selected === 'pump') {
       setStep('select-pump')
     } else {
-      setIssueType('Vehicle Issue')
+      setIssueType(messages.issue.vehicleIssue)
       setStep('select-vehicle')
     }
   }
@@ -463,9 +491,9 @@ export function IssueOverlay({
 
     return (
       <ScannerScreen
-        title={isPump ? undefined : VEHICLE_SCAN.title}
-        hint={isPump ? undefined : VEHICLE_SCAN.hint}
-        manualEntryDescription={isPump ? undefined : VEHICLE_SCAN.manualEntryDescription}
+        title={isPump ? undefined : messages.issue.scanVehicle}
+        hint={isPump ? undefined : messages.issue.scanVehicleHint}
+        manualEntryDescription={isPump ? undefined : messages.issue.searchVehiclesManually}
         onBack={() => setScannerContext(null)}
         onManualEntry={() => setScannerContext(null)}
         onScanComplete={isPump ? handlePumpScanComplete : handleVehicleScanComplete}
@@ -498,16 +526,16 @@ export function IssueOverlay({
       <div className="flex min-h-[50dvh] max-h-[92dvh] flex-col gap-2 overflow-hidden px-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
         <OverlayHeader
           titleId={titleId}
-          title={step === 'category' ? 'Report Issue' : headerTitle}
+          title={step === 'category' ? messages.issue.reportIssue : headerTitle}
           subtitle={step === 'confirmation' ? undefined : overlaySubtitle}
-          showBack={step !== 'category' && !(source === 'fuel' && step === initial.step)}
+          showBack={step !== 'category' && !(source === 'fuel' && step === initial.step) && source !== 'vehicle'}
           onBack={handleBack}
           onClose={onClose}
         />
 
         {showPumpSubtitle && (
           <div className="issue-overlay-pump" role="status" aria-label={`Pump ${pumpNumber}`}>
-            <p className="issue-overlay-pump__label">Pump</p>
+            <p className="issue-overlay-pump__label">{messages.fuel.tablePump}</p>
             <p className="issue-overlay-pump__value">{pumpNumber}</p>
           </div>
         )}
@@ -516,10 +544,10 @@ export function IssueOverlay({
           {step === 'category' && (
             <div className="flex flex-1 flex-col justify-center gap-2 pb-4">
               <p className="text-base font-semibold text-[var(--color-fleet-text)]">
-                What&apos;s the issue?
+                {messages.issue.whatsTheIssue}
               </p>
               <IssueCategoryList
-                options={getCategoryOptions(source, vehicle)}
+                options={getCategoryOptions(source, vehicle, messages.issue)}
                 onSelect={handleCategorySelect}
               />
             </div>
@@ -528,22 +556,22 @@ export function IssueOverlay({
           {step === 'select-vehicle' && (
             <div className="flex flex-1 flex-col gap-2 pb-4">
               <p className="text-base font-semibold text-[var(--color-fleet-text)]">
-                Select Vehicle
+                {messages.issue.selectVehicle}
               </p>
               <PumpVerifyCard
-                buttonLabel="Scan Vehicle"
-                scanHint="Car QR, VIN barcode, or license plate"
+                buttonLabel={messages.issue.scanVehicle}
+                scanHint={messages.issue.scanVehicleShortHint}
                 onClick={() => setScannerContext('vehicle')}
                 trackScan="issue.select-vehicle.scan.open"
               />
               <p className="text-center text-sm font-bold text-[var(--color-fleet-text)]">
-                OR
+                {t('common.or')}
               </p>
               <TextField
-                label="Search vehicles"
+                label={messages.issue.searchVehicles}
                 value={vehicleQuery}
                 onChange={setVehicleQuery}
-                placeholder="Search by unit or model"
+                placeholder={messages.issue.searchPlaceholder}
                 startIcon={Search}
                 onClear={() => setVehicleQuery('')}
                 clearTrackTag="issue.select-vehicle.clear"
@@ -560,21 +588,21 @@ export function IssueOverlay({
             <>
               <div className="workflow-stack">
                 <p className="text-base font-semibold text-[var(--color-fleet-text)]">
-                  Select Pump
+                  {messages.issue.selectPump}
                 </p>
                 <PumpVerifyCard
-                  buttonLabel="Scan Pump"
+                  buttonLabel={messages.fuel.scanPump}
                   onClick={() => setScannerContext('pump')}
                   trackScan="issue.select-pump.scan"
                 />
                 <p className="text-center text-sm font-bold text-[var(--color-fleet-text)]">
-                  OR
+                  {t('common.or')}
                 </p>
                 <TextField
-                  label="Enter Manually"
+                  label={messages.issue.enterManually}
                   value={pumpNumber}
                   onChange={setPumpNumber}
-                  placeholder="Enter pump no."
+                  placeholder={messages.fuel.enterPumpNo}
                   inputMode="numeric"
                   clearTrackTag="issue.select-pump.clear"
                 />
@@ -587,9 +615,9 @@ export function IssueOverlay({
                   className="fleet-btn fleet-btn-lg fleet-btn-contained-info fleet-btn-elevated w-full"
                   {...trackProps('issue.select-pump.continue')}
                 >
-                  Continue
+                  {t('common.continue')}
                 </button>
-                <TextButton onClick={onClose}>Cancel</TextButton>
+                <TextButton onClick={onClose}>{t('common.cancel')}</TextButton>
               </div>
             </>
           )}
@@ -597,10 +625,10 @@ export function IssueOverlay({
           {step === 'issue-type' && (
             <div className="flex flex-1 flex-col justify-center gap-2 pb-4">
               <p className="text-base font-semibold text-[var(--color-fleet-text)]">
-                What&apos;s the issue?
+                {messages.issue.whatsTheIssue}
               </p>
               <OverlayList
-                items={PUMP_ISSUES}
+                items={[...messages.issue.pumpIssueTypes]}
                 trackPrefix="issue.type"
                 onSelect={(issue) => {
                   setIssueType(issue)
@@ -614,16 +642,18 @@ export function IssueOverlay({
             <div className="flex flex-1 flex-col gap-2">
               {category === 'vehicle' && (selectedVehicle ?? vehicle) && (
                 <p className="issue-category-context">
-                  Reporting for {(selectedVehicle ?? vehicle)!.unitId} ·{' '}
-                  {(selectedVehicle ?? vehicle)!.name}
+                  {t('issue.reportingForVehicle', {
+                    unitId: (selectedVehicle ?? vehicle)!.unitId,
+                    name: (selectedVehicle ?? vehicle)!.name,
+                  })}
                 </p>
               )}
               <div className="flex flex-1 flex-col gap-2 pb-4">
                 <TextAreaField
-                  label="Additional details?"
+                  label={messages.issue.additionalDetails}
                   value={details}
                   onChange={setDetails}
-                  placeholder="Tell us more (optional)"
+                  placeholder={messages.issue.detailsPlaceholder}
                   clearTrackTag="issue.details.clear"
                 />
               </div>
@@ -634,9 +664,9 @@ export function IssueOverlay({
                   className="fleet-btn fleet-btn-lg fleet-btn-contained-info fleet-btn-elevated w-full"
                   {...trackProps('issue.details.continue')}
                 >
-                  Continue
+                  {t('common.continue')}
                 </button>
-                <TextButton onClick={onClose}>Cancel</TextButton>
+                <TextButton onClick={onClose}>{t('common.cancel')}</TextButton>
               </div>
             </div>
           )}
@@ -648,10 +678,11 @@ export function IssueOverlay({
                   <Check className="h-8 w-8 text-[var(--color-fleet-info)]" strokeWidth={3} aria-hidden />
                 </div>
                 <div className="workflow-stack">
-                  <p className="text-xl font-bold text-[var(--color-fleet-text)]">Issue Reported</p>
+                  <p className="text-xl font-bold text-[var(--color-fleet-text)]">
+                    {messages.issue.issueReported}
+                  </p>
                   <p className="text-sm leading-normal text-[var(--color-fleet-text-secondary)]">
-                    Thank you for letting us know. We&apos;ll look into this and get back to
-                    you soon.
+                    {messages.issue.issueReportedThanks}
                   </p>
                 </div>
                 <button
@@ -660,7 +691,7 @@ export function IssueOverlay({
                   className="fleet-btn fleet-btn-lg fleet-btn-outlined w-full border-[var(--color-fleet-info)] text-[var(--color-fleet-text-blue)]"
                   {...trackProps('issue.confirmation.done')}
                 >
-                  Done
+                  {t('common.done')}
                 </button>
               </div>
             </div>

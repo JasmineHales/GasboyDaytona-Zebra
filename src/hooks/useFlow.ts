@@ -1043,7 +1043,12 @@ export function useFlow() {
           return {
             ...prev,
             showIssueOverlay: true,
-            issueReportSource: payload === 'fuel' ? 'fuel' : 'header',
+            issueReportSource:
+              payload === 'fuel'
+                ? 'fuel'
+                : payload === 'vehicle'
+                  ? 'vehicle'
+                  : 'header',
           }
         case 'close-issue':
           return {

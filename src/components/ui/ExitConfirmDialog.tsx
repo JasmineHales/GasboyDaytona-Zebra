@@ -1,4 +1,5 @@
 import { BottomSheetOverlay } from './BottomSheetOverlay'
+import { useI18n } from '../../i18n/I18nProvider'
 import { trackProps } from '../../utils/tracking'
 
 type ExitConfirmMode = 'logout' | 'navigate'
@@ -10,30 +11,14 @@ type ExitConfirmDialogProps = {
   onLeave: () => void
 }
 
-const copy = {
-  logout: {
-    title: 'Log out of Hertz?',
-    body: 'You will need to sign in again to access Hertz apps on this device.',
-    continueLabel: 'Stay signed in',
-    leaveLabel: 'Log out',
-    leaveTrackTag: 'exit.logout',
-  },
-  navigate: {
-    title: 'Leave this workflow?',
-    body: 'You will return to the home screen. Your session timer will restart when you return.',
-    continueLabel: 'Keep working',
-    leaveLabel: 'Leave',
-    leaveTrackTag: 'exit.leave',
-  },
-} as const
-
 export function ExitConfirmDialog({
   open,
   mode = 'navigate',
   onContinue,
   onLeave,
 }: ExitConfirmDialogProps) {
-  const text = copy[mode]
+  const { messages } = useI18n()
+  const text = messages.exit[mode]
 
   return (
     <BottomSheetOverlay
@@ -59,15 +44,15 @@ export function ExitConfirmDialog({
             className="fleet-btn fleet-btn-lg fleet-btn-contained-info fleet-btn-elevated w-full"
             {...trackProps('exit.continue', { mode })}
           >
-            {text.continueLabel}
+            {text.continue}
           </button>
           <button
             type="button"
             onClick={onLeave}
             className="fleet-btn fleet-btn-lg fleet-btn-outlined w-full"
-            {...trackProps(text.leaveTrackTag, { mode })}
+            {...trackProps(mode === 'logout' ? 'exit.logout' : 'exit.leave', { mode })}
           >
-            {text.leaveLabel}
+            {text.leave}
           </button>
         </div>
       </div>

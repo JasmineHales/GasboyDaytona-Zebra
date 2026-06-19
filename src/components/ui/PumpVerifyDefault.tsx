@@ -1,6 +1,7 @@
+import { useI18n } from '../../i18n/I18nProvider'
 import { FuelUnlockModeInfo } from '../fuel/FuelUnlockModeInfo'
 import { PumpVerifyCard } from './PumpVerifyCard'
-import { pumpVerifyCopy } from '../../utils/pumpVerifyCopy'
+import { getPumpVerifyCopy } from '../../utils/pumpVerifyCopy'
 
 type PumpVerifyDefaultProps = {
   onScanPump: () => void
@@ -27,6 +28,8 @@ export function PumpVerifyDefault({
   onSwitchUnlockMode,
   trackPrefix = 'pump.verify',
 }: PumpVerifyDefaultProps) {
+  const { messages } = useI18n()
+  const pumpVerifyCopy = getPumpVerifyCopy(messages.fuel.pumpVerify)
   const modeCopy = unlockMode ? pumpVerifyCopy[unlockMode] : pumpVerifyCopy.default
 
   return (

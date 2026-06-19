@@ -1,5 +1,7 @@
 import { useState } from 'react'
 import type { FlowContext } from '../types/flow'
+import type { DevDeviceFrameId } from '../utils/devDeviceFrame'
+import { DEV_DEVICE_FRAME_OPTIONS } from '../utils/devDeviceFrame'
 import {
   PAGE_NAV_ITEMS,
   widgetGroupsForView,
@@ -11,6 +13,7 @@ import {
 import { formatDevScenarioSummary } from '../utils/devPanel'
 import { trackProps } from '../utils/tracking'
 import { DevScenarioPanel } from './dev/DevScenarioPanel'
+import { DevToggleGroup } from './dev/DevToggleGroup'
 import { DevWidgetStatesPanel } from './dev/DevWidgetStatesPanel'
 
 type DevPanelTab = 'navigate' | 'scenario' | 'states'
@@ -23,9 +26,11 @@ type FlowNavigatorProps = {
   view: AppView
   showLogin: boolean
   loginVariant: 'device' | 'browser'
+  deviceFrame: DevDeviceFrameId
   onSelectPage: (item: PageNavItem) => void
   onSelectWidget: (item: WidgetStateItem) => void
   onLoginVariantChange: (variant: 'device' | 'browser') => void
+  onDeviceFrameChange: (frame: DevDeviceFrameId) => void
   onPatchContext: (patch: Partial<FlowContext>) => void
 }
 
@@ -47,9 +52,11 @@ export function FlowNavigator({
   view,
   showLogin,
   loginVariant,
+  deviceFrame,
   onSelectPage,
   onSelectWidget,
   onLoginVariantChange,
+  onDeviceFrameChange,
   onPatchContext,
 }: FlowNavigatorProps) {
   const [tab, setTab] = useState<DevPanelTab>('navigate')
@@ -58,6 +65,7 @@ export function FlowNavigator({
     showLogin,
     loginVariant,
     view,
+    deviceFrame,
   })
 
   const handlePageSelect = (item: PageNavItem) => {
@@ -87,6 +95,15 @@ export function FlowNavigator({
             </span>
           ))}
         </div>
+
+        <DevToggleGroup
+          label="Screen preview"
+          hint="Frame the app preview at Zebra EM45 (360×800)"
+          value={deviceFrame}
+          options={DEV_DEVICE_FRAME_OPTIONS}
+          onChange={onDeviceFrameChange}
+          trackTag="dev.scenario.device-frame"
+        />
 
         <div className="dev-tabs" role="tablist" aria-label="Dev panel sections">
           {TAB_ITEMS.map((item) => (

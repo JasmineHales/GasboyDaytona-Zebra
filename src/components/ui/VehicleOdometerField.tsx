@@ -1,5 +1,7 @@
 import { forwardRef, useId, useState } from 'react'
 import { Lock } from 'lucide-react'
+import { useI18n } from '../../i18n/I18nProvider'
+import { localeForLanguage } from '../../i18n/localeFormat'
 import { getOdometerFloorValidationError } from '../../utils/mileageResolution'
 import { trackProps } from '../../utils/tracking'
 
@@ -11,9 +13,9 @@ type VehicleOdometerFieldProps = {
   minimumMiles?: number | null
 }
 
-function formatOdometerDisplay(digits: string) {
+function formatOdometerDisplay(digits: string, locale: string) {
   if (!digits) return ''
-  return Number(digits).toLocaleString('en-US')
+  return Number(digits).toLocaleString(locale)
 }
 
 export const VehicleOdometerField = forwardRef<HTMLDivElement, VehicleOdometerFieldProps>(
@@ -21,18 +23,28 @@ export const VehicleOdometerField = forwardRef<HTMLDivElement, VehicleOdometerFi
     { odometerReading, onOdometerChange, verified = false, hint, minimumMiles = null },
     ref,
   ) {
+    const { language, messages, t } = useI18n()
+    const locale = localeForLanguage(language)
+    const vehicleCopy = messages.vehicle
     const odometerId = useId()
     const hintId = `${odometerId}-hint`
     const errorId = `${odometerId}-error`
     const [odometerFocused, setOdometerFocused] = useState(false)
-    const [odometerTouched, setOdometerTouched] = useState(false)
+    const [odometerTouched, setOdometerTouched] = useState(() => {
+      if (verified) return false
+      const error = getOdometerFloorValidationError(odometerReading, minimumMiles, vehicleCopy, {
+        showPartial: true,
+        locale,
+      })
+      return Boolean(error)
+    })
 
     const handleOdometerChange = (raw: string) => {
       if (verified) return
       onOdometerChange(raw.replace(/\D/g, '').slice(0, 7))
     }
 
-    const formattedMiles = formatOdometerDisplay(odometerReading)
+    const formattedMiles = formatOdometerDisplay(odometerReading, locale)
 
     if (verified) {
       return (
@@ -42,13 +54,13 @@ export const VehicleOdometerField = forwardRef<HTMLDivElement, VehicleOdometerFi
           data-tutorial="vehicle-odometer"
         >
           <div className="vehicle-card__odometer-compact">
-            <span className="vehicle-card__odometer-compact-label">Odometer</span>
+            <span className="vehicle-card__odometer-compact-label">{t('vehicle.odometer')}</span>
             <span className="vehicle-card__odometer-compact-value">
-              {formattedMiles} mi
+              {formattedMiles} {vehicleCopy.milesUnit}
             </span>
             <span className="vehicle-card__odometer-verified-chip">
               <Lock className="h-3.5 w-3.5" aria-hidden />
-              Verified
+              {t('vehicle.verified')}
             </span>
           </div>
         </div>
@@ -57,9 +69,10 @@ export const VehicleOdometerField = forwardRef<HTMLDivElement, VehicleOdometerFi
 
     const displayValue = odometerFocused
       ? odometerReading
-      : formatOdometerDisplay(odometerReading)
-    const error = getOdometerFloorValidationError(odometerReading, minimumMiles, {
+      : formatOdometerDisplay(odometerReading, locale)
+    const error = getOdometerFloorValidationError(odometerReading, minimumMiles, vehicleCopy, {
       showPartial: odometerTouched,
+      locale,
     })
     const showError = Boolean(error)
     const describedBy = [hint ? hintId : null, showError ? errorId : null]
@@ -73,7 +86,7 @@ export const VehicleOdometerField = forwardRef<HTMLDivElement, VehicleOdometerFi
         data-tutorial="vehicle-odometer"
       >
         <label htmlFor={odometerId} className="vehicle-card__odometer-label">
-          Odometer
+          {t('vehicle.odometer')}
         </label>
         {hint && (
           <p id={hintId} className="vehicle-card__odometer-hint">
@@ -95,14 +108,14 @@ export const VehicleOdometerField = forwardRef<HTMLDivElement, VehicleOdometerFi
               setOdometerFocused(false)
               setOdometerTouched(true)
             }}
-            placeholder="Enter mileage"
+            placeholder={t('vehicle.enterMileage')}
             className="vehicle-card__odometer-input"
             aria-invalid={showError || undefined}
             aria-describedby={describedBy}
             {...trackProps('vehicle.odometer', { verified: false })}
           />
           <span id={`${odometerId}-suffix`} className="vehicle-card__odometer-suffix">
-            mi
+            {vehicleCopy.milesUnit}
           </span>
         </div>
         {showError && error && (

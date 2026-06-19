@@ -1,4 +1,5 @@
 import { useEffect, useId, useState } from 'react'
+import { useTranslate } from '../../i18n/I18nProvider'
 import { ElapsedTimer } from './ElapsedTimer'
 
 export const NOZZLE_PICKUP_WINDOW_SECONDS = 60
@@ -43,6 +44,7 @@ function NozzlePickupIndicator({
   startedAt: number | null
   windowSeconds: number
 }) {
+  const t = useTranslate()
   const labelId = useId()
   const elapsed = useElapsedSeconds(startedAt)
 
@@ -60,7 +62,7 @@ function NozzlePickupIndicator({
       aria-labelledby={labelId}
     >
       <p className="workflow-in-progress__pickup-label" id={labelId}>
-        {pickupActive ? 'Pick up the nozzle' : 'Fueling at pump'}
+        {pickupActive ? t('workflow.inProgress.pickUpNozzle') : t('workflow.inProgress.fuelingAtPump')}
       </p>
       {pickupActive ? (
         <p className="workflow-in-progress__pickup-time" aria-hidden="true">
@@ -75,8 +77,8 @@ function NozzlePickupIndicator({
         aria-valuenow={pickupActive ? elapsed : windowSeconds}
         aria-valuetext={
           pickupActive
-            ? `${remaining} seconds remaining to pick up the nozzle`
-            : 'Nozzle pickup window complete, waiting for pump data'
+            ? t('workflow.inProgress.pickupRemainingAria', { seconds: String(remaining) })
+            : t('workflow.inProgress.pickupWaitingAria')
         }
       >
         <span
@@ -86,8 +88,8 @@ function NozzlePickupIndicator({
       </div>
       <p className="workflow-in-progress__pickup-hint">
         {pickupActive
-          ? 'You have 60 seconds to start fueling. Pump data may take a moment to update.'
-          : 'Pump data can take a moment to sync.'}
+          ? t('workflow.inProgress.pickupActiveHint')
+          : t('workflow.inProgress.pickupWaitingHint')}
       </p>
     </div>
   )
@@ -97,11 +99,14 @@ export function WorkflowInProgressStatus({
   pumpNumber,
   startedAt,
   tone = 'default',
-  elapsedLabel = 'Elapsed',
-  pumpLabel = 'Pump',
+  elapsedLabel,
+  pumpLabel,
   showElapsed = true,
   nozzlePickupWindowSeconds,
 }: WorkflowInProgressStatusProps) {
+  const t = useTranslate()
+  const resolvedPumpLabel = pumpLabel ?? t('workflow.inProgress.pump')
+  const resolvedElapsedLabel = elapsedLabel ?? t('workflow.inProgress.elapsed')
   const pumpLabelId = useId()
   const pumpValueId = useId()
   const elapsedLabelId = useId()
@@ -109,12 +114,12 @@ export function WorkflowInProgressStatus({
   return (
     <section
       className={`workflow-in-progress workflow-in-progress--${tone}`}
-      aria-label={`${pumpLabel} ${pumpNumber}`}
+      aria-label={`${resolvedPumpLabel} ${pumpNumber}`}
     >
       <div className="workflow-in-progress__metrics">
         <div className="workflow-in-progress__metric">
           <p className="workflow-in-progress__metric-label" id={pumpLabelId}>
-            {pumpLabel}
+            {resolvedPumpLabel}
           </p>
           <p
             className="workflow-in-progress__metric-value"
@@ -127,7 +132,7 @@ export function WorkflowInProgressStatus({
         {showElapsed && (
           <div className="workflow-in-progress__metric workflow-in-progress__metric--time">
             <p className="workflow-in-progress__metric-label" id={elapsedLabelId}>
-              {elapsedLabel}
+              {resolvedElapsedLabel}
             </p>
             <ElapsedTimer
               startedAt={startedAt}

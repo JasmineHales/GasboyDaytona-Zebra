@@ -1,4 +1,5 @@
 import type { SectionStatus } from '../../types/flow'
+import { useTranslate } from '../../i18n/I18nProvider'
 
 const statusClass: Record<SectionStatus, string> = {
   complete: 'fleet-status-chip--complete',
@@ -7,11 +8,14 @@ const statusClass: Record<SectionStatus, string> = {
   missing: 'fleet-status-chip--missing',
 }
 
-const labels: Record<SectionStatus, string> = {
-  complete: 'Complete',
-  'not-started': 'Not Started',
-  'in-progress': 'In Progress',
-  missing: 'Missing Information',
+const statusLabelKey: Record<
+  SectionStatus,
+  'workflow.status.complete' | 'workflow.status.notStarted' | 'workflow.status.inProgress' | 'workflow.status.missing'
+> = {
+  complete: 'workflow.status.complete',
+  'not-started': 'workflow.status.notStarted',
+  'in-progress': 'workflow.status.inProgress',
+  missing: 'workflow.status.missing',
 }
 
 type StatusChipProps = {
@@ -21,6 +25,7 @@ type StatusChipProps = {
 }
 
 export function StatusChip({ status, label, variant = 'default' }: StatusChipProps) {
+  const t = useTranslate()
   const modifier =
     variant === 'optional'
       ? 'fleet-status-chip--optional'
@@ -28,7 +33,7 @@ export function StatusChip({ status, label, variant = 'default' }: StatusChipPro
 
   return (
     <span className={`fleet-status-chip fleet-status-chip--inline ${modifier}`}>
-      {label ?? labels[status]}
+      {label ?? t(statusLabelKey[status])}
     </span>
   )
 }

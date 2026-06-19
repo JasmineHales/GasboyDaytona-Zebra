@@ -124,7 +124,7 @@ export function TrackingPage({ forceTutorial = false, onBack }: TrackingPageProp
         onReplayTutorial={tutorial.start}
       />
 
-      <main className="flex min-h-0 flex-1 flex-col gap-3 overflow-hidden px-4 py-4 sm:px-6">
+      <main className="app-scroll tracking-page-main flex min-h-0 flex-1 flex-col gap-3 overflow-hidden px-4 py-4">
         <div className="tracking-toolbar shrink-0" data-tutorial="tracking-filter">
           <input
             type="search"

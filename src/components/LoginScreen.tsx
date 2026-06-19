@@ -1,4 +1,5 @@
 import { KeyRound, Lock, ShieldCheck } from 'lucide-react'
+import { useTranslate } from '../i18n/I18nProvider'
 import { StatusBar } from './ui/StatusBar'
 import { trackProps } from '../utils/tracking'
 
@@ -7,6 +8,8 @@ type LoginScreenProps = {
 }
 
 export function LoginScreen({ onSignIn }: LoginScreenProps) {
+  const t = useTranslate()
+
   return (
     <div className="login-screen">
       <StatusBar />
@@ -14,29 +17,24 @@ export function LoginScreen({ onSignIn }: LoginScreenProps) {
       <main id="main-content">
         <div className="login-screen__hero">
           <p className="login-screen__brand-name">Hertz</p>
-          <p className="login-screen__brand-tagline">Daytona</p>
+          <p className="login-screen__brand-tagline">{t('auth.device.tagline')}</p>
         </div>
 
         <div className="login-screen__panel">
           <div className="login-screen__ownership">
             <Lock className="h-4 w-4 shrink-0" aria-hidden />
-            <span>Hertz-Owned Device · Authorized use only</span>
+            <span>{t('auth.device.ownership')}</span>
           </div>
 
           <div className="login-screen__card">
-            <h1 className="login-screen__title">Sign in to continue</h1>
-            <p className="login-screen__subtitle">
-              Use your Hertz SSO credentials. This device uses certificate-based
-              authentication for secure access.
-            </p>
+            <h1 className="login-screen__title">{t('auth.device.title')}</h1>
+            <p className="login-screen__subtitle">{t('auth.device.subtitle')}</p>
 
             <div className="login-screen__certificate">
               <ShieldCheck className="h-5 w-5 shrink-0" aria-hidden />
               <div>
-                <p className="login-screen__certificate-title">Device certificate verified</p>
-                <p className="login-screen__certificate-desc">
-                  MDM profile active · Device ID HRT-DYT-00482
-                </p>
+                <p className="login-screen__certificate-title">{t('auth.device.certificateTitle')}</p>
+                <p className="login-screen__certificate-desc">{t('auth.device.certificateDesc')}</p>
               </div>
             </div>
 
@@ -47,12 +45,12 @@ export function LoginScreen({ onSignIn }: LoginScreenProps) {
               {...trackProps('login.sso-sign-in')}
             >
               <KeyRound className="h-5 w-5" />
-              Sign in with SSO
+              {t('auth.device.signIn')}
             </button>
 
             <p className="login-screen__help">
-              Need help? Contact Hertz IT Support at{' '}
-              <span className="login-screen__help-link">1-800-HERTZ-IT</span>
+              {t('auth.device.help')}{' '}
+              <span className="login-screen__help-link">{t('auth.device.helpPhone')}</span>
             </p>
           </div>
         </div>

@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { KeyRound, Loader2 } from 'lucide-react'
+import { useTranslate } from '../i18n/I18nProvider'
 import { trackProps } from '../utils/tracking'
 import type { SsoUser } from '../utils/auth'
 
@@ -8,6 +9,7 @@ type BrowserLoginScreenProps = {
 }
 
 export function BrowserLoginScreen({ onSignIn }: BrowserLoginScreenProps) {
+  const t = useTranslate()
   const [isRedirecting, setIsRedirecting] = useState(false)
 
   const handleSsoSignIn = () => {
@@ -26,16 +28,13 @@ export function BrowserLoginScreen({ onSignIn }: BrowserLoginScreenProps) {
       <main id="main-content" className="browser-login-screen__main">
         <div className="browser-login-screen__hero">
           <p className="browser-login-screen__brand-name">Hertz</p>
-          <p className="browser-login-screen__brand-tagline">Remote Off · Web</p>
+          <p className="browser-login-screen__brand-tagline">{t('auth.browser.tagline')}</p>
         </div>
 
         <div className="browser-login-screen__panel">
           <div className="browser-login-screen__card">
-            <h1 className="browser-login-screen__title">Sign in with SSO</h1>
-            <p className="browser-login-screen__subtitle">
-              Use your corporate Hertz credentials. You&apos;ll be redirected to
-              your organization&apos;s single sign-on provider.
-            </p>
+            <h1 className="browser-login-screen__title">{t('auth.browser.title')}</h1>
+            <p className="browser-login-screen__subtitle">{t('auth.browser.subtitle')}</p>
 
             <button
               type="button"
@@ -49,13 +48,10 @@ export function BrowserLoginScreen({ onSignIn }: BrowserLoginScreenProps) {
               ) : (
                 <KeyRound className="h-5 w-5" aria-hidden />
               )}
-              {isRedirecting ? 'Redirecting to SSO…' : 'Continue with Hertz SSO'}
+              {isRedirecting ? t('auth.browser.redirecting') : t('auth.browser.continue')}
             </button>
 
-            <p className="browser-login-screen__help">
-              Access is limited to authorized Hertz team members. Contact IT if you
-              cannot sign in.
-            </p>
+            <p className="browser-login-screen__help">{t('auth.browser.help')}</p>
           </div>
         </div>
       </main>

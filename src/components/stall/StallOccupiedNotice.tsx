@@ -1,10 +1,9 @@
 import { AlertTriangle, Camera } from 'lucide-react'
 import { useCallback } from 'react'
 import { useCameraCapture } from '../../hooks/useCameraCapture'
+import { useI18n } from '../../i18n/I18nProvider'
 import { trackProps } from '../../utils/tracking'
 import { WorkflowNotice } from '../ui/WorkflowNotice'
-
-const PHOTO_REQUIREMENTS = ['Stall Number', 'Entire stall & surroundings']
 
 type StallOccupiedNoticeProps = {
   onTakePhoto: (file: File) => void
@@ -15,6 +14,9 @@ export function StallOccupiedNotice({
   onTakePhoto,
   trackPrefix = 'stall',
 }: StallOccupiedNoticeProps) {
+  const { messages, t } = useI18n()
+  const stallCopy = messages.stall
+
   const handleCapture = useCallback(
     (file: File) => {
       onTakePhoto(file)
@@ -27,9 +29,9 @@ export function StallOccupiedNotice({
   return (
     <WorkflowNotice
       variant="warning"
-      title="Stall appears occupied"
-      description="If this stall is available, take a photo to report the issue."
-      requirements={PHOTO_REQUIREMENTS}
+      title={stallCopy.occupiedTitle}
+      description={stallCopy.occupiedDescription}
+      requirements={[...stallCopy.photoRequirements]}
       icon={<AlertTriangle className="h-4 w-4" />}
       footer={
         <>
@@ -50,7 +52,7 @@ export function StallOccupiedNotice({
             {...trackProps(`${trackPrefix}.take-photo`)}
           >
             <Camera className="h-5 w-5" />
-            Take Photo
+            {t('stall.takePhoto')}
           </button>
         </>
       }

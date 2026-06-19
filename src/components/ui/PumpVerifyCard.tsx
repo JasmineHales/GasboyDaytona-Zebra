@@ -1,4 +1,5 @@
 import { QrCode } from 'lucide-react'
+import { useI18n } from '../../i18n/I18nProvider'
 import { trackProps } from '../../utils/tracking'
 
 type PumpVerifyCardProps = {
@@ -32,19 +33,27 @@ function ScanCorner({ position }: { position: 'tl' | 'tr' | 'bl' | 'br' }) {
 export function PumpVerifyCard({
   title,
   subtitle,
-  buttonLabel = 'Scan Pump',
+  buttonLabel,
   scanHint,
   onClick,
-  manualEntryLabel = 'Enter pump number',
+  manualEntryLabel,
   onManualEntry,
   quickSelectPump,
-  quickSelectHint = 'Cleaning in progress at this pump',
+  quickSelectHint,
   onQuickSelectPump,
   unlockMode,
   trackScan = 'pump.verify.scan',
   trackManual = 'pump.verify.manual-entry',
   trackQuickSelect = 'pump.verify.quick-select',
 }: PumpVerifyCardProps) {
+  const { messages, t } = useI18n()
+  const quickSelectCopy = messages.fuel.quickSelect
+  const resolvedButtonLabel = buttonLabel ?? messages.fuel.scanPump
+  const resolvedManualEntryLabel =
+    manualEntryLabel ?? messages.fuel.pumpVerify.default.manualEntryLabel
+  const resolvedQuickSelectHint =
+    quickSelectHint ?? quickSelectCopy.cleaningInProgress
+
   return (
     <div
       className={`pump-verify-card${unlockMode === 'remote' ? ' pump-verify-card--remote' : ''}`}
@@ -60,7 +69,7 @@ export function PumpVerifyCard({
         type="button"
         onClick={onClick}
         className={`pump-verify-scan-graphic${unlockMode === 'remote' ? ' pump-verify-scan-graphic--remote' : ''}`}
-        aria-label={buttonLabel}
+        aria-label={resolvedButtonLabel}
         {...trackProps(trackScan)}
       >
         <div className="pump-verify-scan-graphic__frame" aria-hidden>
@@ -73,7 +82,7 @@ export function PumpVerifyCard({
           <div className="pump-verify-scan-graphic__line" />
         </div>
         <div className="pump-verify-scan-graphic__copy">
-          <span className="pump-verify-scan-graphic__label">{buttonLabel}</span>
+          <span className="pump-verify-scan-graphic__label">{resolvedButtonLabel}</span>
           {scanHint && (
             <span className="pump-verify-scan-graphic__hint">{scanHint}</span>
           )}
@@ -87,13 +96,13 @@ export function PumpVerifyCard({
           className="pump-verify-manual"
           {...trackProps(trackManual)}
         >
-          {manualEntryLabel}
+          {resolvedManualEntryLabel}
         </button>
       )}
 
       {quickSelectPump && onQuickSelectPump && (
         <div className="pump-verify-quick-select">
-          <p className="pump-verify-quick-select__label">Quick select</p>
+          <p className="pump-verify-quick-select__label">{quickSelectCopy.label}</p>
           <button
             type="button"
             onClick={() => onQuickSelectPump(quickSelectPump)}
@@ -101,10 +110,10 @@ export function PumpVerifyCard({
             {...trackProps(trackQuickSelect)}
           >
             <span className="pump-verify-quick-select__pump">
-              Pump {quickSelectPump}
+              {t('fuel.quickSelect.pump', { pump: quickSelectPump })}
             </span>
-            {quickSelectHint && (
-              <span className="pump-verify-quick-select__hint">{quickSelectHint}</span>
+            {resolvedQuickSelectHint && (
+              <span className="pump-verify-quick-select__hint">{resolvedQuickSelectHint}</span>
             )}
           </button>
         </div>

@@ -1,11 +1,13 @@
-import { AlertCircle, GraduationCap, LogOut, MoreVertical } from 'lucide-react'
+import { AlertCircle, GraduationCap, Languages, LogOut, MoreVertical } from 'lucide-react'
 import { useEffect, useRef, useState, type ReactNode } from 'react'
+import { useTranslate } from '../../i18n/I18nProvider'
 import { trackProps } from '../../utils/tracking'
 
 type HeaderMenuProps = {
   onReportIssue?: () => void
   onSignOut?: () => void
   onReplayTutorial?: () => void
+  onLanguageSettings?: () => void
   menuOpen?: boolean
   onMenuOpenChange?: (open: boolean) => void
   elevateMenu?: boolean
@@ -40,11 +42,13 @@ export function HeaderMenu({
   onReportIssue,
   onSignOut,
   onReplayTutorial,
+  onLanguageSettings,
   menuOpen,
   onMenuOpenChange,
   elevateMenu = false,
   lockMenuOpen = false,
 }: HeaderMenuProps) {
+  const t = useTranslate()
   const [internalOpen, setInternalOpen] = useState(false)
   const isControlled = menuOpen !== undefined
   const open = isControlled ? menuOpen : internalOpen
@@ -69,7 +73,7 @@ export function HeaderMenu({
 
     document.addEventListener('mousedown', handleClickOutside)
     return () => document.removeEventListener('mousedown', handleClickOutside)
-  }, [open])
+  }, [open, isControlled, lockMenuOpen])
 
   const handleReportIssue = () => {
     setOpen(false)
@@ -86,6 +90,11 @@ export function HeaderMenu({
     onReplayTutorial?.()
   }
 
+  const handleLanguageSettings = () => {
+    setOpen(false)
+    onLanguageSettings?.()
+  }
+
   return (
     <div ref={containerRef} className="relative flex flex-col items-end">
       <button
@@ -95,7 +104,7 @@ export function HeaderMenu({
           setOpen(!open)
         }}
         className="header-menu-toggle"
-        aria-label="More options"
+        aria-label={t('header.moreOptions')}
         aria-expanded={open}
         aria-haspopup="menu"
         data-tutorial="header-menu"
@@ -113,21 +122,27 @@ export function HeaderMenu({
             {onReplayTutorial && (
               <MenuItem
                 icon={<GraduationCap className="h-6 w-6" />}
-                label="Replay tutorial"
+                label={t('header.menu.replayTutorial')}
                 trackTag="header.menu.replay-tutorial"
                 onClick={handleReplayTutorial}
               />
             )}
             <MenuItem
               icon={<AlertCircle className="h-6 w-6" />}
-              label="Report Issue"
+              label={t('header.menu.reportIssue')}
               trackTag="header.menu.report-issue"
               tutorialId="header-report-issue"
               onClick={handleReportIssue}
             />
             <MenuItem
+              icon={<Languages className="h-6 w-6" />}
+              label={t('header.menu.languageSettings')}
+              trackTag="header.menu.language-settings"
+              onClick={handleLanguageSettings}
+            />
+            <MenuItem
               icon={<LogOut className="h-6 w-6" />}
-              label="Sign Out"
+              label={t('header.menu.signOut')}
               trackTag="header.menu.sign-out"
               tutorialId="header-sign-out"
               onClick={handleSignOut}

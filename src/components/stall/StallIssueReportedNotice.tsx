@@ -1,6 +1,7 @@
 import { Camera, Info } from 'lucide-react'
 import { PhotoAttachmentPreview } from '../ui/PhotoAttachmentPreview'
 import { WorkflowNotice } from '../ui/WorkflowNotice'
+import { useI18n } from '../../i18n/I18nProvider'
 import { trackProps } from '../../utils/tracking'
 
 type StallIssueReportedNoticeProps = {
@@ -16,11 +17,14 @@ export function StallIssueReportedNotice({
   photoName,
   trackPrefix = 'stall',
 }: StallIssueReportedNoticeProps) {
+  const { messages, t } = useI18n()
+  const stallCopy = messages.stall
+
   return (
     <WorkflowNotice
       variant="info"
-      title="Issue reported"
-      description="Photo attached successfully. You can continue once the stall is verified."
+      title={stallCopy.issueReportedTitle}
+      description={stallCopy.issueReportedDescription}
       icon={<Info className="h-6 w-6" />}
       footer={
         <>
@@ -35,7 +39,7 @@ export function StallIssueReportedNotice({
             {...trackProps(`${trackPrefix}.retake-photo`)}
           >
             <Camera className="h-5 w-5" />
-            Retake Photo
+            {t('stall.retakePhoto')}
           </button>
         </>
       }

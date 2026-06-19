@@ -1,5 +1,6 @@
 import { Check } from 'lucide-react'
 import { useId } from 'react'
+import { useTranslate } from '../../i18n/I18nProvider'
 import { trackProps } from '../../utils/tracking'
 
 type CompleteButtonProps = {
@@ -17,6 +18,7 @@ export function CompleteButton({
   onDisabledPress,
   trackTag = 'workflow.complete',
 }: CompleteButtonProps) {
+  const t = useTranslate()
   const hintId = useId()
 
   return (
@@ -43,7 +45,7 @@ export function CompleteButton({
         {...trackProps(trackTag)}
       >
         <Check className="h-6 w-6" aria-hidden />
-        Complete
+        {t('common.complete')}
       </button>
     </div>
   )

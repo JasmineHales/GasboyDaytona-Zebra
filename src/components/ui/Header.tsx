@@ -1,7 +1,9 @@
 import { ChevronLeft } from 'lucide-react'
 import { useCallback, useState } from 'react'
+import { useTranslate } from '../../i18n/I18nProvider'
 import { ExitConfirmDialog } from './ExitConfirmDialog'
 import { HeaderMenu } from './HeaderMenu'
+import { LanguageSettingsOverlay } from './LanguageSettingsOverlay'
 import { resetSessionTimer, SessionTimer } from './SessionTimer'
 import { StatusBar } from './StatusBar'
 import { trackProps } from '../../utils/tracking'
@@ -39,7 +41,9 @@ export function Header({
   lockHeaderMenu,
   brandLayout = false,
 }: HeaderProps) {
+  const t = useTranslate()
   const [showExitConfirm, setShowExitConfirm] = useState(false)
+  const [showLanguageSettings, setShowLanguageSettings] = useState(false)
   const [exitMode, setExitMode] = useState<'logout' | 'navigate'>('navigate')
   const [pendingExit, setPendingExit] = useState<(() => void) | null>(null)
   const showBackButton = showBack ?? Boolean(onBack)
@@ -81,7 +85,7 @@ export function Header({
               type="button"
               onClick={() => requestExit(onBack, 'navigate')}
               className="field-target flex shrink-0 items-center justify-center rounded-full"
-              aria-label="Go back"
+              aria-label={t('header.goBack')}
               {...trackProps('header.back')}
             >
               <ChevronLeft className="h-6 w-6" />
@@ -105,6 +109,7 @@ export function Header({
           onReportIssue={onReportIssue}
           onSignOut={() => requestExit(onSignOut, 'logout')}
           onReplayTutorial={onReplayTutorial}
+          onLanguageSettings={() => setShowLanguageSettings(true)}
           menuOpen={menuOpen}
           onMenuOpenChange={onMenuOpenChange}
           elevateMenu={elevateHeaderMenu}
@@ -119,6 +124,11 @@ export function Header({
         mode={exitMode}
         onContinue={handleContinue}
         onLeave={handleLeave}
+      />
+
+      <LanguageSettingsOverlay
+        open={showLanguageSettings}
+        onClose={() => setShowLanguageSettings(false)}
       />
     </header>
   )

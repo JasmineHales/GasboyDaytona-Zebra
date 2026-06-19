@@ -1,7 +1,5 @@
-import type {
-  MileageReliabilityIssue,
-  VehicleMileageState,
-} from './mileageResolution'
+import type { Messages } from '../i18n/types'
+import type { MileageReliabilityIssue, VehicleMileageState } from './mileageResolution'
 
 export const DEMO_MILEAGE_MILES = 28432
 
@@ -115,17 +113,9 @@ export const MILEAGE_SCENARIO_IDS = Object.keys(
   MILEAGE_SCENARIOS,
 ) as MileageScenarioId[]
 
-const MILEAGE_ISSUE_LABELS: Record<MileageReliabilityIssue, string> = {
-  'telematics-unavailable': 'Telematics unavailable',
-  'telematics-stale': 'Telematics out of date',
-  'telematics-vin-mismatch': 'VIN does not match',
-  'gasboy-unavailable': 'Gasboy unavailable',
-  'gasboy-delayed': 'Gasboy delayed',
-  'rental-source': 'Rental mileage may be outdated',
-  'lookup-timeout': 'Mileage lookup timed out',
-  'source-mismatch': 'Sources do not match',
-}
-
-export function getMileageIssueLabel(issue: MileageReliabilityIssue): string {
-  return MILEAGE_ISSUE_LABELS[issue]
+export function getMileageIssueLabel(
+  issue: MileageReliabilityIssue,
+  copy: Messages['vehicle']['mileageIssues'],
+): string {
+  return copy[issue]
 }

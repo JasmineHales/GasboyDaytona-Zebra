@@ -9,6 +9,7 @@ import { PumpConfirmedCard } from '../ui/PumpConfirmedCard'
 import { PumpVerifyDefault } from '../ui/PumpVerifyDefault'
 import { TextField } from '../ui/TextField'
 import { WorkflowInProgressStatus } from '../ui/WorkflowInProgressStatus'
+import { useI18n } from '../../i18n/I18nProvider'
 import { getCleaningProgress } from '../../utils/progress'
 import { isUnavailablePump } from '../../utils/pump'
 import { getFuelQuickSelectHint } from '../../utils/pumpQuickSelect'
@@ -56,7 +57,10 @@ export function CleaningContent({
   fuelQuickSelectInProgress = false,
   unavailablePumps = [],
 }: CleaningContentProps) {
-  const progress = getCleaningProgress(step)
+  const { messages, t } = useI18n()
+  const cleaningCopy = messages.cleaning
+  const fuelCopy = messages.fuel
+  const progress = getCleaningProgress(step, messages.progress)
   const canVerify =
     step === 'manual-entry-filled' && pumpNumber.trim().length > 0
   const showManualEntry = [
@@ -72,7 +76,10 @@ export function CleaningContent({
     if (showManualEntry && !pumpNumber.trim()) return pump
     return null
   })()
-  const fuelQuickSelectHint = getFuelQuickSelectHint(fuelQuickSelectInProgress)
+  const fuelQuickSelectHint = getFuelQuickSelectHint(
+    fuelQuickSelectInProgress,
+    messages.fuel.quickSelect,
+  )
 
   return (
     <div className="workflow-stack">
@@ -101,13 +108,13 @@ export function CleaningContent({
           )}
 
           <TextField
-            label="Manual Entry"
-            hint="Enter the pump number displayed on the pump"
+            label={cleaningCopy.manualEntry}
+            hint={cleaningCopy.manualEntryHint}
             value={pumpNumber}
-            placeholder="Enter pump no."
+            placeholder={cleaningCopy.enterPumpNo}
             inputMode="numeric"
             invalid={step === 'manual-entry-error'}
-            error={step === 'manual-entry-error' ? 'Select another pump' : undefined}
+            error={step === 'manual-entry-error' ? cleaningCopy.selectAnotherPump : undefined}
             onChange={onPumpChange}
             onClear={onClearPump}
             clearTrackTag="cleaning.pump.clear"
@@ -121,7 +128,7 @@ export function CleaningContent({
               className="fleet-btn fleet-btn-lg fleet-btn-contained-info fleet-btn-elevated w-full"
               {...trackProps('cleaning.verify-pump')}
             >
-              Verify Pump
+              {cleaningCopy.verifyPump}
             </button>
           </div>
 
@@ -132,7 +139,7 @@ export function CleaningContent({
             {...trackProps('cleaning.back-to-scan')}
           >
             <ArrowLeft className="h-5 w-5" />
-            Back to QR Scanning
+            {cleaningCopy.backToScan}
           </button>
         </>
       )}
@@ -140,9 +147,9 @@ export function CleaningContent({
       {step === 'pump-verified' && (
         <>
           <PumpConfirmedCard
-            title={`You're at Pump ${pumpNumber}`}
-            subtitle="Pump location confirmed. Begin cleaning when ready."
-            actionLabel="Start Cleaning"
+            title={t('cleaning.atPump', { pump: pumpNumber })}
+            subtitle={cleaningCopy.pumpConfirmed}
+            actionLabel={cleaningCopy.startCleaning}
             onAction={onStartCleaning}
             actionIcon={<Play className="h-5 w-5 fill-current" />}
             trackAction="cleaning.start"
@@ -153,7 +160,7 @@ export function CleaningContent({
             className="fleet-btn fleet-btn-lg fleet-btn-outlined w-full"
             {...trackProps('cleaning.wrong-pump')}
           >
-            Cancel
+            {t('common.cancel')}
           </button>
         </>
       )}
@@ -171,7 +178,7 @@ export function CleaningContent({
             {...trackProps('cleaning.finish')}
           >
             <Flag className="h-5 w-5" />
-            Finish Cleaning
+            {cleaningCopy.finishCleaning}
           </button>
         </>
       )}
@@ -180,7 +187,7 @@ export function CleaningContent({
         <>
           <div className="overflow-hidden rounded">
             <div className="grid grid-cols-3 border-b-2 border-[var(--color-border)]">
-              {['Pump', 'Status', 'Time'].map((heading) => (
+              {[fuelCopy.tablePump, fuelCopy.tableStatus, fuelCopy.tableTime].map((heading) => (
                 <p
                   key={heading}
                   className="px-4 py-4 text-sm font-semibold text-[var(--color-text-primary)]"
@@ -195,7 +202,7 @@ export function CleaningContent({
               </p>
               <div className="px-4 py-4">
                 <span className="inline-flex rounded-full bg-[var(--color-chip-complete-bg)] px-2 py-0.5 text-sm font-semibold text-[var(--color-text-success)]">
-                  Complete
+                  {cleaningCopy.statusComplete}
                 </span>
               </div>
               <p className="px-4 py-4 text-sm text-[var(--color-text-primary)]">
@@ -206,10 +213,10 @@ export function CleaningContent({
 
           <div className="workflow-stack rounded bg-[var(--color-fleet-info-surface)] px-4 py-3">
             <p className="text-left text-sm font-semibold text-[var(--color-text-primary)]">
-              Need more time?
+              {cleaningCopy.needMoreTime}
             </p>
             <p className="text-left text-sm font-medium text-[var(--color-text-primary)]">
-              Continue cleaning if you&apos;d like to extend the timer.
+              {cleaningCopy.continueCleaningHint}
             </p>
             <button
               type="button"
@@ -217,7 +224,7 @@ export function CleaningContent({
               className="fleet-btn fleet-btn-lg fleet-btn-contained-info fleet-btn-elevated w-full"
               {...trackProps('cleaning.continue')}
             >
-              Continue Cleaning
+              {cleaningCopy.continueCleaning}
             </button>
           </div>
         </>

@@ -22,8 +22,9 @@ import {
   WorkflowInProgressStatus,
   NOZZLE_PICKUP_WINDOW_SECONDS,
 } from '../ui/WorkflowInProgressStatus'
+import { useI18n } from '../../i18n/I18nProvider'
 import { getFuelProgress } from '../../utils/progress'
-import { pumpVerifyCopy } from '../../utils/pumpVerifyCopy'
+import { getPumpVerifyCopy } from '../../utils/pumpVerifyCopy'
 import { isUnavailablePump } from '../../utils/pump'
 import {
   getCleaningQuickSelectHint,
@@ -74,16 +75,17 @@ function formatGallonsDisplay(gallons: string): string {
 }
 
 function FuelStatusChip({ status }: { status: FuelTransaction['status'] }) {
+  const { t } = useI18n()
   if (status === 'complete') {
     return (
       <span className="inline-flex rounded-full bg-[var(--color-chip-complete-bg)] px-2 py-0.5 text-sm font-semibold text-[var(--color-text-success)]">
-        Complete
+        {t('fuel.statusComplete')}
       </span>
     )
   }
   return (
     <span className="fleet-chip fleet-chip-warning">
-      Issue
+      {t('fuel.statusIssue')}
     </span>
   )
 }
@@ -97,12 +99,15 @@ function ManualFuelingSummaryTable({
   time: string
   gallons: string
 }) {
+  const { messages } = useI18n()
+  const fuelCopy = messages.fuel
   const gallonDisplay = gallons.trim() ? gallons : '--'
 
   return (
     <div className="overflow-hidden rounded">
       <div className="grid grid-cols-[60px_108px_1fr_1fr] border-b-2 border-[var(--color-border)]">
-        {['Pump', 'Status', 'Time', 'Gal'].map((heading) => (
+        {[fuelCopy.tablePump, fuelCopy.tableStatus, fuelCopy.tableTime, fuelCopy.tableGal].map(
+          (heading) => (
           <p
             key={heading}
             className="px-4 py-4 text-sm font-semibold text-[var(--color-text-primary)]"
@@ -132,14 +137,16 @@ function MissingGallonsForm({
   onGallonsChange: (value: string) => void
   onSubmit: () => void
 }) {
+  const { messages, t } = useI18n()
+  const fuelCopy = messages.fuel
   const canSubmit = fuelGallons.trim().length > 0
 
   return (
     <div className="workflow-stack">
       <TextField
-        label="Gallons Pumped"
+        label={fuelCopy.gallonsPumped}
         value={fuelGallons}
-        placeholder="Enter gallons dispensed"
+        placeholder={fuelCopy.enterGallons}
         inputMode="decimal"
         onChange={onGallonsChange}
         onClear={() => onGallonsChange('')}
@@ -152,17 +159,20 @@ function MissingGallonsForm({
         className="fleet-btn fleet-btn-lg fleet-btn-contained-info fleet-btn-elevated w-full"
         {...trackProps('fuel.missing-gallons.submit')}
       >
-        Submit
+        {t('common.submit')}
       </button>
     </div>
   )
 }
 
 function FuelSummaryTable({ rows }: { rows: FuelTransaction[] }) {
+  const { messages } = useI18n()
+  const fuelCopy = messages.fuel
+
   return (
     <div className="overflow-hidden rounded">
       <div className="grid grid-cols-3 border-b-2 border-[var(--color-border)]">
-        {['Pump', 'Status', 'Gal'].map((heading) => (
+        {[fuelCopy.tablePump, fuelCopy.tableStatus, fuelCopy.tableGal].map((heading) => (
           <p
             key={heading}
             className="px-4 py-4 text-sm font-semibold text-[var(--color-text-primary)]"
@@ -213,7 +223,7 @@ function ReportIssueLink({
   onReportIssue,
   title,
   description,
-  actionLabel = 'Report it',
+  actionLabel,
   trackTag = 'fuel.report-issue',
   variant = 'default',
 }: {
@@ -224,6 +234,8 @@ function ReportIssueLink({
   trackTag?: string
   variant?: 'default' | 'inline'
 }) {
+  const { t } = useI18n()
+  const resolvedActionLabel = actionLabel ?? t('common.reportIt')
   const isInline = variant === 'inline'
 
   const actionButton = (
@@ -237,7 +249,7 @@ function ReportIssueLink({
       }
       {...trackProps(trackTag)}
     >
-      {actionLabel}
+      {resolvedActionLabel}
     </button>
   )
 
@@ -290,14 +302,15 @@ function ManualPumpConfirmedCard({
   pumpNumber: string
   onStartFueling: () => void
 }) {
-  const title = `You're at Pump ${pumpNumber}`
-  const subtitle = 'Begin fueling, then record gallons when done.'
+  const { t } = useI18n()
+  const title = t('fuel.atPump', { pump: pumpNumber })
+  const subtitle = t('fuel.beginFueling')
 
   return (
     <PumpConfirmedCard
       title={title}
       subtitle={subtitle}
-      actionLabel="Start Fueling"
+      actionLabel={t('fuel.startFueling')}
       onAction={onStartFueling}
       actionIcon={<Play className="h-5 w-5 fill-current" />}
       trackAction="fuel.start-fueling"
@@ -484,6 +497,9 @@ export function FuelStepContent({
   cleaningActivePump = null,
   cleaningQuickSelectInProgress = false,
 }: FuelStepContentProps) {
+  const { messages, t } = useI18n()
+  const fuelCopy = messages.fuel
+  const pumpVerifyCopy = getPumpVerifyCopy(messages.fuel.pumpVerify)
   const isRemoteUnlockFlow = locationType === 'gasboy' && unlockMode === 'remote'
   const isGasboyRemoteUnlockStep =
     isRemoteUnlockFlow &&
@@ -508,7 +524,7 @@ export function FuelStepContent({
     step as (typeof manualEntrySteps)[number],
   )
   const progress = {
-    ...getFuelProgress(step),
+    ...getFuelProgress(step, messages.progress),
     ...(isGasboyRemoteUnlockStep && {
       label: pumpVerifyCopy.remote.label,
       description: pumpVerifyCopy.remote.description,
@@ -522,7 +538,7 @@ export function FuelStepContent({
       totalSteps: 4,
     }),
     ...(isRemoteInProgress && {
-      label: 'Fueling Session Active',
+      label: t('fuel.sessionActive'),
       description: undefined,
     }),
   }
@@ -575,7 +591,10 @@ export function FuelStepContent({
     if (isManualEntryStep && !pumpNumber.trim()) return pump
     return null
   })()
-  const cleaningQuickSelectHint = getCleaningQuickSelectHint(cleaningQuickSelectInProgress)
+  const cleaningQuickSelectHint = getCleaningQuickSelectHint(
+    cleaningQuickSelectInProgress,
+    messages.fuel.quickSelect,
+  )
 
   return (
     <div className="workflow-stack">
@@ -587,7 +606,7 @@ export function FuelStepContent({
 
       {showNonGasboyVerifyDefault && (
         <PumpVerifyDefault
-          scanLabel="Scan Pump"
+          scanLabel={fuelCopy.scanPump}
           onScanPump={onScanPump}
           onManualEntry={onManualEntry}
           trackPrefix="fuel.verify"
@@ -627,17 +646,17 @@ export function FuelStepContent({
           )}
 
           <TextField
-            label="Manual Entry"
-            hint="Enter the pump number displayed on the pump"
+            label={fuelCopy.manualEntry}
+            hint={fuelCopy.manualEntryHint}
             value={pumpNumber}
-            placeholder="Enter pump no."
+            placeholder={fuelCopy.enterPumpNo}
             inputMode="numeric"
             invalid={isUnavailableSelection}
             error={
               isUnavailableSelection
                 ? isLocationVerifyFlow
-                  ? 'This pump is unavailable. Select another pump.'
-                  : 'This pump cannot be unlocked. Select another pump.'
+                  ? t('fuel.pumpUnavailable')
+                  : fuelCopy.cannotUnlock
                 : undefined
             }
             onChange={onPumpChange}
@@ -661,7 +680,7 @@ export function FuelStepContent({
               )}
             >
               <Lock className="h-5 w-5" />
-              {isLocationVerifyFlow ? 'Verify Pump' : 'Unlock Pump'}
+              {isLocationVerifyFlow ? fuelCopy.verifyPump : fuelCopy.unlockPump}
             </button>
           </div>
 
@@ -672,7 +691,7 @@ export function FuelStepContent({
             {...trackProps('fuel.back-to-scan')}
           >
             <ArrowLeft className="h-5 w-5" />
-            Back to scan
+            {fuelCopy.backToScan}
           </button>
 
           {showGasboyManualEntry && (
@@ -694,7 +713,7 @@ export function FuelStepContent({
             className="fleet-btn fleet-btn-lg fleet-btn-outlined w-full"
             {...trackProps('fuel.cancel-unlock')}
           >
-            Cancel Unlock
+            {fuelCopy.cancelUnlock}
           </button>
         </div>
       )}
@@ -739,11 +758,10 @@ export function FuelStepContent({
           {showGallonsPendingNotice && (
             <div className="workflow-stack rounded bg-[var(--color-fleet-info-surface)] px-4 py-3">
               <p className="text-left text-sm font-semibold text-[var(--color-text-primary)]">
-                Gallons pending
+                {fuelCopy.gallonsPending}
               </p>
               <p className="text-left text-sm font-medium text-[var(--color-text-primary)]">
-                Gallon data was not available yet. It will be added automatically
-                when the pump report arrives.
+                {fuelCopy.gallonsPendingDesc}
               </p>
             </div>
           )}
@@ -760,9 +778,9 @@ export function FuelStepContent({
             <ReportIssueLink
               variant="inline"
               onReportIssue={onReportIssue}
-              title="Need more fuel?"
-              description="Report a problem to request additional fueling."
-              actionLabel="Report & Continue"
+              title={fuelCopy.needMoreFuel}
+              description={fuelCopy.needMoreFuelDesc}
+              actionLabel={fuelCopy.reportAndContinue}
               trackTag="fuel.report-issue.complete"
             />
           </div>
@@ -771,8 +789,8 @@ export function FuelStepContent({
 
       {step === 'connection-lost' && (
         <FuelIssueNotification
-          title="Connection Lost"
-          message={`Connection to Pump ${pumpNumber || '5'} was lost. Try lifting the nozzle or use on-site unlock.`}
+          title={fuelCopy.connectionLost}
+          message={t('fuel.connectionLostMsg', { pump: pumpNumber || '5' })}
           footer={
             <button
               type="button"
@@ -781,7 +799,7 @@ export function FuelStepContent({
               {...trackProps('fuel.connection-lost.on-site-unlock')}
             >
               <Fuel className="h-6 w-6" />
-              On-Site Unlock
+              {fuelCopy.onSiteUnlock}
             </button>
           }
         />
@@ -789,8 +807,8 @@ export function FuelStepContent({
 
       {step === 'no-response' && (
         <FuelIssueNotification
-          title="No Response"
-          message={`Pump ${pumpNumber || '5'} did not respond. Try lifting the nozzle or retry unlock.`}
+          title={fuelCopy.noResponse}
+          message={t('fuel.noResponseMsg', { pump: pumpNumber || '5' })}
           footer={
             <div className="workflow-stack">
               <button
@@ -800,7 +818,7 @@ export function FuelStepContent({
                 {...trackProps('fuel.no-response.retry')}
               >
                 <RefreshCw className="h-6 w-6" />
-                Retry Unlock Pump
+                {fuelCopy.retryUnlockPump}
               </button>
               <FuelUnlockModeInfo
                 mode="remote"
@@ -814,8 +832,8 @@ export function FuelStepContent({
 
       {step === 'pump-timeout' && (
         <FuelIssueNotification
-          title="Unlock Expired"
-          message={`The 60-second unlock window for Pump ${pumpNumber || '5'} has ended.`}
+          title={fuelCopy.unlockExpired}
+          message={t('fuel.unlockExpiredMsg', { pump: pumpNumber || '5' })}
           footer={
             <div className="workflow-stack">
               <button
@@ -825,7 +843,7 @@ export function FuelStepContent({
                 {...trackProps('fuel.pump-timeout.retry')}
               >
                 <RefreshCw className="h-6 w-6" />
-                Retry Unlock Pump
+                {fuelCopy.retryUnlockPump}
               </button>
               <button
                 type="button"
@@ -834,7 +852,7 @@ export function FuelStepContent({
                 {...trackProps('fuel.pump-timeout.change-pump')}
               >
                 <ArrowLeftRight className="h-6 w-6" />
-                Change Pump
+                {fuelCopy.changePump}
               </button>
             </div>
           }
@@ -843,8 +861,8 @@ export function FuelStepContent({
 
       {step === 'pump-unavailable' && (
         <FuelIssueNotification
-          title="Pump Unavailable"
-          message="This pump is currently unavailable. Try another pump or enter manually."
+          title={fuelCopy.pumpUnavailableTitle}
+          message={fuelCopy.pumpUnavailableMsg}
           footer={
             <button
               type="button"
@@ -853,7 +871,7 @@ export function FuelStepContent({
               {...trackProps('fuel.pump-unavailable.choose-another')}
             >
               <Fuel className="h-6 w-6" />
-              Choose Another Pump
+              {fuelCopy.chooseAnotherPump}
             </button>
           }
         />

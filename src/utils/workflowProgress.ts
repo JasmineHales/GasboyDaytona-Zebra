@@ -1,4 +1,5 @@
 import type { FlowContext, FuelStep, SectionStatus, WorkflowSection } from '../types/flow'
+import type { Messages } from '../i18n/types'
 import {
   getOdometerValidationError,
   hasOdometerReading,
@@ -383,16 +384,97 @@ export function hasWorkflowProgress(
 
 export { hasOdometerReading } from './mileageResolution'
 
+/** Section to scroll to and expand when Complete is pressed but blocked. */
+export function getSectionNeedingAttention(
+  sections: WorkflowSection[],
+  sectionStatus: Record<WorkflowSection, SectionStatus>,
+  _acknowledgedSections: WorkflowSection[],
+  options: {
+    completableSection?: WorkflowSection
+    workflowReady?: boolean
+    fuelContext?: FuelWorkflowContext
+    isSectionDisabled?: (section: WorkflowSection) => boolean
+  } = {},
+): WorkflowSection | null {
+  const {
+    completableSection,
+    workflowReady = false,
+    fuelContext,
+    isSectionDisabled,
+  } = options
+
+  const isEnabled = (section: WorkflowSection) => !isSectionDisabled?.(section)
+
+  if (
+    hasBlockingSectionInProgress(
+      sections,
+      sectionStatus,
+      completableSection,
+      fuelContext,
+    )
+  ) {
+    const blocking = sections.find((section) => {
+      if (!isEnabled(section)) return false
+      const status = sectionStatus[section]
+      if (status !== 'in-progress' && status !== 'missing') return false
+      if (
+        section === 'fuel' &&
+        fuelContext &&
+        isFuelPumpUnlockSyncPending(fuelContext)
+      ) {
+        return false
+      }
+      return true
+    })
+    if (blocking) return blocking
+  }
+
+  if (
+    sections.includes('movement') &&
+    sectionStatus.movement !== 'complete' &&
+    isEnabled('movement')
+  ) {
+    return 'movement'
+  }
+
+  if (isVsaWorkflow(sections) && !hasVsaCoreServiceComplete(sectionStatus)) {
+    const next = VSA_PARALLEL_SECTIONS.find(
+      (section) => isEnabled(section) && sectionStatus[section] !== 'complete',
+    )
+    if (next) return next
+  }
+
+  if (completableSection && isEnabled(completableSection)) {
+    return completableSection
+  }
+
+  if (!workflowReady) {
+    const optional = new Set(getOptionalSections(sections))
+    const next = sections.find(
+      (section) =>
+        isEnabled(section) &&
+        sectionStatus[section] !== 'complete' &&
+        !(optional.has(section) && sectionStatus[section] === 'not-started'),
+    )
+    if (next) return next
+  }
+
+  return null
+}
+
 export function getCompleteDisabledReason(
   completableSection: WorkflowSection | undefined,
   sectionTitles: Record<WorkflowSection, string>,
   sections: WorkflowSection[],
   sectionStatus: Record<WorkflowSection, SectionStatus>,
+  copy: Messages['workflow']['complete'],
   odometerReading = '',
   fuelContext?: FuelWorkflowContext,
   workflowReady = false,
   mileageState?: VehicleMileageState,
   mileageOptions?: MileageResolutionOptions,
+  vehicleCopy?: Pick<Messages['vehicle'], 'odometerFloorError' | 'milesUnit'>,
+  locale = 'en-US',
 ): string | undefined {
   if (
     hasBlockingSectionInProgress(
@@ -402,40 +484,41 @@ export function getCompleteDisabledReason(
       fuelContext,
     )
   ) {
-    return 'Finish the active workflow section before completing.'
+    return copy.finishActiveSection
   }
   if (!completableSection) {
     if (workflowReady) {
       return undefined
     }
     if (sections.includes('movement') && sectionStatus.movement !== 'complete') {
-      return 'Finish Movement to continue.'
+      return copy.finishMovement
     }
     if (isVsaWorkflow(sections)) {
       return sections.includes('stall')
-        ? 'Finish Cleaning or Fuel to continue. Other services are optional.'
-        : 'Finish Cleaning or Fuel to continue.'
+        ? copy.finishCleaningOrFuelWithStall
+        : copy.finishCleaningOrFuel
     }
     const optional = getOptionalSections(sections)
     if (optional.includes('fuel')) {
-      return 'Finish Movement to continue. Fuel is optional.'
+      return copy.finishMovementFuelOptional
     }
-    return 'Finish a workflow section to continue.'
+    return copy.finishSection
   }
   if (
     mileageState
       ? !hasResolvedOdometer(odometerReading, mileageState, mileageOptions)
       : !hasOdometerReading(odometerReading)
   ) {
-    if (mileageState) {
-      const odometerError = getOdometerValidationError(odometerReading, mileageState, {
+    if (mileageState && vehicleCopy) {
+      const odometerError = getOdometerValidationError(odometerReading, mileageState, vehicleCopy, {
         showPartial: true,
+        locale,
       })
       if (odometerError) return odometerError
     }
-    return 'Enter odometer reading to continue.'
+    return copy.enterOdometer
   }
-  return `Acknowledge ${sectionTitles[completableSection]} when ready.`
+  return copy.acknowledgeSection.replace('{section}', sectionTitles[completableSection])
 }
 
 export function getVsaProgressCounts(

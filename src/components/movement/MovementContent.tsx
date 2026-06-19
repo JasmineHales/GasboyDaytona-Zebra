@@ -5,6 +5,7 @@ import { StallIssueReportedNotice } from '../stall/StallIssueReportedNotice'
 import { StallOccupiedNotice } from '../stall/StallOccupiedNotice'
 import { ProgressIndicator } from '../ui/ProgressIndicator'
 import { TextField, textFieldKeySubmit } from '../ui/TextField'
+import { useI18n } from '../../i18n/I18nProvider'
 import { getMovementProgress } from '../../utils/progress'
 import { trackProps } from '../../utils/tracking'
 
@@ -79,7 +80,9 @@ export function MovementContent({
   const stallSelected = phase === 'stall-selected' || phase === 'stall-issue-reported'
   const stallVerify = phase === 'stall-verify'
   const issueReported = phase === 'stall-issue-reported'
-  const progress = getMovementProgress(mode, phase)
+  const { messages } = useI18n()
+  const movementCopy = messages.movement
+  const progress = getMovementProgress(mode, phase, messages.progress)
 
   const submitStallDraft = () => {
     const value = stallDraft.trim()
@@ -91,18 +94,18 @@ export function MovementContent({
       <ProgressIndicator {...progress} />
 
       <div className="workflow-stack">
-        <div className="fleet-mode-tab-group" role="group" aria-label="Movement mode">
+        <div className="fleet-mode-tab-group" role="group" aria-label={movementCopy.modeGroup}>
           <ModeTab
             active={isTransport}
             icon={Car}
-            label="Transport"
+            label={movementCopy.transport}
             trackTag="movement.mode.transport"
             onClick={() => onModeChange('transport')}
           />
           <ModeTab
             active={!isTransport}
             icon={ParkingCircle}
-            label="Stall"
+            label={movementCopy.stall}
             trackTag="movement.mode.stall"
             onClick={() => onModeChange('stall')}
           />
@@ -112,7 +115,7 @@ export function MovementContent({
           <>
             {locationSelected ? (
               <TextField
-                label="Location"
+                label={movementCopy.location}
                 value={location}
                 readOnly
                 startIcon={MapPin}
@@ -124,12 +127,12 @@ export function MovementContent({
                 type="button"
                 onClick={onOpenLocationSearch}
                 className="fleet-field w-full text-left"
-                aria-label="Search location"
+                aria-label={movementCopy.searchLocation}
                 {...trackProps('movement.location.search-open')}
               >
                 <MapPin className="h-5 w-5 shrink-0 text-[var(--color-fleet-text-secondary)]" />
                 <span className="fleet-field__value text-[var(--color-fleet-text-secondary)]">
-                  Search location
+                  {movementCopy.searchLocation}
                 </span>
               </button>
             )}
@@ -138,7 +141,7 @@ export function MovementContent({
           <>
             {stallSelected || stallVerify ? (
               <TextField
-                label="Stall No."
+                label={movementCopy.stallNo}
                 value={stallNumber}
                 readOnly
                 onClear={() => {
@@ -150,8 +153,8 @@ export function MovementContent({
               <>
                 <TextField
                   value={stallDraft}
-                  placeholder="Stall Number"
-                  aria-label="Stall number"
+                  placeholder={movementCopy.stallNumber}
+                  aria-label={movementCopy.stallNumberAria}
                   inputMode="numeric"
                   onChange={setStallDraft}
                   onKeyDown={(event) => textFieldKeySubmit(event, onStallSelect)}
@@ -163,7 +166,7 @@ export function MovementContent({
                   className="fleet-btn fleet-btn-lg fleet-btn-contained-info fleet-btn-elevated w-full"
                   {...trackProps('movement.stall.confirm')}
                 >
-                  Confirm Stall
+                  {movementCopy.confirmStall}
                 </button>
               </>
             )}

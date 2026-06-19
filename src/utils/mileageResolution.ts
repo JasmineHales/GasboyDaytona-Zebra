@@ -1,3 +1,6 @@
+import { interpolate } from '../i18n/interpolate'
+import type { Messages } from '../i18n/types'
+
 export type MileageLookupStatus = 'resolved' | 'pending' | 'timeout'
 
 export type MileageSourceKind = 'telematics' | 'gasboy' | 'rental'
@@ -118,7 +121,8 @@ export function isOdometerBelowTelematicsFloor(
 export function getOdometerFloorValidationError(
   manualReading: string,
   floor: number | null | undefined,
-  options?: { showPartial?: boolean },
+  copy: Pick<Messages['vehicle'], 'odometerFloorError' | 'milesUnit'>,
+  options?: { showPartial?: boolean; locale?: string },
 ): string | undefined {
   if (floor == null) return undefined
 
@@ -129,7 +133,10 @@ export function getOdometerFloorValidationError(
   if (!Number.isFinite(entered) || entered >= floor) return undefined
 
   if (options?.showPartial || trimmed.length >= String(floor).length) {
-    return `Mileage cannot be lower than the last telematics reading (${floor.toLocaleString('en-US')} mi).`
+    return interpolate(copy.odometerFloorError, {
+      floor: floor.toLocaleString(options?.locale ?? 'en-US'),
+      unit: copy.milesUnit,
+    })
   }
 
   return undefined
@@ -138,11 +145,13 @@ export function getOdometerFloorValidationError(
 export function getOdometerValidationError(
   manualReading: string,
   mileageState: VehicleMileageState,
-  options?: { showPartial?: boolean },
+  copy: Pick<Messages['vehicle'], 'odometerFloorError' | 'milesUnit'>,
+  options?: { showPartial?: boolean; locale?: string },
 ): string | undefined {
   return getOdometerFloorValidationError(
     manualReading,
     getTelematicsOdometerFloor(mileageState),
+    copy,
     options,
   )
 }

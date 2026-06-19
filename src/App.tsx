@@ -15,6 +15,7 @@ import { TransportScreen } from './components/TransportScreen'
 import { TrackingPage } from './components/TrackingPage'
 import { VsaScreen } from './components/VsaScreen'
 import { IssueOverlay } from './components/fuel/IssueOverlay'
+import type { FlowContext } from './types/flow'
 import { TRANSPORT_VEHICLE, VSA_VEHICLE } from './utils/vehicleSummary'
 import {
   clearAuth,
@@ -40,6 +41,12 @@ import {
   type WidgetStateItem,
   type WorkflowView,
 } from './utils/flowNavigation'
+import type { DevDeviceFrameId } from './utils/devDeviceFrame'
+import {
+  EM45_VIEWPORT,
+  persistDevDeviceFrame,
+  readDevDeviceFrame,
+} from './utils/devDeviceFrame'
 
 type LoginPreview = 'device' | 'browser' | null
 
@@ -72,6 +79,9 @@ export default function App() {
   const [loginPreview, setLoginPreview] = useState<LoginPreview>(null)
   const [devExperience, setDevExperience] = useState<'device' | 'browser'>(() =>
     isHertzDevice ? 'device' : 'browser',
+  )
+  const [deviceFrame, setDeviceFrame] = useState<DevDeviceFrameId>(() =>
+    readDevDeviceFrame(),
   )
   const [ssoUser, setSsoUser] = useState<SsoUser | null>(() => readSsoUser())
   const [view, setView] = useState<AppView>(() => initialView(tutorialForce))
@@ -229,6 +239,10 @@ export default function App() {
 
   const handleWidgetSelect = (item: WidgetStateItem) => {
     setActiveWidgetKey(item.key)
+    if (item.patch) {
+      patchDevContext(item.patch)
+      return
+    }
     applyWidgetState(item.screen)
   }
 
@@ -266,6 +280,13 @@ export default function App() {
     handleAction(action, payload)
   }
 
+  const handlePatchContext = (patch: Partial<FlowContext>) => {
+    if ('mileageState' in patch || 'odometerReading' in patch) {
+      setActiveWidgetKey(null)
+    }
+    patchDevContext(patch)
+  }
+
   const activePageKey = resolveActivePageKey({
     view,
     showLogin,
@@ -273,12 +294,28 @@ export default function App() {
 
   const resolvedWidgetKey =
     activeWidgetKey ??
-    (workflowView ? resolveActiveWidgetKey(workflowView, context.screen) : null)
+    (workflowView
+      ? resolveActiveWidgetKey(workflowView, context.screen, context)
+      : null)
+
+  const handleDeviceFrameChange = (frame: DevDeviceFrameId) => {
+    setDeviceFrame(frame)
+    persistDevDeviceFrame(frame)
+  }
+
+  const isEm45Frame = deviceFrame === 'em45'
+  const appShellClassName = isEm45Frame
+    ? 'app-shell relative flex min-h-0 flex-1 flex-col overflow-hidden bg-white'
+    : 'app-shell relative flex min-h-0 flex-1 flex-col overflow-hidden bg-white sm:max-w-xl sm:rounded-xl sm:shadow-lg md:max-w-2xl md:rounded-2xl lg:max-w-3xl xl:max-w-4xl'
 
   const browserUser = ssoUser ?? readSsoUser()
 
   return (
-    <div className="app-viewport flex h-dvh min-h-0" data-runtime={runtimeMode}>
+    <div
+      className="app-viewport flex h-dvh min-h-0"
+      data-runtime={runtimeMode}
+      data-device-frame={deviceFrame}
+    >
       <a href="#main-content" className="fleet-sr-only">
         Skip to main content
       </a>
@@ -293,14 +330,39 @@ export default function App() {
         onSelectPage={handlePageSelect}
         onSelectWidget={handleWidgetSelect}
         onLoginVariantChange={handleExperienceChange}
-        onPatchContext={patchDevContext}
+        onDeviceFrameChange={handleDeviceFrameChange}
+        deviceFrame={deviceFrame}
+        onPatchContext={handlePatchContext}
       />
-      <div className="flex min-h-0 min-w-0 flex-1 flex-col bg-[var(--color-hertz-page)] p-0 sm:p-3 md:p-4 lg:p-6">
+      <div
+        className={`app-preview-column flex min-h-0 min-w-0 flex-1 flex-col bg-[var(--color-hertz-page)]${
+          isEm45Frame ? ' app-preview-column--framed p-2' : ' p-0 sm:p-3 md:p-4 lg:p-6'
+        }`}
+      >
         <div
-          className="app-shell relative flex min-h-0 flex-1 flex-col overflow-hidden bg-white sm:max-w-xl sm:rounded-xl sm:shadow-lg md:max-w-2xl md:rounded-2xl lg:max-w-3xl xl:max-w-4xl"
-          data-current-view={showLogin ? 'login' : view}
-          data-current-screen={context.screen}
+          className={`dev-device-frame${
+            isEm45Frame ? ' dev-device-frame--em45' : ' dev-device-frame--responsive'
+          }`}
         >
+          {isEm45Frame && (
+            <div className="dev-device-frame__chrome" aria-hidden>
+              <span className="dev-device-frame__label">Zebra EM45</span>
+              <span className="dev-device-frame__size">
+                {EM45_VIEWPORT.width} × {EM45_VIEWPORT.height}
+              </span>
+            </div>
+          )}
+          <div
+            className={`dev-device-frame__viewport${
+              isEm45Frame ? ' dev-device-frame__viewport--em45' : ''
+            }`}
+            data-em45-preview={isEm45Frame ? '' : undefined}
+          >
+          <div
+            className={appShellClassName}
+            data-current-view={showLogin ? 'login' : view}
+            data-current-screen={context.screen}
+          >
           {showLogin && (
             <>
               {loginVariant === 'device' ? (
@@ -318,7 +380,6 @@ export default function App() {
               onSelectFuel={() => enterWorkflow('fuel')}
               onReportIssue={() => handleAction('report-issue')}
               onSignOut={handleSignOut}
-              onOpenTracking={() => setView('tracking')}
             />
           )}
           {!showLogin && view === 'home' && !isHertzDevice && browserUser && (
@@ -330,7 +391,6 @@ export default function App() {
               onSelectFuel={() => enterWorkflow('fuel')}
               onReportIssue={() => handleAction('report-issue')}
               onSignOut={handleSignOut}
-              onOpenTracking={() => setView('tracking')}
             />
           )}
           {!showLogin && view === 'tracking' && (
@@ -368,8 +428,6 @@ export default function App() {
           {!showLogin && view === 'fuel' && (
             <TransportScreen
               key="fuel"
-              title="Fuel"
-              subtitle="Remote Fueling"
               sections={['fuel']}
               defaultExpanded="fuel"
               workflowFinishId="fuel"
@@ -384,7 +442,13 @@ export default function App() {
           {!showLogin && context.showIssueOverlay && (
             <IssueOverlay
               defaultPumpNumber={context.pumpNumber}
-              source={context.issueReportSource === 'fuel' ? 'fuel' : 'header'}
+              source={
+                context.issueReportSource === 'fuel'
+                  ? 'fuel'
+                  : context.issueReportSource === 'vehicle'
+                    ? 'vehicle'
+                    : 'header'
+              }
               vehicle={
                 view === 'vsa'
                   ? { unitId: VSA_VEHICLE.unitId, name: VSA_VEHICLE.name }
@@ -402,6 +466,8 @@ export default function App() {
               }}
             />
           )}
+          </div>
+          </div>
         </div>
       </div>
     </div>
