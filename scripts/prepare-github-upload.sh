@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Creates a small zip for GitHub web upload (excludes node_modules, dist, .git).
+# Creates a small zip for GitHub web upload (excludes node_modules, dist, .git, dev artifacts).
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
@@ -21,6 +21,9 @@ zip -r "$ZIP" . \
   -x '.env.local' \
   -x '*.zip' \
   -x '*-upload/*' \
-  -x '*-upload/**'
+  -x '*-upload/**' \
+  -x '.flow-captures/*' \
+  -x '.flow-captures/**' \
+  -x 'eng.traineddata'
 
 echo "Created: $ZIP ($(du -h "$ZIP" | cut -f1))"

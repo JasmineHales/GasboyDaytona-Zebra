@@ -7,6 +7,10 @@ dist/
 .DS_Store
 *.zip
 
+# Dev captures and OCR data — not needed for clone/install (large)
+.flow-captures/
+eng.traineddata
+
 # Local upload/staging copies — never commit duplicates of this repo
 *-upload/
 GitHuub*/

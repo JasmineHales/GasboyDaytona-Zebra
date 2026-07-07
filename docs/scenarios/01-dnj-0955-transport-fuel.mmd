@@ -1,0 +1,24 @@
+flowchart TD
+  subgraph entry [Shared entry]
+    H[home-work] --> T[Tap Transport]
+    T --> VS[vehicle-search · DNJ 0955]
+    VS --> TR[transport-default]
+  end
+
+  subgraph odo [Odometer]
+    TR --> OF[odometer-manual-filled]
+  end
+
+  subgraph move [Movement · Miami AP]
+    OF --> ML[movement-transport-select-location]
+    ML --> MS[movement-transport-location-selected]
+    MS --> MC[movement-transport-complete]
+  end
+
+  subgraph fuel [Remote fuel]
+    MC --> FD[fueling-default]
+    FD --> FU[fueling-unlocking]
+    FU --> IP[fueling-in-progress]
+    IP --> FC[fueling-complete · auto ~20s]
+    FC --> FIN[Footer Complete → home-work]
+  end

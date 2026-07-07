@@ -46,6 +46,8 @@ function writeLog(events: TrackEvent[]) {
   }
 }
 
+import { isTutorialModeActive } from './tutorialModeState'
+
 export function slugifyTrackValue(value: string) {
   return value
     .toLowerCase()
@@ -72,6 +74,8 @@ export function trackProps(
 }
 
 export function recordClick(event: TrackEvent) {
+  if (isTutorialModeActive()) return
+
   const next = [...readLog(), event]
   writeLog(next)
   notifyClickLogListeners()

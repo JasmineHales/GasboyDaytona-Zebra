@@ -51,7 +51,9 @@ export function PumpVerifyDefault({
       {unlockMode && (
         <FuelUnlockModeInfo
           mode={unlockMode}
-          onSwitch={onSwitchUnlockMode}
+          onModeChange={(next) => {
+            if (next !== unlockMode) onSwitchUnlockMode?.()
+          }}
           trackPrefix={trackPrefix}
         />
       )}

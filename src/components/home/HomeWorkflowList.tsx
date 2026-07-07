@@ -1,4 +1,5 @@
 import {
+  Briefcase,
   CarFront,
   ClipboardCheck,
   ClipboardList,
@@ -15,9 +16,11 @@ import {
   buildHomeWorkflowGroups,
   buildHomeWorkflowItems,
 } from '../../utils/homeWorkflowCopy'
+import { HomeHighDemandVehicleGroups } from './HomeHighDemandVehicleGroups'
 import { WorkflowCard } from './WorkflowCard'
 
 type HomeWorkflowListProps = {
+  site: string
   onSelectVsa: () => void
   onSelectTransport: () => void
   onSelectFuel: () => void
@@ -31,6 +34,7 @@ const WORKFLOW_ICONS: Record<HomeWorkflowVariant, LucideIcon> = {
   dispatcher: Radio,
   inspection: ClipboardCheck,
   keys: KeyRound,
+  'non-driving-activity': Briefcase,
   default: ClipboardList,
 }
 
@@ -49,6 +53,7 @@ const WORKFLOW_HANDLERS: Partial<
 }
 
 export function HomeWorkflowList({
+  site,
   onSelectVsa,
   onSelectTransport,
   onSelectFuel,
@@ -68,28 +73,43 @@ export function HomeWorkflowList({
     onSelectTransport,
     onSelectFuel,
   }
+  const showGroupHeaders = groups.length > 1
+  const firstGroupId = groups.find((group) =>
+    items.some((item) => item.group === group.id),
+  )?.id
 
   return (
     <div className="home-workflow-list" data-tutorial="workflows">
+      <HomeHighDemandVehicleGroups site={site} />
       {groups.map((group) => {
         const groupItems = items.filter((item) => item.group === group.id)
         if (groupItems.length === 0) return null
+        const groupTitleId = `home-workflow-group-${group.id}`
 
         return (
           <section
             key={group.id}
             className="home-workflow-group"
-            aria-labelledby={`home-workflow-group-${group.id}`}
+            aria-labelledby={groupTitleId}
           >
-            <div className="home-workflow-group__header">
-              <h2 id={`home-workflow-group-${group.id}`} className="home-workflow-group__title">
+            {showGroupHeaders ? (
+              <div className="home-workflow-group__header">
+                <h2 id={groupTitleId} className="home-workflow-group__title">
+                  {group.label}
+                </h2>
+                {group.description && (
+                  <p className="home-workflow-group__description">{group.description}</p>
+                )}
+              </div>
+            ) : (
+              <h2 id={groupTitleId} className="fleet-sr-only">
                 {group.label}
               </h2>
-              {group.description && (
-                <p className="home-workflow-group__description">{group.description}</p>
-              )}
-            </div>
-            <div className="home-workflow-group__items">
+            )}
+            <div
+              className="home-workflow-group__items"
+              data-tutorial={group.id === firstGroupId ? 'workflows-v3' : undefined}
+            >
               {groupItems.map((item) => {
                 const handlerKey = WORKFLOW_HANDLERS[item.id]
                 const onClick = handlerKey ? handlers[handlerKey] : undefined
@@ -101,7 +121,6 @@ export function HomeWorkflowList({
                     key={item.id}
                     variant={item.variant}
                     title={item.title}
-                    description={item.description}
                     icon={<Icon className="home-workflow-card__icon-svg" aria-hidden />}
                     onClick={onClick ?? (() => {})}
                     disabled={disabled}

@@ -1,0 +1,16 @@
+flowchart TD
+  H[home-work] --> VS[vehicle-search · BC18351]
+  VS --> TR[transport-default]
+  TR --> OV[odometer-verified]
+  OV --> SS[movement-stall-select-stall · Stall 3]
+  SS --> SEL[movement-stall-selected]
+  SEL --> VER[movement-stall-verify]
+  VER --> FD[fueling-default]
+  FD --> FU[fueling-unlocking]
+  FU --> IP[fueling-in-progress]
+  IP --> FC[fueling-complete · pump stop ~12s]
+  FC --> FAC{Facilitator: pump stopped unexpectedly}
+  FAC --> ISS[fueling-issue · Report and continue]
+  ISS --> ADD[fueling-additional]
+  ADD --> AC[fueling-additional-complete]
+  AC --> FIN[Footer Complete]

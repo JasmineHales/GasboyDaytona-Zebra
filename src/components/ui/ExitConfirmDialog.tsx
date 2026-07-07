@@ -27,7 +27,7 @@ export function ExitConfirmDialog({
       dismissTrackTag="exit.dismiss-backdrop"
       labelId="exit-confirm-title"
     >
-      <div className="px-4 pt-2 pb-[max(1.25rem,env(safe-area-inset-bottom))]">
+      <div className="bottom-sheet-body pt-2">
         <h2
           id="exit-confirm-title"
           className="text-left text-lg font-bold text-[var(--color-fleet-text)]"
@@ -37,7 +37,7 @@ export function ExitConfirmDialog({
         <p className="mt-2 text-left text-[length:var(--text-ui-sm)] leading-relaxed text-[var(--color-fleet-text-secondary)]">
           {text.body}
         </p>
-        <div className="workflow-stack mt-5">
+        <div className="bottom-sheet-footer workflow-stack pt-5">
           <button
             type="button"
             onClick={onContinue}

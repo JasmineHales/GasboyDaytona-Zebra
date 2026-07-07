@@ -1,0 +1,59 @@
+{
+  "board": "https://miro.com/app/board/uXjVHAsM1OU=/",
+  "frames": [
+    {
+      "id": "transport_session",
+      "frameUrl": "https://miro.com/app/board/uXjVHAsM1OU=/?moveToWidget=3458764676936148400",
+      "shots": [
+        { "slug": "transport-default", "label": "Fresh session", "x": 190, "y": 300 },
+        { "slug": "transport-complete", "label": "Ready to finish", "x": 410, "y": 300 },
+        { "slug": "transport-issue-header", "label": "Header report issue", "x": 630, "y": 300 }
+      ]
+    },
+    {
+      "id": "vsa_session",
+      "frameUrl": "https://miro.com/app/board/uXjVHAsM1OU=/?moveToWidget=3458764676936148401",
+      "shots": [
+        { "slug": "vsa-default", "label": "Fresh session", "x": 190, "y": 300 },
+        { "slug": "vsa-complete", "label": "All sections complete", "x": 410, "y": 300 },
+        { "slug": "vsa-issue-header", "label": "Header report issue", "x": 630, "y": 300 }
+      ]
+    },
+    {
+      "id": "vsa_cleaning",
+      "frameUrl": "https://miro.com/app/board/uXjVHAsM1OU=/?moveToWidget=3458764676936148402",
+      "shots": [
+        { "slug": "cleaning-default", "label": "Enter workstation", "x": 190, "y": 300 },
+        { "slug": "cleaning-manual-entry", "label": "Manual entry", "x": 410, "y": 300 },
+        { "slug": "cleaning-manual-filled", "label": "Manual filled", "x": 630, "y": 300 },
+        { "slug": "cleaning-manual-error", "label": "Manual error", "x": 850, "y": 300 },
+        { "slug": "cleaning-pump-verified", "label": "Pump verified", "x": 190, "y": 770 },
+        { "slug": "cleaning-in-progress", "label": "Cleaning in progress", "x": 410, "y": 770 },
+        { "slug": "cleaning-complete", "label": "Cleaning complete", "x": 630, "y": 770 }
+      ]
+    },
+    {
+      "id": "vsa_stall",
+      "frameUrl": "https://miro.com/app/board/uXjVHAsM1OU=/?moveToWidget=3458764676936148403",
+      "shots": [
+        { "slug": "stall-default", "label": "Select stall", "x": 190, "y": 300 },
+        { "slug": "stall-complete", "label": "Stall complete", "x": 410, "y": 300 },
+        { "slug": "stall-missing", "label": "Verify stall", "x": 630, "y": 300 },
+        { "slug": "stall-issue-reported", "label": "Issue reported", "x": 850, "y": 300 }
+      ]
+    },
+    {
+      "id": "fuel_non_gasboy",
+      "frameUrl": "https://miro.com/app/board/uXjVHAsM1OU=/?moveToWidget=3458764676936148404",
+      "shots": [
+        { "slug": "non-gasboy-non-gasboy-default", "label": "Start", "x": 190, "y": 360 },
+        { "slug": "non-gasboy-non-gasboy-manual-entry", "label": "Manual entry", "x": 410, "y": 360 },
+        { "slug": "non-gasboy-non-gasboy-pump-verified", "label": "At pump", "x": 190, "y": 814 },
+        { "slug": "non-gasboy-non-gasboy-fueling-in-progress", "label": "In progress", "x": 190, "y": 1268 },
+        { "slug": "non-gasboy-non-gasboy-fueling-complete", "label": "Complete", "x": 190, "y": 2156 },
+        { "slug": "non-gasboy-non-gasboy-missing-info", "label": "Missing gallons", "x": 190, "y": 1720 },
+        { "slug": "non-gasboy-non-gasboy-missing-filled", "label": "Missing filled", "x": 410, "y": 1720 }
+      ]
+    }
+  ]
+}

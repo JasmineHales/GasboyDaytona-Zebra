@@ -1,0 +1,60 @@
+---
+description: Zebra-first field ops platform, touch, outdoor, accessibility, and copy requirements
+alwaysApply: true
+---
+
+# Platform & field operations requirements
+
+Design and implement for **Zebra Android handheld first** (~360×800, touch-first, outdoor ops), then scale up to mobile browsers, tablets, and desktop without changing interaction patterns.
+
+## Interaction
+
+- Touch-first: no hover-only behavior; all actions work on coarse pointers.
+- Minimum touch target **48×48dp**; primary actions **56–64dp** preferred.
+- Use existing tokens: `--touch-target` (60px), `--touch-gap` (12px), `fleet-btn-lg` for primary CTAs.
+- Large spacing between adjacent actions; never place destructive and primary actions side-by-side without separation.
+- One-handed, thumb-friendly layouts; critical actions reachable without precision taps.
+
+## Outdoor & visual
+
+- Strong contrast; avoid low-contrast greys for status or instructions.
+- Do not rely on color alone — pair with icon, label, or stepper state.
+- Reduce duplication: one clear title, stepper or buttons carry action (not both).
+- Prefer white space, clear hierarchy, large type, minimal containers/borders/warning noise.
+- Mission-critical field app feel, not consumer app polish.
+
+## Screen structure (every screen)
+
+1. State what happened (title + stepper/icon).
+2. State what action is available (buttons).
+3. Make the primary action obvious (single contained primary; secondary outlined).
+
+If a screen is not scannable in **under 2 seconds**, simplify.
+
+## Copy
+
+- Short, action-oriented, scannable.
+- No backend/technical jargon, long paragraphs, or repeated instructions.
+- Pump number in titles where state is pump-specific.
+
+## Accessibility
+
+- WCAG AA minimum; support screen readers (aria-label, aria-live, sr-only step states).
+- Respect `prefers-reduced-motion`.
+- Keyboard navigation on web; native `disabled` on blocked actions.
+- Layouts must tolerate dynamic text / font scaling where possible.
+
+## Responsive
+
+- **360px** width baseline; test in EM45 / Zebra preview frame.
+- Tablet/desktop: scale layout, preserve same action hierarchy — do not add desktop-only complexity.
+
+## Fuel unlock flows
+
+- In-progress fuel session blocks footer **Complete**.
+- Uncertain unlock (connection lost / no response): Retry Unlock + Change Pump; optional “complete if unlocked” warning fallback.
+- Error states: title + stepper + actions; avoid redundant header hints.
+
+## Success bar
+
+A first-time user can find a pump, unlock, recover from errors, and complete fueling with minimal training on a Zebra device in any weather.

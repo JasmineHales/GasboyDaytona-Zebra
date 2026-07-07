@@ -1,7 +1,5 @@
 import { useState } from 'react'
 import type { FlowContext } from '../types/flow'
-import type { DevDeviceFrameId } from '../utils/devDeviceFrame'
-import { DEV_DEVICE_FRAME_OPTIONS } from '../utils/devDeviceFrame'
 import {
   PAGE_NAV_ITEMS,
   widgetGroupsForView,
@@ -10,10 +8,12 @@ import {
   type WidgetStateItem,
   type WorkflowView,
 } from '../utils/flowNavigation'
+import { VEHICLE_SEARCH_DEV_GROUPS } from '../utils/vehicleSearchDevStates'
+import type { DesignVersion } from '../utils/designVersion'
 import { formatDevScenarioSummary } from '../utils/devPanel'
 import { trackProps } from '../utils/tracking'
+import { DesignVersionSwitcher } from './dev/DesignVersionSwitcher'
 import { DevScenarioPanel } from './dev/DevScenarioPanel'
-import { DevToggleGroup } from './dev/DevToggleGroup'
 import { DevWidgetStatesPanel } from './dev/DevWidgetStatesPanel'
 
 type DevPanelTab = 'navigate' | 'scenario' | 'states'
@@ -25,13 +25,17 @@ type FlowNavigatorProps = {
   context: FlowContext
   view: AppView
   showLogin: boolean
+  showSetup?: boolean
   loginVariant: 'device' | 'browser'
-  deviceFrame: DevDeviceFrameId
   onSelectPage: (item: PageNavItem) => void
   onSelectWidget: (item: WidgetStateItem) => void
   onLoginVariantChange: (variant: 'device' | 'browser') => void
-  onDeviceFrameChange: (frame: DevDeviceFrameId) => void
   onPatchContext: (patch: Partial<FlowContext>) => void
+  vehicleSearchActive?: boolean
+  vehicleSearchDevState?: string | null
+  onVehicleSearchDevStateSelect?: (stateKey: string) => void
+  designVersion?: DesignVersion
+  onDesignVersionChange?: (version: DesignVersion) => void
 }
 
 const TAB_ITEMS: { id: DevPanelTab; label: string }[] = [
@@ -51,21 +55,29 @@ export function FlowNavigator({
   context,
   view,
   showLogin,
+  showSetup = false,
   loginVariant,
-  deviceFrame,
   onSelectPage,
   onSelectWidget,
   onLoginVariantChange,
-  onDeviceFrameChange,
   onPatchContext,
+  vehicleSearchActive = false,
+  vehicleSearchDevState = null,
+  onVehicleSearchDevStateSelect,
+  designVersion = 'v2',
+  onDesignVersionChange,
 }: FlowNavigatorProps) {
   const [tab, setTab] = useState<DevPanelTab>('navigate')
   const widgetGroups = workflowView ? widgetGroupsForView(workflowView) : []
+  const stateGroups = vehicleSearchActive ? VEHICLE_SEARCH_DEV_GROUPS : widgetGroups
+  const resolvedActiveWidgetKey = vehicleSearchActive
+    ? vehicleSearchDevState
+    : activeWidgetKey
   const summary = formatDevScenarioSummary(context, {
     showLogin,
+    showSetup,
     loginVariant,
     view,
-    deviceFrame,
   })
 
   const handlePageSelect = (item: PageNavItem) => {
@@ -96,14 +108,12 @@ export function FlowNavigator({
           ))}
         </div>
 
-        <DevToggleGroup
-          label="Screen preview"
-          hint="Frame the app preview at Zebra EM45 (360×800)"
-          value={deviceFrame}
-          options={DEV_DEVICE_FRAME_OPTIONS}
-          onChange={onDeviceFrameChange}
-          trackTag="dev.scenario.device-frame"
-        />
+        {onDesignVersionChange ? (
+          <DesignVersionSwitcher
+            designVersion={designVersion}
+            onDesignVersionChange={onDesignVersionChange}
+          />
+        ) : null}
 
         <div className="dev-tabs" role="tablist" aria-label="Dev panel sections">
           {TAB_ITEMS.map((item) => (
@@ -169,9 +179,15 @@ export function FlowNavigator({
         {tab === 'states' && (
           <section aria-label="Widget states">
             <DevWidgetStatesPanel
-              groups={widgetGroups}
-              activeWidgetKey={activeWidgetKey}
-              onSelectWidget={onSelectWidget}
+              groups={stateGroups}
+              activeWidgetKey={resolvedActiveWidgetKey}
+              onSelectWidget={(item) => {
+                if (vehicleSearchActive) {
+                  onVehicleSearchDevStateSelect?.(item.key)
+                  return
+                }
+                onSelectWidget(item)
+              }}
             />
           </section>
         )}

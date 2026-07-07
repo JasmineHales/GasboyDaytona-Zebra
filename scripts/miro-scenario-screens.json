@@ -1,0 +1,117 @@
+{
+  "board": "https://miro.com/app/board/uXjVH_bPrHs=/",
+  "captureDir": ".flow-captures/miro-flow-full",
+  "imageWidth": 200,
+  "rowGap": 220,
+  "diagramY": -3400,
+  "screenshotY": -700,
+  "scenarios": [
+    {
+      "id": "s1",
+      "title": "Scenario 1 — Transport + Remote Fuel · DNJ 0955",
+      "plate": "DNJ 0955",
+      "vin": "5YJ3E1EA1KF654321",
+      "originX": -8400,
+      "originY": -700,
+      "screens": [
+        { "file": "home-work.png", "title": "Home · Work" },
+        { "file": "vehicle-search-selected.png", "title": "Vehicle search · DNJ 0955" },
+        { "file": "transport-default.png", "title": "Transport session" },
+        { "file": "odometer-manual-filled.png", "title": "Odometer · manual" },
+        { "file": "movement-transport-select-location.png", "title": "Movement · select Miami AP" },
+        { "file": "movement-transport-location-selected.png", "title": "Movement · destination set" },
+        { "file": "movement-transport-complete.png", "title": "Movement complete" },
+        { "file": "fuel-remote-fueling-default.png", "title": "Fuel · enter pump" },
+        { "file": "fuel-remote-fueling-unlocking.png", "title": "Fuel · unlocking" },
+        { "file": "fuel-remote-fueling-in-progress.png", "title": "Fuel · in progress" },
+        { "file": "fuel-remote-fueling-complete.png", "title": "Fuel complete" },
+        { "file": "transport-complete.png", "title": "Footer complete" }
+      ]
+    },
+    {
+      "id": "s2",
+      "title": "Scenario 2 — Stall + Fuel recovery · BC18351",
+      "plate": "BC18351",
+      "vin": "5NPE34AF4HH123789",
+      "originX": -5200,
+      "originY": -700,
+      "screens": [
+        { "file": "home-work.png", "title": "Home · Work" },
+        { "file": "vehicle-search-selected.png", "title": "Vehicle search · BC18351" },
+        { "file": "transport-default.png", "title": "Transport session" },
+        { "file": "odometer-verified.png", "title": "Odometer · trusted" },
+        { "file": "movement-stall-select-stall.png", "title": "Movement · select Stall 3" },
+        { "file": "movement-stall-selected.png", "title": "Movement · stall selected" },
+        { "file": "movement-stall-verify.png", "title": "Movement · verify stall" },
+        { "file": "fuel-remote-fueling-default.png", "title": "Fuel · enter pump" },
+        { "file": "fuel-remote-fueling-unlocking.png", "title": "Fuel · unlocking" },
+        { "file": "fuel-remote-fueling-in-progress.png", "title": "Fuel · in progress" },
+        { "file": "fuel-remote-fueling-complete.png", "title": "Pump stopped · partial" },
+        { "file": "fuel-remote-fueling-issue.png", "title": "Report & continue" },
+        { "file": "fuel-remote-fueling-additional.png", "title": "Additional fuel" },
+        { "file": "fuel-remote-fueling-additional-complete.png", "title": "Additional complete" },
+        { "file": "transport-complete.png", "title": "Footer complete" }
+      ]
+    },
+    {
+      "id": "s3",
+      "title": "Scenario 3 — Clean only (hold) · 8LAK631",
+      "plate": "8LAK631",
+      "vin": "1C4NJCEB4HD123456",
+      "originX": -2000,
+      "originY": -700,
+      "screens": [
+        { "file": "home-work.png", "title": "Home · Work" },
+        { "file": "vehicle-search-selected.png", "title": "Vehicle search · 8LAK631" },
+        { "file": "vehicle-search-hold-confirm.png", "title": "Hold confirm" },
+        { "file": "stall-default.png", "title": "VSA session" },
+        { "file": "odometer-manual-filled.png", "title": "Odometer · manual" },
+        { "file": "cleaning-default.png", "title": "Cleaning · start" },
+        { "file": "cleaning-in-progress.png", "title": "Cleaning · in progress" },
+        { "file": "cleaning-complete.png", "title": "Cleaning complete" },
+        { "file": "vsa-complete.png", "title": "Footer complete" }
+      ]
+    },
+    {
+      "id": "s4",
+      "title": "Scenario 4 — Clean + Fuel + Stall · V576AE",
+      "plate": "V576AE",
+      "vin": "1FM5K8D83HGA98765",
+      "originX": 1200,
+      "originY": -700,
+      "screens": [
+        { "file": "home-work.png", "title": "Home · Work" },
+        { "file": "vehicle-search-selected.png", "title": "Vehicle search · V576AE" },
+        { "file": "stall-default.png", "title": "VSA session" },
+        { "file": "odometer-manual-filled.png", "title": "Odometer · manual" },
+        { "file": "cleaning-default.png", "title": "Cleaning · start" },
+        { "file": "cleaning-in-progress.png", "title": "Cleaning · in progress" },
+        { "file": "cleaning-complete.png", "title": "Cleaning complete" },
+        { "file": "fuel-remote-fueling-default.png", "title": "Fuel · enter pump" },
+        { "file": "fuel-remote-fueling-unlocking.png", "title": "Fuel · unlocking" },
+        { "file": "fuel-remote-fueling-in-progress.png", "title": "Fuel · manual complete" },
+        { "file": "fuel-remote-fueling-complete.png", "title": "Fuel complete" },
+        { "file": "stall-missing.png", "title": "Stall issue" },
+        { "file": "stall-issue-reported.png", "title": "Stall issue reported" },
+        { "file": "stall-complete.png", "title": "Stall complete" }
+      ]
+    },
+    {
+      "id": "s5",
+      "title": "Scenario 5 — Fuel only · 215BG2",
+      "plate": "215BG2",
+      "vin": "3VW2B7AJ5HM567890",
+      "originX": 4400,
+      "originY": -700,
+      "screens": [
+        { "file": "home-work.png", "title": "Home · Work" },
+        { "file": "vehicle-search-selected.png", "title": "Vehicle search · 215BG2" },
+        { "file": "vehicle-search-hold-confirm.png", "title": "Hold confirm · Customer extension" },
+        { "file": "fuel-remote-fueling-default.png", "title": "Fuel session" },
+        { "file": "odometer-verified.png", "title": "Odometer · trusted" },
+        { "file": "fuel-remote-fueling-unlocking.png", "title": "Fuel · unlocking" },
+        { "file": "fuel-remote-fueling-pump-timeout.png", "title": "Pump unlock timeout" }
+      ]
+    }
+  ]
+}

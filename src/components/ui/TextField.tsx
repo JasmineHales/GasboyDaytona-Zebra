@@ -1,7 +1,8 @@
-import type { InputHTMLAttributes, KeyboardEvent, ReactNode } from 'react'
-import { useId } from 'react'
+import type { InputHTMLAttributes, KeyboardEvent, ReactNode, Ref } from 'react'
+import { useId, useRef } from 'react'
 import type { LucideIcon } from 'lucide-react'
 import { X } from 'lucide-react'
+import { useTranslate } from '../../i18n/I18nProvider'
 import { trackProps } from '../../utils/tracking'
 
 type TextFieldProps = {
@@ -17,6 +18,7 @@ type TextFieldProps = {
   endAdornment?: ReactNode
   readOnly?: boolean
   className?: string
+  inputRef?: Ref<HTMLInputElement>
 } & Pick<
   InputHTMLAttributes<HTMLInputElement>,
   | 'placeholder'
@@ -25,12 +27,14 @@ type TextFieldProps = {
   | 'autoComplete'
   | 'autoFocus'
   | 'onBlur'
+  | 'onFocus'
   | 'onKeyDown'
   | 'id'
   | 'name'
   | 'disabled'
   | 'role'
   | 'aria-label'
+  | 'maxLength'
 >
 
 export function TextField({
@@ -46,20 +50,25 @@ export function TextField({
   endAdornment,
   readOnly = false,
   className = '',
+  inputRef,
   placeholder,
   inputMode,
   type = 'text',
   autoComplete,
   autoFocus,
   onBlur,
+  onFocus,
   onKeyDown,
   id,
   name,
   disabled,
   role,
   'aria-label': ariaLabel,
+  maxLength,
 }: TextFieldProps) {
+  const t = useTranslate()
   const generatedId = useId()
+  const localInputRef = useRef<HTMLInputElement>(null)
   const inputId = id ?? generatedId
   const hintId = hint ? `${inputId}-hint` : undefined
   const errorId = error ? `${inputId}-error` : undefined
@@ -74,6 +83,27 @@ export function TextField({
       return
     }
     onChange?.('')
+  }
+
+  const setInputNode = (node: HTMLInputElement | null) => {
+    localInputRef.current = node
+    if (typeof inputRef === 'function') {
+      inputRef(node)
+      return
+    }
+    if (inputRef && typeof inputRef === 'object') {
+      inputRef.current = node
+    }
+  }
+
+  const focusInput = () => {
+    localInputRef.current?.focus()
+  }
+
+  const handleFieldPointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
+    if (disabled || readOnly) return
+    if (event.target instanceof HTMLInputElement) return
+    focusInput()
   }
 
   return (
@@ -97,6 +127,7 @@ export function TextField({
         className={`fleet-field ${hasErrorState ? 'fleet-field--error' : ''} ${
           disabled ? 'fleet-field--disabled' : ''
         }`}
+        onPointerDown={handleFieldPointerDown}
       >
         {StartIcon && (
           <StartIcon
@@ -115,6 +146,7 @@ export function TextField({
           </span>
         ) : (
           <input
+            ref={setInputNode}
             id={inputId}
             name={name}
             type={type}
@@ -128,8 +160,10 @@ export function TextField({
             aria-invalid={hasErrorState || undefined}
             aria-describedby={describedBy}
             aria-label={!label ? ariaLabel : undefined}
+            maxLength={maxLength}
             onChange={(event) => onChange?.(event.target.value)}
             onBlur={onBlur}
+            onFocus={onFocus}
             onKeyDown={onKeyDown}
             className="fleet-field__input"
           />
@@ -142,7 +176,7 @@ export function TextField({
             type="button"
             onClick={handleClear}
             className="field-target flex shrink-0 items-center justify-center"
-            aria-label={`Clear ${label ?? 'field'}`}
+            aria-label={t('common.clearField', { label: label ?? 'field' })}
             {...trackProps(clearTrackTag)}
           >
             <X
@@ -190,6 +224,7 @@ export function TextAreaField({
   className = '',
   rows = 8,
 }: TextAreaFieldProps) {
+  const t = useTranslate()
   const inputId = useId()
   const hintId = hint ? `${inputId}-hint` : undefined
   const errorId = error ? `${inputId}-error` : undefined
@@ -233,7 +268,7 @@ export function TextAreaField({
             type="button"
             onClick={handleClear}
             className="field-target absolute top-3 right-3 flex shrink-0 items-center justify-center"
-            aria-label={`Clear ${label ?? 'field'}`}
+            aria-label={t('common.clearField', { label: label ?? 'field' })}
             {...trackProps(clearTrackTag)}
           >
             <X className="h-5 w-5 text-[var(--color-fleet-info)]" />

@@ -1,4 +1,4 @@
-import type { FlowContext, FuelStep, SectionStatus, WorkflowSection } from '../types/flow'
+import type { FlowContext, FuelStep, FuelTransaction, SectionStatus, WorkflowSection } from '../types/flow'
 import type { Messages } from '../i18n/types'
 import {
   getOdometerValidationError,
@@ -15,6 +15,38 @@ export type FuelWorkflowContext = {
   unlockMode: 'remote' | 'on-site'
   locationType: 'gasboy' | 'non-gasboy'
   fuelStartedAt?: number | null
+  fuelComplete?: boolean
+  isAdditionalFueling?: boolean
+  fuelTransactions?: FuelTransaction[]
+}
+
+const FUEL_REPORT_COMPLETION_CONTEXT_KEYS = [
+  'fuelStep',
+  'fuelComplete',
+  'isAdditionalFueling',
+  'fuelTransactions',
+] as const satisfies readonly (keyof FuelWorkflowContext)[]
+
+type FuelReportCompletionContext = Pick<
+  import('../types/flow').FlowContext,
+  (typeof FUEL_REPORT_COMPLETION_CONTEXT_KEYS)[number]
+>
+
+/** After reporting a pump issue, operator may finish transport once fuel is idle again. */
+export function hasFuelPumpReportCompletionEligibility(
+  context: FuelReportCompletionContext,
+): boolean {
+  if (isFuelWorkflowInProgress(context)) return false
+  if (!context.isAdditionalFueling) return false
+  if (context.fuelStep !== 'verify-pump') return false
+
+  const transactions = context.fuelTransactions
+  if (transactions.length === 0) return false
+
+  const hasIssueTxn = transactions.some((row) => row.status === 'issue')
+  const hasCompleteTxn = transactions.some((row) => row.status === 'complete')
+
+  return hasIssueTxn && hasCompleteTxn
 }
 
 const FUEL_COMPLETE_STEPS: FuelStep[] = [
@@ -96,6 +128,18 @@ function isFuelSectionSatisfiedForFinish(
     return true
   }
 
+  if (
+    fuelContext &&
+    hasFuelPumpReportCompletionEligibility({
+      fuelStep: fuelContext.fuelStep,
+      fuelComplete: fuelContext.fuelComplete ?? false,
+      isAdditionalFueling: fuelContext.isAdditionalFueling ?? false,
+      fuelTransactions: fuelContext.fuelTransactions ?? [],
+    })
+  ) {
+    return true
+  }
+
   return isSectionSatisfiedForFinish(
     'fuel',
     status,
@@ -168,13 +212,15 @@ export function hasVsaCoreServiceAcknowledged(
   )
 }
 
-/** Whether a not-started section should show the Optional chip. */
+/** Whether a section should show the Optional chip (not started yet). */
 export function isSectionOptional(
   section: WorkflowSection,
   sections: WorkflowSection[],
   sectionStatus: Record<WorkflowSection, SectionStatus>,
   fuelContext?: FuelWorkflowContext,
 ): boolean {
+  const status = sectionStatus[section]
+
   if (
     section === 'fuel' &&
     fuelContext &&
@@ -188,14 +234,11 @@ export function isSectionOptional(
     }
   }
 
-  if (sectionStatus[section] !== 'not-started') return false
+  if (status !== 'not-started') return false
 
   if (isVsaWorkflow(sections)) {
-    if (section === 'stall') return true
-
-    if (VSA_PARALLEL_SECTIONS.includes(section)) {
-      const other = VSA_PARALLEL_SECTIONS.find((s) => s !== section)!
-      return sectionStatus[other] === 'complete'
+    if (section === 'stall' || VSA_PARALLEL_SECTIONS.includes(section)) {
+      return true
     }
   }
 
@@ -323,21 +366,24 @@ export function isWorkflowReadyToFinish(
 export function hasBlockingSectionInProgress(
   sections: WorkflowSection[],
   sectionStatus: Record<WorkflowSection, SectionStatus>,
-  completableSection?: WorkflowSection,
+  _completableSection?: WorkflowSection,
   fuelContext?: FuelWorkflowContext,
 ): boolean {
   const optional = new Set(getOptionalSections(sections))
-  const parallel = new Set(getParallelSections(sections))
+  const fuelReportCompletionEligible =
+    fuelContext &&
+    hasFuelPumpReportCompletionEligibility({
+      fuelStep: fuelContext.fuelStep,
+      fuelComplete: fuelContext.fuelComplete ?? false,
+      isAdditionalFueling: fuelContext.isAdditionalFueling ?? false,
+      fuelTransactions: fuelContext.fuelTransactions ?? [],
+    })
 
   return sections.some((section) => {
     const status = sectionStatus[section]
     if (status !== 'in-progress' && status !== 'missing') return false
 
-    if (
-      section === 'fuel' &&
-      fuelContext &&
-      isFuelPumpUnlockSyncPending(fuelContext)
-    ) {
+    if (section === 'fuel' && fuelReportCompletionEligible) {
       return false
     }
 
@@ -346,13 +392,7 @@ export function hasBlockingSectionInProgress(
       return true
     }
 
-    // VSA: finishing cleaning does not require fuel to be idle (and vice versa)
-    if (
-      completableSection &&
-      parallel.has(completableSection) &&
-      parallel.has(section) &&
-      section !== completableSection
-    ) {
+    if (section === 'fuel' && fuelContext && isFuelPumpUnlockSyncPending(fuelContext)) {
       return false
     }
 
@@ -417,13 +457,6 @@ export function getSectionNeedingAttention(
       if (!isEnabled(section)) return false
       const status = sectionStatus[section]
       if (status !== 'in-progress' && status !== 'missing') return false
-      if (
-        section === 'fuel' &&
-        fuelContext &&
-        isFuelPumpUnlockSyncPending(fuelContext)
-      ) {
-        return false
-      }
       return true
     })
     if (blocking) return blocking
@@ -460,6 +493,25 @@ export function getSectionNeedingAttention(
   }
 
   return null
+}
+
+/** Short reason shown on a locked accordion section header. */
+export function getSectionDisabledReason(
+  section: WorkflowSection,
+  context: Pick<
+    FlowContext,
+    | 'fuelComplete'
+    | 'fuelStep'
+    | 'isAdditionalFueling'
+    | 'cleaningComplete'
+    | 'cleaningStep'
+  >,
+  copy: Messages['workflow']['complete'],
+): string | undefined {
+  if (section === 'stall' && !isStallSectionUnlocked(context)) {
+    return copy.finishCleaningOrFuel
+  }
+  return undefined
 }
 
 export function getCompleteDisabledReason(

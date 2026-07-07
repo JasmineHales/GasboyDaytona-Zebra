@@ -83,6 +83,9 @@ export function MovementContent({
   const { messages } = useI18n()
   const movementCopy = messages.movement
   const progress = getMovementProgress(mode, phase, messages.progress)
+  const hideProgressIndicator =
+    (isTransport && locationSelected) ||
+    (!isTransport && (stallSelected || issueReported))
 
   const submitStallDraft = () => {
     const value = stallDraft.trim()
@@ -91,7 +94,7 @@ export function MovementContent({
 
   return (
     <div className="workflow-stack">
-      <ProgressIndicator {...progress} />
+      {!hideProgressIndicator && <ProgressIndicator {...progress} />}
 
       <div className="workflow-stack">
         <div className="fleet-mode-tab-group" role="group" aria-label={movementCopy.modeGroup}>

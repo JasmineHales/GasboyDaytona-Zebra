@@ -7,7 +7,6 @@ import { trackProps } from '../../utils/tracking'
 type WorkflowCardProps = {
   variant: HomeWorkflowVariant
   title: string
-  description: string
   icon: ReactNode
   onClick: () => void
   compact?: boolean
@@ -17,7 +16,6 @@ type WorkflowCardProps = {
 export function WorkflowCard({
   variant,
   title,
-  description,
   icon,
   onClick,
   compact = false,
@@ -31,9 +29,7 @@ export function WorkflowCard({
       onClick={disabled ? undefined : onClick}
       disabled={disabled}
       aria-disabled={disabled || undefined}
-      aria-label={
-        disabled ? t('common.comingSoonAria', { title, description }) : undefined
-      }
+      aria-label={disabled ? `${title}. ${t('common.soon')}.` : undefined}
       className={`home-workflow-card home-workflow-card--${variant}${
         compact ? ' home-workflow-card--compact' : ''
       }${disabled ? ' home-workflow-card--disabled' : ''}`}
@@ -43,7 +39,6 @@ export function WorkflowCard({
       <div className="home-workflow-card__icon">{icon}</div>
       <div className="home-workflow-card__body">
         <p className="home-workflow-card__title">{title}</p>
-        <p className="home-workflow-card__desc">{description}</p>
       </div>
       {disabled ? (
         <span className="home-workflow-card__badge">{t('common.soon')}</span>

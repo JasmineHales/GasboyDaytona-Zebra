@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react'
 import { useEffect, useId, useState } from 'react'
 import { useTranslate } from '../../i18n/I18nProvider'
 import { ElapsedTimer } from './ElapsedTimer'
@@ -6,6 +7,13 @@ export const NOZZLE_PICKUP_WINDOW_SECONDS = 60
 
 export type WorkflowInProgressTone = 'remote' | 'default'
 
+export type WorkflowInProgressPickupCopy = {
+  activeLabel?: string
+  activeHint?: string | ((remainingSeconds: number) => string)
+  waitingLabel?: string
+  waitingHint?: string
+}
+
 export type WorkflowInProgressStatusProps = {
   pumpNumber: string
   startedAt: number | null
@@ -13,10 +21,12 @@ export type WorkflowInProgressStatusProps = {
   elapsedLabel?: string
   pumpLabel?: string
   showElapsed?: boolean
+  banner?: ReactNode
   nozzlePickupWindowSeconds?: number
+  pickupCopy?: WorkflowInProgressPickupCopy
 }
 
-function useElapsedSeconds(startedAt: number | null): number {
+export function useElapsedSeconds(startedAt: number | null): number {
   const [elapsed, setElapsed] = useState(0)
 
   useEffect(() => {
@@ -40,9 +50,11 @@ function useElapsedSeconds(startedAt: number | null): number {
 function NozzlePickupIndicator({
   startedAt,
   windowSeconds,
+  pickupCopy,
 }: {
   startedAt: number | null
   windowSeconds: number
+  pickupCopy?: WorkflowInProgressPickupCopy
 }) {
   const t = useTranslate()
   const labelId = useId()
@@ -53,6 +65,12 @@ function NozzlePickupIndicator({
   const remaining = Math.max(0, windowSeconds - elapsed)
   const progress = Math.min(100, (elapsed / windowSeconds) * 100)
   const pickupActive = remaining > 0
+  const activeHint =
+    typeof pickupCopy?.activeHint === 'function'
+      ? pickupCopy.activeHint(remaining)
+      : (pickupCopy?.activeHint ?? t('workflow.inProgress.pickupActiveHint'))
+  const waitingHint =
+    pickupCopy?.waitingHint ?? t('workflow.inProgress.pickupWaitingHint')
 
   return (
     <div
@@ -62,7 +80,9 @@ function NozzlePickupIndicator({
       aria-labelledby={labelId}
     >
       <p className="workflow-in-progress__pickup-label" id={labelId}>
-        {pickupActive ? t('workflow.inProgress.pickUpNozzle') : t('workflow.inProgress.fuelingAtPump')}
+        {pickupActive
+          ? (pickupCopy?.activeLabel ?? t('workflow.inProgress.pickUpNozzle'))
+          : (pickupCopy?.waitingLabel ?? t('workflow.inProgress.fuelingAtPump'))}
       </p>
       {pickupActive ? (
         <p className="workflow-in-progress__pickup-time" aria-hidden="true">
@@ -87,9 +107,7 @@ function NozzlePickupIndicator({
         />
       </div>
       <p className="workflow-in-progress__pickup-hint">
-        {pickupActive
-          ? t('workflow.inProgress.pickupActiveHint')
-          : t('workflow.inProgress.pickupWaitingHint')}
+        {pickupActive ? activeHint : waitingHint}
       </p>
     </div>
   )
@@ -102,7 +120,9 @@ export function WorkflowInProgressStatus({
   elapsedLabel,
   pumpLabel,
   showElapsed = true,
+  banner,
   nozzlePickupWindowSeconds,
+  pickupCopy,
 }: WorkflowInProgressStatusProps) {
   const t = useTranslate()
   const resolvedPumpLabel = pumpLabel ?? t('workflow.inProgress.pump')
@@ -142,10 +162,12 @@ export function WorkflowInProgressStatus({
           </div>
         )}
       </div>
+      {banner ? <div className="workflow-in-progress__info">{banner}</div> : null}
       {nozzlePickupWindowSeconds != null && nozzlePickupWindowSeconds > 0 && (
         <NozzlePickupIndicator
           startedAt={startedAt}
           windowSeconds={nozzlePickupWindowSeconds}
+          pickupCopy={pickupCopy}
         />
       )}
     </section>

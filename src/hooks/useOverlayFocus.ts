@@ -3,6 +3,8 @@ import { useEffect, useRef } from 'react'
 export function useOverlayFocus(open: boolean, onDismiss?: () => void) {
   const containerRef = useRef<HTMLDivElement>(null)
   const previousFocusRef = useRef<HTMLElement | null>(null)
+  const onDismissRef = useRef(onDismiss)
+  onDismissRef.current = onDismiss
 
   useEffect(() => {
     if (!open) return
@@ -22,10 +24,28 @@ export function useOverlayFocus(open: boolean, onDismiss?: () => void) {
     const focusables = getFocusable()
     ;(focusables[0] ?? container).focus()
 
+    return () => {
+      previousFocusRef.current?.focus()
+    }
+  }, [open])
+
+  useEffect(() => {
+    if (!open) return
+
+    const container = containerRef.current
+    if (!container) return
+
+    const getFocusable = () =>
+      Array.from(
+        container.querySelectorAll<HTMLElement>(
+          'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
+        ),
+      )
+
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape' && onDismiss) {
+      if (event.key === 'Escape' && onDismissRef.current) {
         event.preventDefault()
-        onDismiss()
+        onDismissRef.current()
         return
       }
 
@@ -49,9 +69,8 @@ export function useOverlayFocus(open: boolean, onDismiss?: () => void) {
     document.addEventListener('keydown', handleKeyDown)
     return () => {
       document.removeEventListener('keydown', handleKeyDown)
-      previousFocusRef.current?.focus()
     }
-  }, [open, onDismiss])
+  }, [open])
 
   return containerRef
 }

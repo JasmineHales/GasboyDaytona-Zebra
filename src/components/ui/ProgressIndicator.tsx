@@ -1,3 +1,5 @@
+import { useTranslate } from '../../i18n/I18nProvider'
+
 export type ProgressBadgeVariant = 'active' | 'complete' | 'warning' | 'error'
 
 export type ProgressLabelVariant = 'default' | 'complete' | 'warning' | 'error'
@@ -32,15 +34,20 @@ export function ProgressIndicator({
   progressPercent = 0,
   totalSteps,
 }: ProgressIndicatorProps) {
+  const t = useTranslate()
   const fill = Math.min(100, Math.max(0, progressPercent))
   const showStepCount = totalSteps != null
+  const groupAriaLabel =
+    totalSteps != null
+      ? t('common.progressStep', { step, totalSteps, label })
+      : `${label}, ${fill}% complete`
 
   return (
     <div
       data-accordion-scroll-anchor
       className="fleet-progress"
       role="group"
-      aria-label={`Step ${step}${totalSteps ? ` of ${totalSteps}` : ''}: ${label}, ${fill}% complete`}
+      aria-label={groupAriaLabel}
     >
       <div className="fleet-progress__header">
         <p className={`fleet-progress__label fleet-progress__label--${labelVariant}`}>

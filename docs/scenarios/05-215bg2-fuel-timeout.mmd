@@ -1,0 +1,12 @@
+flowchart TD
+  H[home-work] --> F[Tap Fuel]
+  F --> VS[vehicle-search · 215BG2]
+  VS --> HC{Customer extension hold}
+  HC --> FD[fueling-default]
+  FD --> OV[odometer-verified]
+  OV --> FU[fueling-unlocking]
+  FU --> FAC{Facilitator: unlock timed out}
+  FAC --> TO[fueling-pump-timeout]
+  TO --> R1[Retry unlock]
+  TO --> R2[Change pump]
+  TO --> R3[Report issue]

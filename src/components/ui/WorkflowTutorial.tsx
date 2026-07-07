@@ -8,21 +8,18 @@ import {
   estimateMobileSheetHeight,
   estimateMobileTopCardHeight,
   findScrollParent,
+  getTutorialPortalRoot,
   getTutorialViewport,
   isMobileTutorialViewport,
+  measureTutorialTarget,
+  resolveTutorialTopCard,
+  scheduleSpotlightMeasure,
   scheduleTutorialScroll,
   scrollTargetForTutorial,
-  shouldUseTopTutorialCard,
+  type SpotlightRect,
 } from '../../utils/tutorialScroll'
 import { trackProps } from '../../utils/tracking'
 import { WorkflowNotice } from './WorkflowNotice'
-
-type SpotlightRect = {
-  top: number
-  left: number
-  width: number
-  height: number
-}
 
 type CardLayout = {
   className: string
@@ -46,20 +43,6 @@ type WorkflowTutorialProps = {
 
 const EDGE_PADDING = 16
 const DEFAULT_HEADER_CLEARANCE = 56
-
-function measureTarget(selector?: string): SpotlightRect | null {
-  if (!selector) return null
-  const element = document.querySelector(selector)
-  if (!element) return null
-  const rect = element.getBoundingClientRect()
-  if (rect.width <= 0 || rect.height <= 0) return null
-  return {
-    top: rect.top,
-    left: rect.left,
-    width: rect.width,
-    height: rect.height,
-  }
-}
 
 function StallPhotoPreview() {
   return (
@@ -246,37 +229,36 @@ export function WorkflowTutorial({
       return
     }
 
-    const measure = () => {
-      const element = document.querySelector(step.target!)
-      if (!element) {
-        setSpotlight(null)
-        return
-      }
+    const applyMeasure = (nextSpotlight: SpotlightRect | null) => {
+      if (!nextSpotlight) return
 
-      const topCard =
-        step.mobileCard === 'top' ||
-        (step.mobileCard !== 'sheet' &&
-          shouldUseTopTutorialCard(
-            measureTarget(step.target) ?? { top: 0, height: 0, left: 0, width: 0 },
-            estimateMobileSheetHeight(step.preview === 'stall-photo'),
-          ))
+      const topCard = resolveTutorialTopCard(
+        step,
+        nextSpotlight,
+        estimateMobileSheetHeight(step.preview === 'stall-photo'),
+      )
       const cardHeight = topCard
         ? cardRef.current?.offsetHeight ?? estimateMobileTopCardHeight(step.preview === 'stall-photo')
         : cardRef.current?.offsetHeight ?? estimateMobileSheetHeight(step.preview === 'stall-photo')
 
       scrollToTarget(step.target, topCard, cardHeight)
-
-      window.requestAnimationFrame(() => {
-        setSpotlight(measureTarget(step.target))
-      })
+      setSpotlight(nextSpotlight)
     }
 
-    const delay = step.openHeaderMenu ? 200 : step.expandSection ? 420 : 120
-    window.setTimeout(measure, delay)
+    const delays = step.openHeaderMenu || step.openLocationPicker
+      ? [120, 280, 480, 720, 1000, 1400]
+      : step.expandSection
+        ? [420, 680, 960, 1280]
+        : [0, 120, 280, 480, 750]
+
+    return scheduleSpotlightMeasure(step.target, applyMeasure, delays)
   }, [open, scrollToTarget, step])
 
   useEffect(() => {
-    updateSpotlight()
+    const cancel = updateSpotlight()
+    return () => {
+      cancel?.()
+    }
   }, [updateSpotlight])
 
   useEffect(() => {
@@ -310,9 +292,7 @@ export function WorkflowTutorial({
     const cardHeight =
       cardRef.current?.offsetHeight ??
       estimateMobileTopCardHeight(step.preview === 'stall-photo')
-    const nextUseTopCard =
-      step.mobileCard === 'top' ||
-      (step.mobileCard !== 'sheet' && shouldUseTopTutorialCard(spotlight, cardHeight))
+    const nextUseTopCard = resolveTutorialTopCard(step, spotlight, cardHeight)
 
     setUseTopCard(nextUseTopCard)
     setCardLayout(computeSpotlightLayout(spotlight, step.placement, cardHeight, nextUseTopCard))
@@ -333,7 +313,7 @@ export function WorkflowTutorial({
     }
 
     window.requestAnimationFrame(() => {
-      setSpotlight(measureTarget(step.target))
+      setSpotlight(measureTutorialTarget(step.target))
     })
   }, [open, scrollToTarget, step, spotlight, stepIndex])
 
@@ -495,6 +475,6 @@ export function WorkflowTutorial({
         </div>
       </div>
     </div>,
-    document.body,
+    getTutorialPortalRoot(),
   )
 }

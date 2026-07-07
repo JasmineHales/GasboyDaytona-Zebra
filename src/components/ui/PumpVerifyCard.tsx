@@ -1,4 +1,4 @@
-import { QrCode } from 'lucide-react'
+import { ChevronRight, Keyboard, ScanQrCode } from 'lucide-react'
 import { useI18n } from '../../i18n/I18nProvider'
 import { trackProps } from '../../utils/tracking'
 
@@ -17,17 +17,6 @@ type PumpVerifyCardProps = {
   trackScan?: string
   trackManual?: string
   trackQuickSelect?: string
-}
-
-function ScanCorner({ position }: { position: 'tl' | 'tr' | 'bl' | 'br' }) {
-  const positionClass = {
-    tl: 'pump-verify-scan-corner--tl',
-    tr: 'pump-verify-scan-corner--tr',
-    bl: 'pump-verify-scan-corner--bl',
-    br: 'pump-verify-scan-corner--br',
-  }[position]
-
-  return <span className={`pump-verify-scan-corner ${positionClass}`} aria-hidden />
 }
 
 export function PumpVerifyCard({
@@ -72,21 +61,17 @@ export function PumpVerifyCard({
         aria-label={resolvedButtonLabel}
         {...trackProps(trackScan)}
       >
-        <div className="pump-verify-scan-graphic__frame" aria-hidden>
-          <ScanCorner position="tl" />
-          <ScanCorner position="tr" />
-          <ScanCorner position="bl" />
-          <ScanCorner position="br" />
-          <div className="pump-verify-scan-graphic__ring" />
-          <QrCode className="pump-verify-scan-graphic__icon" />
-          <div className="pump-verify-scan-graphic__line" />
-        </div>
+        <span className="pump-verify-scan-graphic__icon-slot" aria-hidden>
+          <ScanQrCode className="pump-verify-scan-graphic__icon" strokeWidth={2.25} />
+        </span>
+        <span className="pump-verify-scan-graphic__divider" aria-hidden />
         <div className="pump-verify-scan-graphic__copy">
           <span className="pump-verify-scan-graphic__label">{resolvedButtonLabel}</span>
           {scanHint && (
             <span className="pump-verify-scan-graphic__hint">{scanHint}</span>
           )}
         </div>
+        <ChevronRight className="pump-verify-scan-graphic__chevron" aria-hidden />
       </button>
 
       {onManualEntry && (
@@ -96,7 +81,9 @@ export function PumpVerifyCard({
           className="pump-verify-manual"
           {...trackProps(trackManual)}
         >
-          {resolvedManualEntryLabel}
+          <Keyboard className="pump-verify-manual__icon" aria-hidden />
+          <span className="pump-verify-manual__label">{resolvedManualEntryLabel}</span>
+          <ChevronRight className="pump-verify-manual__chevron" aria-hidden />
         </button>
       )}
 

@@ -61,6 +61,7 @@ export function CleaningContent({
   const cleaningCopy = messages.cleaning
   const fuelCopy = messages.fuel
   const progress = getCleaningProgress(step, messages.progress)
+  const hideProgressIndicator = step === 'cleaning-complete'
   const canVerify =
     step === 'manual-entry-filled' && pumpNumber.trim().length > 0
   const showManualEntry = [
@@ -83,12 +84,14 @@ export function CleaningContent({
 
   return (
     <div className="workflow-stack">
-      <ProgressIndicator {...progress} />
+      {!hideProgressIndicator && <ProgressIndicator {...progress} />}
 
       {step === 'verify-pump' && (
         <PumpVerifyDefault
           onScanPump={onScanPump}
           onManualEntry={onManualEntry}
+          scanLabel={cleaningCopy.scanWorkstation}
+          manualEntryLabel={cleaningCopy.enterWorkstationNumber}
           quickSelectPump={fuelQuickSelectPump ?? undefined}
           quickSelectHint={fuelQuickSelectHint}
           onQuickSelectPump={onQuickSelectPump}
@@ -109,12 +112,11 @@ export function CleaningContent({
 
           <TextField
             label={cleaningCopy.manualEntry}
-            hint={cleaningCopy.manualEntryHint}
             value={pumpNumber}
-            placeholder={cleaningCopy.enterPumpNo}
+            placeholder={cleaningCopy.enterWorkstationNo}
             inputMode="numeric"
             invalid={step === 'manual-entry-error'}
-            error={step === 'manual-entry-error' ? cleaningCopy.selectAnotherPump : undefined}
+            error={step === 'manual-entry-error' ? cleaningCopy.selectAnotherWorkstation : undefined}
             onChange={onPumpChange}
             onClear={onClearPump}
             clearTrackTag="cleaning.pump.clear"
@@ -128,7 +130,7 @@ export function CleaningContent({
               className="fleet-btn fleet-btn-lg fleet-btn-contained-info fleet-btn-elevated w-full"
               {...trackProps('cleaning.verify-pump')}
             >
-              {cleaningCopy.verifyPump}
+              {cleaningCopy.confirmWorkstation}
             </button>
           </div>
 
@@ -147,8 +149,8 @@ export function CleaningContent({
       {step === 'pump-verified' && (
         <>
           <PumpConfirmedCard
-            title={t('cleaning.atPump', { pump: pumpNumber })}
-            subtitle={cleaningCopy.pumpConfirmed}
+            title={t('cleaning.atWorkstation', { workstation: pumpNumber })}
+            subtitle={cleaningCopy.workstationConfirmed}
             actionLabel={cleaningCopy.startCleaning}
             onAction={onStartCleaning}
             actionIcon={<Play className="h-5 w-5 fill-current" />}
@@ -170,6 +172,7 @@ export function CleaningContent({
           <WorkflowInProgressStatus
             pumpNumber={pumpNumber}
             startedAt={startedAt}
+            pumpLabel={cleaningCopy.tableWorkstation}
           />
           <button
             type="button"
@@ -187,7 +190,7 @@ export function CleaningContent({
         <>
           <div className="overflow-hidden rounded">
             <div className="grid grid-cols-3 border-b-2 border-[var(--color-border)]">
-              {[fuelCopy.tablePump, fuelCopy.tableStatus, fuelCopy.tableTime].map((heading) => (
+              {[cleaningCopy.tableWorkstation, fuelCopy.tableStatus, fuelCopy.tableTime].map((heading) => (
                 <p
                   key={heading}
                   className="px-4 py-4 text-sm font-semibold text-[var(--color-text-primary)]"
@@ -201,7 +204,7 @@ export function CleaningContent({
                 {pumpNumber}
               </p>
               <div className="px-4 py-4">
-                <span className="inline-flex rounded-full bg-[var(--color-chip-complete-bg)] px-2 py-0.5 text-sm font-semibold text-[var(--color-text-success)]">
+                <span className="inline-flex rounded bg-[var(--color-chip-complete-bg)] px-2 py-0.5 text-sm font-semibold text-[var(--color-text-success)]">
                   {cleaningCopy.statusComplete}
                 </span>
               </div>

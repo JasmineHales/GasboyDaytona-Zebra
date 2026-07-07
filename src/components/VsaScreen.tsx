@@ -2,11 +2,13 @@ import { useMemo } from 'react'
 import type { FlowContext } from '../types/flow'
 import { useI18n } from '../i18n/I18nProvider'
 import { getVsaSections, getVsaTutorial } from '../utils/vsaStall'
-import { VSA_VEHICLE } from '../utils/vehicleSummary'
+import { VSA_VEHICLE, type VehicleProfile } from '../utils/vehicleSummary'
 import { TransportScreen } from './TransportScreen'
 
 type VsaScreenProps = {
   context: FlowContext
+  vehicleProfile?: VehicleProfile
+  site?: string
   onAction: (action: string, payload?: string) => void
   onMovementAction: (action: string, payload?: string) => void
   onStallAction: (action: string, payload?: string) => void
@@ -17,6 +19,8 @@ type VsaScreenProps = {
 
 export function VsaScreen({
   context,
+  vehicleProfile = VSA_VEHICLE,
+  site,
   onAction,
   onMovementAction,
   onStallAction,
@@ -34,7 +38,8 @@ export function VsaScreen({
       subtitle={messages.workflow.vsa.subtitle}
       sections={sections}
       defaultExpanded={null}
-      vehicleProfile={VSA_VEHICLE}
+      vehicleProfile={vehicleProfile}
+      site={site}
       workflowFinishId="vsa"
       context={context}
       onAction={onAction}

@@ -65,3 +65,15 @@ export function clearAuth() {
     // ignore
   }
 }
+
+export function updateSsoUserSite(site: string): SsoUser | null {
+  const user = readSsoUser()
+  if (!user) return null
+  const updated = { ...user, site }
+  try {
+    sessionStorage.setItem(SSO_USER_KEY, JSON.stringify(updated))
+  } catch {
+    // ignore
+  }
+  return updated
+}

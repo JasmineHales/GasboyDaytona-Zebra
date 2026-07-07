@@ -75,10 +75,11 @@ export function StallContent({
   const { messages } = useI18n()
   const movementCopy = messages.movement
   const progress = getStallProgress(phase, messages.progress)
+  const hideProgressIndicator = !isDefault && !stallVerify
 
   return (
     <div className="workflow-stack">
-      <ProgressIndicator {...progress} />
+      {!hideProgressIndicator && <ProgressIndicator {...progress} />}
 
       <div className="workflow-stack">
         {isDefault ? (

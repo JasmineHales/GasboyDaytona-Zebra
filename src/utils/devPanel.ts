@@ -1,7 +1,3 @@
-import {
-  formatDevDeviceFrameLabel,
-  type DevDeviceFrameId,
-} from './devDeviceFrame'
 import type { FlowContext } from '../types/flow'
 import { requiresManualMileageEntry } from './mileageResolution'
 import {
@@ -91,20 +87,22 @@ export function formatDevScenarioSummary(
   context: FlowContext,
   input: {
     showLogin: boolean
+    showSetup?: boolean
     loginVariant: 'device' | 'browser'
     view: string
-    deviceFrame?: DevDeviceFrameId
   },
 ): string[] {
-  const lines =
-    input.deviceFrame && input.deviceFrame !== 'responsive'
-      ? [`Preview · ${formatDevDeviceFrameLabel(input.deviceFrame)}`]
-      : []
+  const lines: string[] = []
 
   if (input.showLogin) {
     lines.push(
       `Login · ${input.loginVariant === 'device' ? 'Hertz device' : 'Browser SSO'}`,
     )
+    return lines
+  }
+
+  if (input.showSetup) {
+    lines.push('Page · setup')
     return lines
   }
 

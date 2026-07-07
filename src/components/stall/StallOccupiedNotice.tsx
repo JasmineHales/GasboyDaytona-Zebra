@@ -24,7 +24,9 @@ export function StallOccupiedNotice({
     [onTakePhoto],
   )
 
-  const { openCamera, inputRef, handleInputChange } = useCameraCapture(handleCapture)
+  const { openCamera, inputRef, handleInputChange } = useCameraCapture({
+    onCapture: handleCapture,
+  })
 
   return (
     <WorkflowNotice
