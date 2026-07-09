@@ -1,10 +1,15 @@
 import type { ReactNode } from 'react'
 import { EM45_VIEWPORT } from '../../utils/devDeviceFrame'
+import { isDevPreviewEnabled } from '../../utils/devPreview'
 import { getRuntimeMode } from '../../utils/runtime'
 import { trackProps } from '../../utils/tracking'
 
 export function useDevEm45Preview(devExperience: 'device' | 'browser'): boolean {
-  return import.meta.env.DEV && devExperience === 'device' && getRuntimeMode() !== 'hertz-device'
+  return (
+    isDevPreviewEnabled() &&
+    devExperience === 'device' &&
+    getRuntimeMode() !== 'hertz-device'
+  )
 }
 
 export function devAppShellClassName(useEm45Preview: boolean, extra = ''): string {
@@ -22,7 +27,7 @@ export function DevExperienceMobileSwitcher({
   value,
   onChange,
 }: DevExperienceMobileSwitcherProps) {
-  if (!import.meta.env.DEV || getRuntimeMode() === 'hertz-device') return null
+  if (!isDevPreviewEnabled() || getRuntimeMode() === 'hertz-device') return null
 
   return (
     <div className="dev-experience-mobile md:hidden" aria-label="Preview experience">

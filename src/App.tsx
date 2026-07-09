@@ -74,6 +74,7 @@ import {
 import { workflowToActivityType } from './utils/vehicleSearchActivity'
 import { isVehicleSearchDevStateId } from './utils/vehicleSearchDevStates'
 import { consumeCaptureSeed } from './utils/captureSeed'
+import { isDevPreviewEnabled } from './utils/devPreview'
 import { resetSessionTimer } from './components/ui/SessionTimer'
 import { isTutorialModeActive } from './utils/tutorialModeState'
 
@@ -121,9 +122,11 @@ export default function App() {
       (!shouldForceLoginScreen() && readAuthenticated()),
   )
   const [loginPreview, setLoginPreview] = useState<LoginPreview>(null)
-  const [devExperience, setDevExperience] = useState<'device' | 'browser'>(() =>
-    isHertzDevice || readAuthMethod() === 'device' ? 'device' : 'browser',
-  )
+  const [devExperience, setDevExperience] = useState<'device' | 'browser'>(() => {
+    if (isHertzDevice) return 'device'
+    if (isDevPreviewEnabled()) return 'device'
+    return readAuthMethod() === 'device' ? 'device' : 'browser'
+  })
   const [ssoUser, setSsoUser] = useState<SsoUser | null>(() => readSsoUser())
   const [operatorSite, setOperatorSite] = useState(() =>
     resolveOperatorSite(readSsoUser()?.site ?? MOCK_SSO_USER.site),
@@ -518,6 +521,7 @@ export default function App() {
       <a href="#main-content" className="fleet-skip-link">
         {t('common.skipToMainContent')}
       </a>
+      {isDevPreviewEnabled() ? (
       <FlowNavigator
         activePageKey={activePageKey}
         activeWidgetKey={resolvedWidgetKey}
@@ -535,6 +539,7 @@ export default function App() {
         vehicleSearchDevState={vehicleSearchDevState}
         onVehicleSearchDevStateSelect={setVehicleSearchDevState}
       />
+      ) : null}
       <DevDevicePreviewFrame
         devExperience={loginVariant}
         mobileSwitcher={
