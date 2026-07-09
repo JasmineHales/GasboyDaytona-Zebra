@@ -22,7 +22,9 @@ import {
   ISSUE_VEHICLE_OPTIONS,
   type IssueVehicleOption,
 } from '../../utils/vehicleSummary'
-import type { VehicleSummary } from '../../utils/vehicleSummary'
+import type { VehicleProfile } from '../../utils/vehicleSummary'
+import { toVehicleInformationSummary } from '../../utils/issueVehicleDisplay'
+import { VehicleInformationSummary } from '../ui/VehicleInformationSummary'
 import type { Messages } from '../../i18n/types'
 
 type Step =
@@ -59,11 +61,12 @@ type IssueOverlayProps = {
   onComplete: (data: IssueReportData) => void
   defaultPumpNumber?: string
   source?: 'header' | 'fuel' | 'vehicle'
-  vehicle?: Pick<VehicleSummary, 'unitId' | 'name'>
+  vehicleProfile?: VehicleProfile
+  vehicle?: Pick<VehicleProfile, 'unitId' | 'name'>
 }
 
 function resolveIssueVehicle(
-  vehicle?: Pick<VehicleSummary, 'unitId' | 'name'>,
+  vehicle?: Pick<VehicleProfile, 'unitId' | 'name'>,
 ): IssueVehicleOption | null {
   if (!vehicle) return null
 
@@ -101,7 +104,7 @@ type CategoryOption = {
 
 function getCategoryOptions(
   source: 'header' | 'fuel' | 'vehicle',
-  vehicle: Pick<VehicleSummary, 'unitId' | 'name'> | undefined,
+  vehicle: Pick<VehicleProfile, 'unitId' | 'name'> | undefined,
   issue: Messages['issue'],
 ): CategoryOption[] {
   const vehicleDescription = vehicle
@@ -377,6 +380,7 @@ export function IssueOverlay({
   onComplete,
   defaultPumpNumber = '',
   source = 'header',
+  vehicleProfile,
   vehicle,
 }: IssueOverlayProps) {
   const { messages, t } = useI18n()
@@ -408,14 +412,26 @@ export function IssueOverlay({
         : messages.issue.reportIssue
   const overlaySubtitle =
     source === 'vehicle'
-      ? vehicle
-        ? t('issue.reportingFor', { unitId: vehicle.unitId, name: vehicle.name })
-        : messages.issue.workflowStaysOpen
+      ? undefined
       : source === 'fuel'
         ? messages.issue.fuelingStaysOpen
         : step === 'category'
           ? messages.issue.chooseCategory
           : messages.issue.workflowStaysOpen
+  const activeVehicleOption = selectedVehicle ?? resolveIssueVehicle(vehicle)
+  const vehicleInformation = (() => {
+    if (source === 'vehicle' && vehicleProfile) {
+      return toVehicleInformationSummary(vehicleProfile)
+    }
+    if (category === 'vehicle' && activeVehicleOption) {
+      return toVehicleInformationSummary(activeVehicleOption)
+    }
+    return null
+  })()
+  const showVehicleSummary =
+    Boolean(vehicleInformation) &&
+    (source === 'vehicle' ||
+      (category === 'vehicle' && (step === 'details' || step === 'issue-type')))
   const showPumpSubtitle =
     isPumpFlow && pumpNumber.trim().length > 0 && step !== 'select-pump'
 
@@ -548,6 +564,17 @@ export function IssueOverlay({
           onClose={onClose}
         />
 
+        {showVehicleSummary && vehicleInformation && (
+          <div className="issue-overlay-vehicle-summary shrink-0">
+            <VehicleInformationSummary {...vehicleInformation} />
+            {source === 'vehicle' ? (
+              <p className="issue-overlay-vehicle-summary__hint">
+                {messages.issue.workflowStaysOpen}
+              </p>
+            ) : null}
+          </div>
+        )}
+
         {showPumpSubtitle && (
           <div className="issue-overlay-pump shrink-0" role="status" aria-label={`Pump ${pumpNumber}`}>
             <p className="issue-overlay-pump__label">{messages.fuel.tablePump}</p>
@@ -647,14 +674,6 @@ export function IssueOverlay({
 
           {step === 'details' && (
             <div className="flex flex-col gap-2 pb-4">
-              {category === 'vehicle' && (selectedVehicle ?? vehicle) && (
-                <p className="issue-category-context">
-                  {t('issue.reportingForVehicle', {
-                    unitId: (selectedVehicle ?? vehicle)!.unitId,
-                    name: (selectedVehicle ?? vehicle)!.name,
-                  })}
-                </p>
-              )}
               <TextAreaField
                 label={messages.issue.additionalDetails}
                 value={details}

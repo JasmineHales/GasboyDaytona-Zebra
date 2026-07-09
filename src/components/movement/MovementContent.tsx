@@ -3,10 +3,8 @@ import { useEffect, useState } from 'react'
 import type { MovementMode, MovementPhase } from '../../types/flow'
 import { StallIssueReportedNotice } from '../stall/StallIssueReportedNotice'
 import { StallOccupiedNotice } from '../stall/StallOccupiedNotice'
-import { ProgressIndicator } from '../ui/ProgressIndicator'
 import { TextField, textFieldKeySubmit } from '../ui/TextField'
 import { useI18n } from '../../i18n/I18nProvider'
-import { getMovementProgress } from '../../utils/progress'
 import { trackProps } from '../../utils/tracking'
 
 type MovementContentProps = {
@@ -82,10 +80,6 @@ export function MovementContent({
   const issueReported = phase === 'stall-issue-reported'
   const { messages } = useI18n()
   const movementCopy = messages.movement
-  const progress = getMovementProgress(mode, phase, messages.progress)
-  const hideProgressIndicator =
-    (isTransport && locationSelected) ||
-    (!isTransport && (stallSelected || issueReported))
 
   const submitStallDraft = () => {
     const value = stallDraft.trim()
@@ -94,8 +88,6 @@ export function MovementContent({
 
   return (
     <div className="workflow-stack">
-      {!hideProgressIndicator && <ProgressIndicator {...progress} />}
-
       <div className="workflow-stack">
         <div className="fleet-mode-tab-group" role="group" aria-label={movementCopy.modeGroup}>
           <ModeTab
@@ -134,7 +126,7 @@ export function MovementContent({
                 {...trackProps('movement.location.search-open')}
               >
                 <MapPin className="h-5 w-5 shrink-0 text-[var(--color-fleet-text-secondary)]" />
-                <span className="fleet-field__value text-[var(--color-fleet-text-secondary)]">
+                <span className="fleet-field__placeholder">
                   {movementCopy.searchLocation}
                 </span>
               </button>
@@ -160,17 +152,9 @@ export function MovementContent({
                   aria-label={movementCopy.stallNumberAria}
                   inputMode="numeric"
                   onChange={setStallDraft}
+                  onBlur={submitStallDraft}
                   onKeyDown={(event) => textFieldKeySubmit(event, onStallSelect)}
                 />
-                <button
-                  type="button"
-                  onClick={submitStallDraft}
-                  disabled={!stallDraft.trim()}
-                  className="fleet-btn fleet-btn-lg fleet-btn-contained-info fleet-btn-elevated w-full"
-                  {...trackProps('movement.stall.confirm')}
-                >
-                  {movementCopy.confirmStall}
-                </button>
               </>
             )}
 

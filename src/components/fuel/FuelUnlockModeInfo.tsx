@@ -1,5 +1,7 @@
-import { Info } from 'lucide-react'
+import { Info, Smartphone } from 'lucide-react'
+import type { ReactNode } from 'react'
 import { useId, useState } from 'react'
+import { ManualEntryKeypadIcon } from '../icons/WorkflowStrokeIcons'
 import { useI18n } from '../../i18n/I18nProvider'
 import { trackProps } from '../../utils/tracking'
 import { FuelUnlockModeHelpOverlay } from './FuelUnlockModeHelpOverlay'
@@ -22,9 +24,17 @@ export function FuelUnlockModeInfo({
   const labelId = useId()
   const [helpOpen, setHelpOpen] = useState(false)
 
-  const options: { id: FuelUnlockMode; label: string }[] = [
-    { id: 'remote', label: copy.remote.label },
-    { id: 'on-site', label: copy.onSite.label },
+  const options: { id: FuelUnlockMode; label: string; icon: ReactNode }[] = [
+    {
+      id: 'remote',
+      label: copy.remote.label,
+      icon: <Smartphone className="fleet-mode-tab__icon" aria-hidden />,
+    },
+    {
+      id: 'on-site',
+      label: copy.onSite.label,
+      icon: <ManualEntryKeypadIcon className="fleet-mode-tab__icon" />,
+    },
   ]
 
   return (
@@ -56,10 +66,17 @@ export function FuelUnlockModeInfo({
                 onClick={() => {
                   if (!active) onModeChange?.(option.id)
                 }}
-                className={`fleet-mode-tab${active ? ' fleet-mode-tab--active' : ''}`}
+                className={[
+                  'fleet-mode-tab',
+                  option.id === 'remote' ? 'fleet-mode-tab--remote' : 'fleet-mode-tab--on-site',
+                  active ? 'fleet-mode-tab--active' : '',
+                ]
+                  .filter(Boolean)
+                  .join(' ')}
                 {...trackProps(`${trackPrefix}.select`, { mode: option.id })}
               >
-                <span className="text-base font-semibold">{option.label}</span>
+                {option.icon}
+                <span className="fleet-mode-tab__label">{option.label}</span>
               </button>
             )
           })}

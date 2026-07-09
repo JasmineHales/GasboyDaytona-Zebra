@@ -96,7 +96,7 @@ export function formatDevScenarioSummary(
 
   if (input.showLogin) {
     lines.push(
-      `Login · ${input.loginVariant === 'device' ? 'Hertz device' : 'Browser SSO'}`,
+      `Login · ${input.loginVariant === 'device' ? 'Zebra emulator' : 'Browser SSO'}`,
     )
     return lines
   }

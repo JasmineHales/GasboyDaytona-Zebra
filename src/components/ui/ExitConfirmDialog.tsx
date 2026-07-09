@@ -2,13 +2,14 @@ import { BottomSheetOverlay } from './BottomSheetOverlay'
 import { useI18n } from '../../i18n/I18nProvider'
 import { trackProps } from '../../utils/tracking'
 
-type ExitConfirmMode = 'logout' | 'navigate'
+type ExitConfirmMode = 'logout' | 'navigate' | 'complete-fuel' | 'fuel-in-progress'
 
 type ExitConfirmDialogProps = {
   open: boolean
   mode?: ExitConfirmMode
   onContinue: () => void
   onLeave: () => void
+  onCompleteFuel?: () => void
 }
 
 export function ExitConfirmDialog({
@@ -16,9 +17,16 @@ export function ExitConfirmDialog({
   mode = 'navigate',
   onContinue,
   onLeave,
+  onCompleteFuel,
 }: ExitConfirmDialogProps) {
   const { messages } = useI18n()
-  const text = messages.exit[mode]
+  const isCompleteFuel = mode === 'complete-fuel'
+  const isFuelInProgress = mode === 'fuel-in-progress'
+  const text = isCompleteFuel
+    ? messages.exit.completeFuel
+    : isFuelInProgress
+      ? messages.exit.fuelInProgress
+      : messages.exit[mode === 'logout' ? 'logout' : 'navigate']
 
   return (
     <BottomSheetOverlay
@@ -38,22 +46,54 @@ export function ExitConfirmDialog({
           {text.body}
         </p>
         <div className="bottom-sheet-footer workflow-stack pt-5">
-          <button
-            type="button"
-            onClick={onContinue}
-            className="fleet-btn fleet-btn-lg fleet-btn-contained-info fleet-btn-elevated w-full"
-            {...trackProps('exit.continue', { mode })}
-          >
-            {text.continue}
-          </button>
-          <button
-            type="button"
-            onClick={onLeave}
-            className="fleet-btn fleet-btn-lg fleet-btn-outlined w-full"
-            {...trackProps(mode === 'logout' ? 'exit.logout' : 'exit.leave', { mode })}
-          >
-            {text.leave}
-          </button>
+          {isCompleteFuel ? (
+            <>
+              <button
+                type="button"
+                onClick={onCompleteFuel}
+                className="fleet-btn fleet-btn-lg fleet-btn-contained-success fleet-btn-elevated w-full"
+                {...trackProps('exit.complete-fuel.confirm', { mode })}
+              >
+                {messages.exit.completeFuel.complete}
+              </button>
+              <button
+                type="button"
+                onClick={onContinue}
+                className="fleet-btn fleet-btn-lg fleet-btn-outlined w-full"
+                {...trackProps('exit.complete-fuel.continue', { mode })}
+              >
+                {text.continue}
+              </button>
+            </>
+          ) : isFuelInProgress ? (
+            <button
+              type="button"
+              onClick={onContinue}
+              className="fleet-btn fleet-btn-lg fleet-btn-contained-info fleet-btn-elevated w-full"
+              {...trackProps('exit.fuel-in-progress.continue', { mode })}
+            >
+              {text.continue}
+            </button>
+          ) : (
+            <>
+              <button
+                type="button"
+                onClick={onContinue}
+                className="fleet-btn fleet-btn-lg fleet-btn-contained-info fleet-btn-elevated w-full"
+                {...trackProps('exit.continue', { mode })}
+              >
+                {text.continue}
+              </button>
+              <button
+                type="button"
+                onClick={onLeave}
+                className="fleet-btn fleet-btn-lg fleet-btn-outlined w-full"
+                {...trackProps(mode === 'logout' ? 'exit.logout' : 'exit.leave', { mode })}
+              >
+                {mode === 'logout' ? messages.exit.logout.leave : messages.exit.navigate.leave}
+              </button>
+            </>
+          )}
         </div>
       </div>
     </BottomSheetOverlay>

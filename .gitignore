@@ -14,3 +14,16 @@ eng.traineddata
 # Local upload/staging copies — never commit duplicates of this repo
 *-upload/
 GitHuub*/
+
+# IDE and local capture artifacts
+.cursor/
+.flow-captures/
+eng.traineddata
+
+# Local Miro/capture tooling (not part of the app)
+scripts/miro-*
+scripts/capture-*
+scripts/mermaid-to-miro-dsl.mjs
+scripts/_*
+scripts/miro-frame-upload-jobs.json
+scripts/miro-scenario-screens.json

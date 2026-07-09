@@ -27,10 +27,10 @@ import {
   isSectionOptional,
   isStallSectionUnlocked,
   isWorkflowReadyToFinish,
+  shouldShowSectionRequiredChip,
+  getGasboyFuelExitBlockMode,
 } from '../utils/workflowProgress'
-import { getMileageIssueLabel } from '../utils/mileageScenarios'
 import {
-  getMileageReliabilityIssues,
   getTelematicsOdometerFloor,
   getTrustedMileageMiles,
   hasResolvedOdometer,
@@ -40,6 +40,7 @@ import { CleaningContent } from './cleaning/CleaningContent'
 import { AccordionGroup, AccordionSection } from './ui/AccordionSection'
 import { CompleteButton } from './ui/CompleteButton'
 import { Header } from './ui/Header'
+import { SessionTimer } from './ui/SessionTimer'
 import { VehicleCard } from './ui/VehicleCard'
 import { FuelStepContent } from './fuel/FuelStepContent'
 import { ScannerScreen } from './fuel/ScannerScreen'
@@ -56,7 +57,6 @@ import { applyWorkflowScroll, scrollElementIntoWorkflowView } from '../utils/scr
 import { WorkflowTutorial } from './ui/WorkflowTutorial'
 import {
   getCleaningQuickSelectSource,
-  getFuelQuickSelectSource,
 } from '../utils/pumpQuickSelect'
 
 const DEFAULT_SECTIONS: WorkflowSection[] = ['movement', 'fuel']
@@ -72,7 +72,6 @@ function initialExpanded(
 
 type TransportScreenProps = {
   title?: string
-  subtitle?: string
   sections?: WorkflowSection[]
   defaultExpanded?: WorkflowSection | null
   site?: string
@@ -91,7 +90,6 @@ type TransportScreenProps = {
 
 export function TransportScreen({
   title,
-  subtitle,
   sections = DEFAULT_SECTIONS,
   defaultExpanded,
   vehicleProfile = TRANSPORT_VEHICLE,
@@ -116,13 +114,6 @@ export function TransportScreen({
       : workflowFinishId === 'vsa'
         ? messages.workflow.vsa.title
         : messages.workflow.transport.title)
-  const resolvedSubtitle =
-    subtitle ??
-    (workflowFinishId === 'fuel'
-      ? messages.workflow.fuelOnly.subtitle
-      : workflowFinishId === 'vsa'
-        ? messages.workflow.vsa.subtitle
-        : messages.workflow.transport.subtitle)
 
   const tutorialSteps = useMemo(() => {
     if (tutorialConfig?.storageKey === VSA_TUTORIAL_STORAGE_KEY) {
@@ -203,7 +194,8 @@ export function TransportScreen({
               context.fuelStep === 'additional-fueling'
             ? 'not-started'
             : 'in-progress'
-  const stallUnlocked = isStallSectionUnlocked(context)
+  const stallUnlocked =
+    finishWorkflowId === 'vsa' || isStallSectionUnlocked(context)
   const stallStatus: SectionStatus = !stallUnlocked
     ? 'not-started'
     : context.stallComplete
@@ -215,9 +207,13 @@ export function TransportScreen({
           : 'in-progress'
   const cleaningStatus: SectionStatus = context.cleaningComplete
     ? 'complete'
-    : context.cleaningStep === 'verify-pump'
-      ? 'not-started'
-      : 'in-progress'
+    : context.cleaningStep === 'manual-entry-error'
+      ? 'missing'
+      : finishWorkflowId === 'vsa'
+        ? 'in-progress'
+        : context.cleaningStep === 'verify-pump'
+          ? 'not-started'
+          : 'in-progress'
 
   const sectionStatus: Record<WorkflowSection, SectionStatus> = {
     movement: movementStatus,
@@ -262,11 +258,21 @@ export function TransportScreen({
     acknowledgedSections,
   )
 
+  const gasboyFuelExitBlockMode = getGasboyFuelExitBlockMode(
+    sections,
+    sectionStatus,
+    acknowledgedSections,
+    context,
+  )
+
+  const requireFuelCompleteBeforeExit = gasboyFuelExitBlockMode === 'complete-fuel'
+
   const workflowReady = isWorkflowReadyToFinish(
     sections,
     sectionStatus,
     acknowledgedSections,
     fuelWorkflowContext,
+    finishWorkflowId,
   )
 
   const scrollToOdometer = () => {
@@ -321,6 +327,7 @@ export function TransportScreen({
       sectionStatus,
       nextAcknowledged,
       fuelWorkflowContext,
+      finishWorkflowId,
     )
 
     if (allAcknowledged) {
@@ -438,21 +445,6 @@ export function TransportScreen({
     }
   }
 
-  const getSectionTimerStartedAt = (section: WorkflowSection): number | null => {
-    switch (section) {
-      case 'cleaning':
-        return context.cleaningStep === 'cleaning-in-progress'
-          ? context.cleaningStartedAt
-          : null
-      case 'fuel':
-        return context.fuelStep === 'fueling-in-progress'
-          ? context.fuelStartedAt
-          : null
-      default:
-        return null
-    }
-  }
-
   const mileageState = context.mileageState ?? vehicleProfile.mileageState
   const mileageOptions = {
     gasboyMileageExpected: context.locationType === 'gasboy',
@@ -462,10 +454,6 @@ export function TransportScreen({
     mileageOptions,
   )
   const trustedMileageMiles = getTrustedMileageMiles(mileageState, mileageOptions)
-  const mileageIssues = getMileageReliabilityIssues(mileageState, mileageOptions)
-  const odometerHint = manualMileageRequired
-    ? getMileageIssueLabel(mileageIssues[0], messages.vehicle.mileageIssues)
-    : undefined
   const odometerMinimumMiles = manualMileageRequired
     ? getTelematicsOdometerFloor(mileageState)
     : null
@@ -486,6 +474,7 @@ export function TransportScreen({
       sectionStatus,
       completableSection,
       fuelWorkflowContext,
+      finishWorkflowId,
     ) &&
     (completableSection !== undefined || workflowReady)
   const completeDisabledReason = canComplete
@@ -503,6 +492,7 @@ export function TransportScreen({
         mileageOptions,
         messages.vehicle,
         language === 'es' ? 'es-US' : 'en-US',
+        finishWorkflowId,
       )
   const vehicleSummary = getVehicleSummary(
     sections,
@@ -510,10 +500,11 @@ export function TransportScreen({
     context,
     vehicleProfile,
     messages,
+    finishWorkflowId,
   )
 
   const handleStallAction = (action: string, payload?: string) => {
-    if (!isStallSectionUnlocked(context)) return
+    if (!stallUnlocked) return
     onStallAction(action, payload)
   }
 
@@ -538,6 +529,7 @@ export function TransportScreen({
         workflowReady,
         fuelContext: fuelWorkflowContext,
         isSectionDisabled,
+        workflowKind: finishWorkflowId,
       },
     )
 
@@ -562,9 +554,17 @@ export function TransportScreen({
     }
   }, [canComplete])
 
+  const sectionIsOptional = (section: WorkflowSection) =>
+    isSectionOptional(
+      section,
+      sections,
+      sectionStatus,
+      fuelWorkflowContext,
+      finishWorkflowId,
+    )
+
   const renderSectionContent = (section: WorkflowSection) => {
     const cleaningQuickSelect = getCleaningQuickSelectSource(context)
-    const fuelQuickSelect = getFuelQuickSelectSource(context)
 
     switch (section) {
       case 'cleaning':
@@ -572,22 +572,12 @@ export function TransportScreen({
           <CleaningContent
             step={context.cleaningStep}
             pumpNumber={context.cleaningPumpNumber}
-            finalTime={context.cleaningFinalTime}
-            startedAt={context.cleaningStartedAt}
-            fuelActivePump={fuelQuickSelect?.pump ?? null}
-            fuelQuickSelectInProgress={fuelQuickSelect?.inProgress ?? false}
-            unavailablePumps={context.unavailablePumps}
             onScanPump={() => openScanner('cleaning')}
             onManualEntry={() => onCleaningAction('manual-entry')}
             onBackToScan={() => onCleaningAction('back-to-scan')}
             onPumpChange={(value) => onCleaningAction('pump-change', value)}
             onQuickSelectPump={(pump) => onCleaningAction('quick-select-pump', pump)}
             onClearPump={() => onCleaningAction('clear-pump')}
-            onVerifyPump={() => onCleaningAction('verify-pump')}
-            onWrongPump={() => onCleaningAction('wrong-pump')}
-            onStartCleaning={() => onCleaningAction('start-cleaning')}
-            onFinishCleaning={() => onCleaningAction('finish-cleaning')}
-            onContinueCleaning={() => onCleaningAction('continue-cleaning')}
           />
         )
       case 'movement':
@@ -663,13 +653,35 @@ export function TransportScreen({
     <div className="relative flex min-h-0 w-full flex-1 flex-col app-surface">
       <Header
         title={resolvedTitle}
-        subtitle={resolvedSubtitle}
         onBack={() => onAction('back')}
         onReportIssue={() => onAction('report-issue')}
         onSignOut={onSignOut}
         onReplayTutorial={tutorial.start}
+        showSessionTimer={false}
         confirmOnExit
+        exitNavigateMode={
+          gasboyFuelExitBlockMode === 'complete-fuel'
+            ? 'complete-fuel'
+            : gasboyFuelExitBlockMode === 'fuel-in-progress'
+              ? 'fuel-in-progress'
+              : 'leave'
+        }
+        onExitComplete={requireFuelCompleteBeforeExit ? handleComplete : undefined}
       />
+
+      {!tutorial.active ? (
+        <SessionTimer
+          label={
+            finishWorkflowId === 'vsa'
+              ? t('workflow.vsa.timer')
+              : finishWorkflowId === 'transport'
+                ? t('workflow.transport.timer')
+                : finishWorkflowId === 'fuel'
+                  ? t('workflow.fuelOnly.timer')
+                  : undefined
+          }
+        />
+      ) : null}
 
       <main
         id="main-content"
@@ -677,64 +689,69 @@ export function TransportScreen({
         className="app-scroll app-workflow-main min-h-0 flex-1 py-2"
       >
         <div className="app-workflow-scroll-body">
-          <div className="app-main-bottom" data-workflow-widget="stack">
-          <VehicleCard
-            summary={vehicleSummary}
-            onReportVehicle={() => onAction('report-issue', 'vehicle')}
-            odometer={{
-              odometerReading: odometerDisplayValue,
-              onOdometerChange: (value) => onAction('odometer-change', value),
-              verified: !manualMileageRequired,
-              hint: odometerHint,
-              minimumMiles: odometerMinimumMiles,
-              odometerRef,
-            }}
-          />
-          <AccordionGroup>
-            {sections.map((section, index) => {
-              const sectionOptional = isSectionOptional(
-                section,
-                sections,
-                sectionStatus,
-                fuelWorkflowContext,
-              )
-              const sectionAwaiting =
-                !isSectionExpanded(section) &&
-                !isSectionDisabled(section) &&
-                !sectionOptional &&
-                (sectionStatus[section] === 'not-started' ||
-                  sectionStatus[section] === 'in-progress' ||
-                  sectionStatus[section] === 'missing')
+          <div className="app-main-bottom workflow-stack" data-workflow-widget="stack">
+            <VehicleCard
+              summary={vehicleSummary}
+              onReportVehicle={() => onAction('report-issue', 'vehicle')}
+              odometer={{
+                odometerReading: odometerDisplayValue,
+                onOdometerChange: (value) => onAction('odometer-change', value),
+                verified: !manualMileageRequired,
+                minimumMiles: odometerMinimumMiles,
+                odometerRef,
+              }}
+            />
+            <AccordionGroup>
+              {sections.map((section, index) => {
+                const sectionOptional = sectionIsOptional(section)
+                const sectionShowsRequiredChip = shouldShowSectionRequiredChip(
+                  section,
+                  sectionOptional,
+                  sectionStatus[section],
+                  finishWorkflowId,
+                )
+                const sectionAwaiting =
+                  !isSectionExpanded(section) &&
+                  !isSectionDisabled(section) &&
+                  !sectionOptional &&
+                  (sectionStatus[section] === 'not-started' ||
+                    sectionStatus[section] === 'in-progress' ||
+                    sectionStatus[section] === 'missing')
 
-              return (
-                <AccordionSection
-                  key={section}
-                  title={sectionTitles[section]}
-                  status={sectionStatus[section]}
-                  statusLabel={sectionOptional ? t('common.optional') : undefined}
-                  chipVariant={sectionOptional ? 'optional' : 'default'}
-                  highlighted={sectionAwaiting}
-                  expanded={isSectionExpanded(section)}
-                  disabled={isSectionDisabled(section)}
-                  disabledReason={getSectionDisabledReason(
-                    section,
-                    context,
-                    messages.workflow.complete,
-                  )}
-                  onToggle={() => toggleSection(section)}
-                  isLast={index === sections.length - 1}
-                  trackTag={`workflow.accordion.${section}`}
-                  headerTimerStartedAt={getSectionTimerStartedAt(section)}
-                  dataTutorial={section}
-                  sectionRef={(el) => {
-                    sectionRefs.current[section] = el
-                  }}
-                >
-                  {renderSectionContent(section)}
-                </AccordionSection>
-              )
-            })}
-          </AccordionGroup>
+                return (
+                  <AccordionSection
+                    key={section}
+                    title={sectionTitles[section]}
+                    status={sectionStatus[section]}
+                    statusLabel={sectionOptional ? t('common.optional') : undefined}
+                    chipVariant={
+                      sectionOptional
+                        ? 'optional'
+                        : sectionShowsRequiredChip
+                          ? 'required'
+                          : 'default'
+                    }
+                    highlighted={sectionAwaiting}
+                    expanded={isSectionExpanded(section)}
+                    disabled={isSectionDisabled(section)}
+                    disabledReason={getSectionDisabledReason(
+                      section,
+                      context,
+                      messages.workflow.complete,
+                    )}
+                    onToggle={() => toggleSection(section)}
+                    isLast={index === sections.length - 1}
+                    trackTag={`workflow.accordion.${section}`}
+                    dataTutorial={section}
+                    sectionRef={(el) => {
+                      sectionRefs.current[section] = el
+                    }}
+                  >
+                    {renderSectionContent(section)}
+                  </AccordionSection>
+                )
+              })}
+            </AccordionGroup>
           </div>
         </div>
       </main>
@@ -748,15 +765,16 @@ export function TransportScreen({
           disabled={!canComplete}
           onClick={handleCompletePress}
           ariaDescribedBy={
-            showCompleteHint && completeDisabledReason ? completeHintId : undefined
+            showCompleteHint && !canComplete && completeDisabledReason
+              ? completeHintId
+              : undefined
           }
         />
-        {showCompleteHint && completeDisabledReason ? (
+        {showCompleteHint && !canComplete && completeDisabledReason ? (
           <p
             id={completeHintId}
-            className="app-workflow-footer__hint"
-            role="status"
-            aria-live="polite"
+            className="app-workflow-footer__hint app-workflow-footer__hint--blocked"
+            role="alert"
           >
             {completeDisabledReason}
           </p>

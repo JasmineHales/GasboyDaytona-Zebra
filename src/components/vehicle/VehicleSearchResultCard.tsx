@@ -43,7 +43,7 @@ export function VehicleSearchResultCard({
           role="radio"
           aria-checked={selected}
           name={radioName}
-          className="vehicle-search-card__radio field-target"
+          className="vehicle-search-card__select"
           aria-label={t('vehicleSearch.results.selectVehicleAria', {
             plate: vehicle.licensePlate,
           })}
@@ -53,19 +53,17 @@ export function VehicleSearchResultCard({
           })}
         >
           <span className="vehicle-search-card__radio-mark" aria-hidden />
+          <VehicleSearchListCardHeader {...detailProps} />
+          {detailProps.holdWarning ? (
+            <span className="vehicle-search-card__hold-badge">
+              {t('vehicleSearch.results.onHoldBadge')}
+            </span>
+          ) : null}
         </button>
-
-        <VehicleSearchListCardHeader {...detailProps} />
-
-        {detailProps.holdWarning ? (
-          <span className="vehicle-search-card__hold-badge">
-            {t('vehicleSearch.results.onHoldBadge')}
-          </span>
-        ) : null}
 
         <button
           type="button"
-          className="vehicle-search-card__expand field-target"
+          className="vehicle-search-card__expand"
           aria-expanded={expanded}
           aria-controls={detailsId}
           aria-label={t('vehicleSearch.results.toggleDetailsAria', {

@@ -26,6 +26,17 @@ import {
   resolveMovementScreen,
   resolveStallScreen,
 } from '../utils/flowScreenSync'
+import { getSessionStartAt } from './useSessionElapsed'
+
+function confirmCleaningStall(prev: FlowContext, pump: string): FlowContext {
+  return {
+    ...prev,
+    cleaningPumpNumber: pump,
+    cleaningStep: 'cleaning-complete',
+    cleaningStartedAt: getSessionStartAt(),
+    cleaningComplete: true,
+  }
+}
 
 function fuelTransactionTime(prev: FlowContext): string {
   return formatFuelFinalTime(prev.fuelStartedAt) || prev.fuelFinalTime.trim() || '--'
@@ -175,6 +186,8 @@ function applyRemoteFuelingComplete(prev: FlowContext): FlowContext {
 }
 
 function scheduleRemoteGallonSync(setContext: Dispatch<SetStateAction<FlowContext>>) {
+  if (isTutorialModeActive()) return
+
   window.setTimeout(() => {
     setContext((prev) => {
       if (!prev.fuelGallonsPending || !isFuelCompleteStep(prev.fuelStep)) {
@@ -193,6 +206,7 @@ function scheduleRemoteFuelTelemetryForContext(
   ctx: FlowContext,
   setContext: Dispatch<SetStateAction<FlowContext>>,
 ) {
+  if (isTutorialModeActive()) return
   if (!isRemoteGasboy(ctx) || ctx.fuelSimManualCompleteOnly) return
 
   const token = ++remoteFuelTelemetryToken
@@ -249,6 +263,8 @@ const UNLOCK_SUCCESS_MS = 1500
 const UNLOCK_FAIL_MS = 15_000
 
 function scheduleUnlockSimulation(setContext: Dispatch<SetStateAction<FlowContext>>) {
+  if (isTutorialModeActive()) return
+
   window.setTimeout(() => {
     setContext((prev) => {
       if (prev.fuelStep !== 'unlocking-pump') return prev
@@ -366,6 +382,7 @@ export function useFlow() {
   const [context, setContext] = useState<FlowContext>(readInitialContext)
 
   useEffect(() => {
+    if (isTutorialModeActive()) return
     savePersistedWorkflow({ context })
   }, [context])
 
@@ -528,7 +545,10 @@ export function useFlow() {
             pumpNumber: '',
             fuelStartedAt: null,
             fuelGallons: '',
-            screen: 'on-site-default',
+            screen: fuelVerifyScreen({
+              unlockMode: 'on-site',
+              locationType: prev.locationType,
+            }),
           }
         case 'unlock-pump': {
           if (prev.fuelStep === 'manual-entry-error') return prev
@@ -772,6 +792,8 @@ export function useFlow() {
   }, [])
 
   const recordGallonsCapture = useCallback((record: GallonsCaptureRecord) => {
+    if (isTutorialModeActive()) return
+
     setContext((prev) => ({
       ...prev,
       fuelGallonsCapture: record,
@@ -779,6 +801,8 @@ export function useFlow() {
   }, [])
 
   const handleMovementAction = useCallback((action: string, payload?: string) => {
+    if (isTutorialModeActive()) return
+
     setContext((prev) => {
       let next: FlowContext
 
@@ -857,6 +881,8 @@ export function useFlow() {
   }, [])
 
   const handleCleaningAction = useCallback((action: string, payload?: string) => {
+    if (isTutorialModeActive()) return
+
     setContext((prev) => {
       const isUnavailablePump = (pump: string) =>
         prev.unavailablePumps.includes(Number(pump))
@@ -865,12 +891,7 @@ export function useFlow() {
 
       switch (action) {
         case 'scan-complete':
-          next = {
-            ...prev,
-            cleaningStep: 'pump-verified',
-            cleaningPumpNumber: payload?.trim() || '5',
-            cleaningComplete: false,
-          }
+          next = confirmCleaningStall(prev, payload?.trim() || '5')
           break
         case 'manual-entry':
           next = {
@@ -916,11 +937,7 @@ export function useFlow() {
               cleaningPumpNumber: pump,
             }
           } else {
-            next = {
-              ...prev,
-              cleaningStep: 'pump-verified',
-              cleaningPumpNumber: pump,
-            }
+            next = confirmCleaningStall(prev, pump)
           }
           break
         }
@@ -928,7 +945,9 @@ export function useFlow() {
           next = {
             ...prev,
             cleaningPumpNumber: '',
-            cleaningStep: 'manual-entry',
+            cleaningStep: 'verify-pump',
+            cleaningComplete: false,
+            cleaningStartedAt: null,
           }
           break
         case 'verify-pump': {
@@ -940,11 +959,7 @@ export function useFlow() {
               cleaningPumpNumber: pump,
             }
           } else {
-            next = {
-              ...prev,
-              cleaningStep: 'pump-verified',
-              cleaningPumpNumber: pump,
-            }
+            next = confirmCleaningStall(prev, pump)
           }
           break
         }
@@ -957,12 +972,7 @@ export function useFlow() {
           }
           break
         case 'start-cleaning':
-          next = {
-            ...prev,
-            cleaningStep: 'cleaning-in-progress',
-            cleaningStartedAt: Date.now(),
-            cleaningComplete: false,
-          }
+          next = confirmCleaningStall(prev, prev.cleaningPumpNumber.trim() || '5')
           break
         case 'finish-cleaning': {
           const elapsed = prev.cleaningStartedAt
@@ -982,9 +992,9 @@ export function useFlow() {
         case 'continue-cleaning':
           next = {
             ...prev,
-            cleaningStep: 'cleaning-in-progress',
-            cleaningComplete: false,
-            cleaningStartedAt: prev.cleaningStartedAt ?? Date.now(),
+            cleaningStep: 'cleaning-complete',
+            cleaningComplete: true,
+            cleaningStartedAt: prev.cleaningStartedAt ?? getSessionStartAt(),
           }
           break
         default:
@@ -999,6 +1009,8 @@ export function useFlow() {
   }, [])
 
   const handleStallAction = useCallback((action: string, payload?: string) => {
+    if (isTutorialModeActive()) return
+
     setContext((prev) => {
       switch (action) {
         case 'stall-select': {

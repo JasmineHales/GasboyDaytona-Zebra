@@ -10,10 +10,6 @@ import {
   shouldForceTutorial,
   type TutorialForceTarget,
 } from './utils/tutorialSteps'
-import { resolveDesignVersion, readDesignVersionFromUrl, writeDesignVersionDevOverride, type DesignVersion } from './utils/designVersion'
-import { DesignVersionProvider } from './context/DesignVersionContext'
-import { DesignVersionSwitcher } from './components/dev/DesignVersionSwitcher'
-import { DevDevicePreviewFrame, devAppShellClassName, useDevEm45Preview } from './components/dev/DevDevicePreviewFrame'
 import { HomePage } from './components/HomePage'
 import { InitialSetupScreen } from './components/InitialSetupScreen'
 import { TransportScreen } from './components/TransportScreen'
@@ -52,6 +48,7 @@ import { useTranslate } from './i18n/I18nProvider'
 import { useClickTracking } from './hooks/useClickTracking'
 import { useFlow } from './hooks/useFlow'
 import { getRuntimeMode } from './utils/runtime'
+import { EM45_VIEWPORT } from './utils/devDeviceFrame'
 import {
   clearPersistedWorkflow,
   loadPersistedWorkflow,
@@ -73,6 +70,7 @@ import { workflowToActivityType } from './utils/vehicleSearchActivity'
 import { isVehicleSearchDevStateId } from './utils/vehicleSearchDevStates'
 import { consumeCaptureSeed } from './utils/captureSeed'
 import { resetSessionTimer } from './components/ui/SessionTimer'
+import { isTutorialModeActive } from './utils/tutorialModeState'
 
 type LoginPreview = 'device' | 'browser' | null
 
@@ -81,7 +79,6 @@ function shouldForceLoginScreen() {
 }
 
 function initialView(force: TutorialForceTarget | null): AppView {
-  if (readDesignVersionFromUrl()) return 'home'
   const seed = import.meta.env.DEV ? consumeCaptureSeed() : null
   if (seed?.page === 'tracking') return 'tracking'
   if (seed?.page === 'workflow' && seed.activeView) return seed.activeView
@@ -102,27 +99,6 @@ function initialCaptureAuth() {
 }
 
 export default function App() {
-  const [designVersion, setDesignVersion] = useState<DesignVersion>(() => resolveDesignVersion())
-
-  const handleDesignVersionChange = (version: DesignVersion) => {
-    writeDesignVersionDevOverride(version)
-    setDesignVersion(version)
-  }
-
-  return (
-    <MainApp
-      designVersion={designVersion}
-      onDesignVersionChange={handleDesignVersionChange}
-    />
-  )
-}
-
-type MainAppProps = {
-  designVersion: DesignVersion
-  onDesignVersionChange: (version: DesignVersion) => void
-}
-
-function MainApp({ designVersion, onDesignVersionChange }: MainAppProps) {
   const t = useTranslate()
   const [runtimeMode] = useState(() => getRuntimeMode())
   const isHertzDevice = runtimeMode === 'hertz-device'
@@ -141,9 +117,8 @@ function MainApp({ designVersion, onDesignVersionChange }: MainAppProps) {
   )
   const [loginPreview, setLoginPreview] = useState<LoginPreview>(null)
   const [devExperience, setDevExperience] = useState<'device' | 'browser'>(() =>
-    isHertzDevice ? 'device' : import.meta.env.DEV ? 'device' : 'browser',
+    isHertzDevice || readAuthMethod() === 'device' ? 'device' : 'browser',
   )
-  const useEm45Preview = useDevEm45Preview(devExperience)
   const [ssoUser, setSsoUser] = useState<SsoUser | null>(() => readSsoUser())
   const [operatorSite, setOperatorSite] = useState(() =>
     resolveOperatorSite(readSsoUser()?.site ?? MOCK_SSO_USER.site),
@@ -180,8 +155,7 @@ function MainApp({ designVersion, onDesignVersionChange }: MainAppProps) {
 
   const showLogin = !isAuthenticated || loginPreview != null
   const loginVariant = loginPreview ?? devExperience
-  const showInitialSetupForVersion = showInitialSetup
-  const showAppContent = !showLogin && !showInitialSetupForVersion
+  const showAppContent = !showLogin && !showInitialSetup
   const authMethod = readAuthMethod()
   const useDeviceHome = isHertzDevice || authMethod === 'device'
   const workflowView: WorkflowView | null =
@@ -268,16 +242,10 @@ function MainApp({ designVersion, onDesignVersionChange }: MainAppProps) {
     setIsAuthenticated(true)
     setLoginPreview(null)
     if (!readInitialSetupComplete()) {
-      if (import.meta.env.DEV) {
-        markInitialSetupComplete()
-        setOperatorSite(resolveOperatorSite())
-      } else {
-        setShowInitialSetup(true)
-        return
-      }
-    } else {
-      setOperatorSite(resolveOperatorSite())
+      setShowInitialSetup(true)
+      return
     }
+    setOperatorSite(resolveOperatorSite())
   }
 
   const handleBrowserSignIn = (user: SsoUser) => {
@@ -346,20 +314,9 @@ function MainApp({ designVersion, onDesignVersionChange }: MainAppProps) {
     setView(workflow)
   }
 
-  const browserUser = ssoUser ?? readSsoUser()
-
   const requestWorkflow = (workflow: WorkflowView) => {
     setVehicleSearchWorkflow(workflow)
     setVehicleSearchDevState('vehicle-search:idle')
-  }
-
-  const startWorkflow = (workflow: WorkflowView) => {
-    if (useDeviceHome) {
-      setWorkflowVehicleProfile(null)
-      enterWorkflow(workflow)
-      return
-    }
-    requestWorkflow(workflow)
   }
 
   const handleVehicleSearchCancel = () => {
@@ -481,6 +438,8 @@ function MainApp({ designVersion, onDesignVersionChange }: MainAppProps) {
   }
 
   const handleFlowAction = (action: string, payload?: string) => {
+    if (isTutorialModeActive()) return
+
     if (action === 'workflow-finish') {
       handleAction('complete', payload)
       clearPersistedWorkflow()
@@ -534,7 +493,7 @@ function MainApp({ designVersion, onDesignVersionChange }: MainAppProps) {
   const activePageKey = resolveActivePageKey({
     view,
     showLogin,
-    showSetup: showInitialSetupForVersion,
+    showSetup: showInitialSetup,
   })
 
   const resolvedWidgetKey =
@@ -543,19 +502,20 @@ function MainApp({ designVersion, onDesignVersionChange }: MainAppProps) {
       ? resolveActiveWidgetKey(workflowView, context.screen, context)
       : null)
 
-  const handleDesignVersionChange = (version: DesignVersion) => {
-    onDesignVersionChange(version)
-    setView('home')
-    setActiveWidgetKey(null)
-    setVehicleSearchWorkflow(null)
-    setVehicleSearchDevState('vehicle-search:idle')
-    setWorkflowVehicleProfile(null)
-    savePersistedWorkflow({ activeView: null })
-  }
+  const browserUser = ssoUser ?? readSsoUser()
+
+  const isEm45Frame =
+    import.meta.env.DEV && loginVariant === 'device' && !isHertzDevice
+  const appShellClassName = isEm45Frame
+    ? 'app-shell app-surface relative flex min-h-0 flex-1 flex-col overflow-hidden'
+    : 'app-shell app-surface relative flex min-h-0 flex-1 flex-col overflow-hidden sm:max-w-xl sm:rounded-xl sm:shadow-lg md:max-w-2xl md:rounded-2xl lg:max-w-3xl xl:max-w-4xl'
 
   return (
-    <DesignVersionProvider version={designVersion}>
-    <div className="app-viewport flex h-dvh min-h-0" data-runtime={runtimeMode} data-design-version={designVersion}>
+    <div
+      className="app-viewport flex h-dvh min-h-0"
+      data-runtime={runtimeMode}
+      data-device-frame={isEm45Frame ? 'em45' : 'responsive'}
+    >
       <a href="#main-content" className="fleet-skip-link">
         {t('common.skipToMainContent')}
       </a>
@@ -566,7 +526,7 @@ function MainApp({ designVersion, onDesignVersionChange }: MainAppProps) {
         context={context}
         view={view}
         showLogin={showLogin}
-        showSetup={showInitialSetupForVersion}
+        showSetup={showInitialSetup}
         loginVariant={loginVariant}
         onSelectPage={handlePageSelect}
         onSelectWidget={handleWidgetSelect}
@@ -575,25 +535,34 @@ function MainApp({ designVersion, onDesignVersionChange }: MainAppProps) {
         vehicleSearchActive={Boolean(vehicleSearchWorkflow)}
         vehicleSearchDevState={vehicleSearchDevState}
         onVehicleSearchDevStateSelect={setVehicleSearchDevState}
-        designVersion={designVersion}
-        onDesignVersionChange={handleDesignVersionChange}
       />
-      <DevDevicePreviewFrame
-        devExperience={devExperience}
-        mobileSwitcher={
-          <div className="dev-design-switcher-mobile md:hidden">
-            <DesignVersionSwitcher
-              designVersion={designVersion}
-              onDesignVersionChange={handleDesignVersionChange}
-              compact
-            />
-          </div>
-        }
+      <div
+        className={`app-preview-column flex min-h-0 min-w-0 flex-1 flex-col bg-[var(--color-hertz-page)]${
+          isEm45Frame ? ' app-preview-column--framed p-2' : ' p-0 sm:p-3 md:p-4 lg:p-6'
+        }`}
       >
         <div
-          key={`design-${designVersion}`}
-          className={devAppShellClassName(useEm45Preview, 'app-surface')}
-          data-current-view={showLogin ? 'login' : showInitialSetupForVersion ? 'setup' : view}
+          className={`dev-device-frame${
+            isEm45Frame ? ' dev-device-frame--em45' : ' dev-device-frame--responsive'
+          }`}
+        >
+          {isEm45Frame && (
+            <div className="dev-device-frame__chrome" aria-hidden>
+              <span className="dev-device-frame__label">Zebra EM45</span>
+              <span className="dev-device-frame__size">
+                {EM45_VIEWPORT.width} × {EM45_VIEWPORT.height}
+              </span>
+            </div>
+          )}
+          <div
+            className={`dev-device-frame__viewport${
+              isEm45Frame ? ' dev-device-frame__viewport--em45' : ''
+            }`}
+            data-em45-preview={isEm45Frame ? '' : undefined}
+          >
+        <div
+          className={appShellClassName}
+          data-current-view={showLogin ? 'login' : showInitialSetup ? 'setup' : view}
           data-current-screen={context.screen}
         >
           <div id="app-main-shell" className="flex min-h-0 flex-1 flex-col overflow-hidden">
@@ -606,7 +575,7 @@ function MainApp({ designVersion, onDesignVersionChange }: MainAppProps) {
               )}
             </>
           )}
-          {!showLogin && showInitialSetupForVersion && (
+          {!showLogin && showInitialSetup && (
             <InitialSetupScreen
               onComplete={handleInitialSetupComplete}
               applyDefaults={!readInitialSetupComplete()}
@@ -627,27 +596,25 @@ function MainApp({ designVersion, onDesignVersionChange }: MainAppProps) {
           )}
           {showAppContent && view === 'home' && useDeviceHome && !vehicleSearchWorkflow && (
             <HomePage
-              key={`design-${designVersion}`}
               site={operatorSite}
               onSiteChange={handleOperatorSiteChange}
               forceTutorial={shouldForceTutorial(tutorialForce, 'home')}
-              onSelectVsa={() => startWorkflow('vsa')}
-              onSelectTransport={() => startWorkflow('transport')}
-              onSelectFuel={() => startWorkflow('fuel')}
+              onSelectVsa={() => requestWorkflow('vsa')}
+              onSelectTransport={() => requestWorkflow('transport')}
+              onSelectFuel={() => requestWorkflow('fuel')}
               onReportIssue={() => handleAction('report-issue')}
               onSignOut={handleSignOut}
             />
           )}
           {showAppContent && view === 'home' && !useDeviceHome && browserUser && !vehicleSearchWorkflow && (
             <BrowserHomePage
-              key={`design-${designVersion}`}
               user={browserUser}
               site={operatorSite}
               onSiteChange={handleOperatorSiteChange}
               forceTutorial={shouldForceTutorial(tutorialForce, 'home')}
-              onSelectVsa={() => startWorkflow('vsa')}
-              onSelectTransport={() => startWorkflow('transport')}
-              onSelectFuel={() => startWorkflow('fuel')}
+              onSelectVsa={() => requestWorkflow('vsa')}
+              onSelectTransport={() => requestWorkflow('transport')}
+              onSelectFuel={() => requestWorkflow('fuel')}
               onReportIssue={() => handleAction('report-issue')}
               onSignOut={handleSignOut}
             />
@@ -716,6 +683,13 @@ function MainApp({ designVersion, onDesignVersionChange }: MainAppProps) {
                     ? 'vehicle'
                     : 'header'
               }
+              vehicleProfile={
+                view === 'vsa'
+                  ? VSA_VEHICLE
+                  : view === 'transport' || view === 'fuel'
+                    ? TRANSPORT_VEHICLE
+                    : undefined
+              }
               vehicle={
                 view === 'vsa'
                   ? { unitId: VSA_VEHICLE.unitId, name: VSA_VEHICLE.name }
@@ -736,8 +710,9 @@ function MainApp({ designVersion, onDesignVersionChange }: MainAppProps) {
           </div>
           <div id="app-overlay-root" className="app-overlay-root" />
         </div>
-      </DevDevicePreviewFrame>
+          </div>
+        </div>
+      </div>
     </div>
-    </DesignVersionProvider>
   )
 }

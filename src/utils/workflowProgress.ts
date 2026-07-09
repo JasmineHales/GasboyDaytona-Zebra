@@ -8,7 +8,9 @@ import {
   type VehicleMileageState,
 } from './mileageResolution'
 
-const VSA_PARALLEL_SECTIONS: WorkflowSection[] = ['cleaning', 'fuel']
+export type WorkflowKind = 'transport' | 'vsa' | 'fuel'
+
+const VSA_CORE_SECTIONS: WorkflowSection[] = ['cleaning', 'fuel']
 
 export type FuelWorkflowContext = {
   fuelStep: FuelStep
@@ -148,32 +150,15 @@ function isFuelSectionSatisfiedForFinish(
   )
 }
 
-function isVsaFuelSectionSatisfiedForFinish(
-  sectionStatus: Record<WorkflowSection, SectionStatus>,
-  acknowledgedSections: WorkflowSection[],
-  fuelContext?: FuelWorkflowContext,
-): boolean {
-  const status = sectionStatus.fuel
-
-  if (fuelContext && isFuelPumpUnlockSyncPending(fuelContext)) {
-    return true
-  }
-
-  if (status === 'in-progress' || status === 'missing') {
-    return false
-  }
-
-  if (status === 'complete') {
-    return acknowledgedSections.includes('fuel')
-  }
-
-  return status === 'not-started'
-}
-
-/** Transport: fuel can be skipped when never started. VSA: stall is always skippable. */
-export function getOptionalSections(sections: WorkflowSection[]): WorkflowSection[] {
-  if (isVsaWorkflow(sections)) {
-    return sections.includes('stall') ? ['stall'] : []
+/** Transport: fuel can be skipped when never started. VSA: fuel and stall are skippable. */
+export function getOptionalSections(
+  sections: WorkflowSection[],
+  workflowKind?: WorkflowKind,
+): WorkflowSection[] {
+  if (isVsaWorkflow(sections, workflowKind)) {
+    const optional: WorkflowSection[] = ['fuel']
+    if (sections.includes('stall')) optional.push('stall')
+    return optional
   }
 
   const isTransport =
@@ -184,19 +169,27 @@ export function getOptionalSections(sections: WorkflowSection[]): WorkflowSectio
   return isTransport ? ['fuel'] : []
 }
 
-export function isVsaWorkflow(sections: WorkflowSection[]): boolean {
-  return sections.includes('cleaning') && sections.includes('fuel')
+export function isVsaWorkflow(
+  sections: WorkflowSection[],
+  workflowKind?: WorkflowKind,
+): boolean {
+  if (workflowKind === 'vsa') return true
+  if (workflowKind === 'fuel' || workflowKind === 'transport') return false
+  return sections.includes('cleaning') || (sections.includes('stall') && !sections.includes('movement'))
 }
 
-/** Cleaning and fuel can be acknowledged independently on VSA. */
-export function getParallelSections(sections: WorkflowSection[]): WorkflowSection[] {
-  return isVsaWorkflow(sections) ? VSA_PARALLEL_SECTIONS : []
+/** Fuel (and legacy cleaning) can be acknowledged independently on VSA. */
+export function getParallelSections(
+  sections: WorkflowSection[],
+  workflowKind?: WorkflowKind,
+): WorkflowSection[] {
+  return isVsaWorkflow(sections, workflowKind) ? VSA_CORE_SECTIONS : []
 }
 
 export function hasVsaCoreServiceComplete(
   sectionStatus: Record<WorkflowSection, SectionStatus>,
 ): boolean {
-  return VSA_PARALLEL_SECTIONS.some(
+  return VSA_CORE_SECTIONS.some(
     (section) => sectionStatus[section] === 'complete',
   )
 }
@@ -205,7 +198,7 @@ export function hasVsaCoreServiceAcknowledged(
   sectionStatus: Record<WorkflowSection, SectionStatus>,
   acknowledgedSections: WorkflowSection[],
 ): boolean {
-  return VSA_PARALLEL_SECTIONS.some(
+  return VSA_CORE_SECTIONS.some(
     (section) =>
       sectionStatus[section] === 'complete' &&
       acknowledgedSections.includes(section),
@@ -218,6 +211,7 @@ export function isSectionOptional(
   sections: WorkflowSection[],
   sectionStatus: Record<WorkflowSection, SectionStatus>,
   fuelContext?: FuelWorkflowContext,
+  workflowKind?: WorkflowKind,
 ): boolean {
   const status = sectionStatus[section]
 
@@ -229,28 +223,45 @@ export function isSectionOptional(
     if (sections.includes('movement') && sectionStatus.movement === 'complete') {
       return true
     }
-    if (isVsaWorkflow(sections) && hasVsaCoreServiceComplete(sectionStatus)) {
+    if (isVsaWorkflow(sections, workflowKind) && hasVsaCoreServiceComplete(sectionStatus)) {
       return true
     }
   }
 
   if (status !== 'not-started') return false
 
-  if (isVsaWorkflow(sections)) {
-    if (section === 'stall' || VSA_PARALLEL_SECTIONS.includes(section)) {
+  if (isVsaWorkflow(sections, workflowKind)) {
+    if (section === 'stall' || section === 'fuel') {
       return true
     }
   }
 
-  return getOptionalSections(sections).includes(section)
+  return getOptionalSections(sections, workflowKind).includes(section)
 }
 
-export function getRequiredSections(sections: WorkflowSection[]): WorkflowSection[] {
-  if (isVsaWorkflow(sections)) {
-    return VSA_PARALLEL_SECTIONS
+/** Accordion header chip — required sections awaiting input use the mileage-style Required badge. */
+export function shouldShowSectionRequiredChip(
+  section: WorkflowSection,
+  sectionOptional: boolean,
+  status: SectionStatus,
+  workflowKind?: WorkflowKind,
+): boolean {
+  if (sectionOptional || status === 'complete' || status === 'missing') return false
+  if (status === 'in-progress') {
+    return workflowKind === 'vsa' && section === 'cleaning'
+  }
+  return true
+}
+
+export function getRequiredSections(
+  sections: WorkflowSection[],
+  workflowKind?: WorkflowKind,
+): WorkflowSection[] {
+  if (isVsaWorkflow(sections, workflowKind)) {
+    return []
   }
 
-  const optional = new Set(getOptionalSections(sections))
+  const optional = new Set(getOptionalSections(sections, workflowKind))
   return sections.filter((section) => !optional.has(section))
 }
 
@@ -300,30 +311,19 @@ function isVsaWorkflowReadyToFinish(
   acknowledgedSections: WorkflowSection[],
   fuelContext?: FuelWorkflowContext,
 ): boolean {
-  if (!hasVsaCoreServiceAcknowledged(sectionStatus, acknowledgedSections)) {
-    return false
-  }
+  const optionalSections = getOptionalSections(sections, 'vsa')
 
   return sections.every((section) => {
-    if (section === 'fuel') {
-      return isVsaFuelSectionSatisfiedForFinish(
-        sectionStatus,
-        acknowledgedSections,
-        fuelContext,
-      )
+    if (section === 'fuel' && fuelContext && isFuelPumpUnlockSyncPending(fuelContext)) {
+      return true
     }
 
-    const status = sectionStatus[section]
-
-    if (status === 'in-progress' || status === 'missing') {
-      return false
-    }
-
-    if (status === 'complete') {
-      return acknowledgedSections.includes(section)
-    }
-
-    return status === 'not-started'
+    return isSectionSatisfiedForFinish(
+      section,
+      sectionStatus[section],
+      acknowledgedSections,
+      optionalSections,
+    )
   })
 }
 
@@ -332,8 +332,9 @@ export function isWorkflowReadyToFinish(
   sectionStatus: Record<WorkflowSection, SectionStatus>,
   acknowledgedSections: WorkflowSection[],
   fuelContext?: FuelWorkflowContext,
+  workflowKind?: WorkflowKind,
 ): boolean {
-  if (isVsaWorkflow(sections)) {
+  if (isVsaWorkflow(sections, workflowKind)) {
     return isVsaWorkflowReadyToFinish(
       sections,
       sectionStatus,
@@ -342,7 +343,7 @@ export function isWorkflowReadyToFinish(
     )
   }
 
-  const optionalSections = getOptionalSections(sections)
+  const optionalSections = getOptionalSections(sections, workflowKind)
 
   return sections.every((section) => {
     if (section === 'fuel') {
@@ -368,8 +369,9 @@ export function hasBlockingSectionInProgress(
   sectionStatus: Record<WorkflowSection, SectionStatus>,
   _completableSection?: WorkflowSection,
   fuelContext?: FuelWorkflowContext,
+  workflowKind?: WorkflowKind,
 ): boolean {
-  const optional = new Set(getOptionalSections(sections))
+  const optional = new Set(getOptionalSections(sections, workflowKind))
   const fuelReportCompletionEligible =
     fuelContext &&
     hasFuelPumpReportCompletionEligibility({
@@ -387,8 +389,8 @@ export function hasBlockingSectionInProgress(
       return false
     }
 
-    // Transport: once fuel has started, footer Complete stays disabled until fuel settles
-    if (optional.has('fuel') && section === 'fuel') {
+    // Optional service sections block Complete once started.
+    if (optional.has(section) && (section === 'fuel' || section === 'cleaning')) {
       return true
     }
 
@@ -434,6 +436,7 @@ export function getSectionNeedingAttention(
     workflowReady?: boolean
     fuelContext?: FuelWorkflowContext
     isSectionDisabled?: (section: WorkflowSection) => boolean
+    workflowKind?: WorkflowKind
   } = {},
 ): WorkflowSection | null {
   const {
@@ -441,6 +444,7 @@ export function getSectionNeedingAttention(
     workflowReady = false,
     fuelContext,
     isSectionDisabled,
+    workflowKind,
   } = options
 
   const isEnabled = (section: WorkflowSection) => !isSectionDisabled?.(section)
@@ -451,6 +455,7 @@ export function getSectionNeedingAttention(
       sectionStatus,
       completableSection,
       fuelContext,
+      workflowKind,
     )
   ) {
     const blocking = sections.find((section) => {
@@ -470,19 +475,12 @@ export function getSectionNeedingAttention(
     return 'movement'
   }
 
-  if (isVsaWorkflow(sections) && !hasVsaCoreServiceComplete(sectionStatus)) {
-    const next = VSA_PARALLEL_SECTIONS.find(
-      (section) => isEnabled(section) && sectionStatus[section] !== 'complete',
-    )
-    if (next) return next
-  }
-
   if (completableSection && isEnabled(completableSection)) {
     return completableSection
   }
 
   if (!workflowReady) {
-    const optional = new Set(getOptionalSections(sections))
+    const optional = new Set(getOptionalSections(sections, workflowKind))
     const next = sections.find(
       (section) =>
         isEnabled(section) &&
@@ -490,6 +488,86 @@ export function getSectionNeedingAttention(
         !(optional.has(section) && sectionStatus[section] === 'not-started'),
     )
     if (next) return next
+  }
+
+  return null
+}
+
+export function hasDefiniteGasboyFuelingRecorded(
+  context: Pick<
+    FlowContext,
+    'fuelComplete' | 'fuelStep' | 'fuelTransactions' | 'fuelGallonsDispensed'
+  >,
+): boolean {
+  if (context.fuelComplete) return true
+  if (
+    context.fuelStep === 'fueling-complete' ||
+    context.fuelStep === 'additional-fueling-complete'
+  ) {
+    return true
+  }
+  if (context.fuelGallonsDispensed.trim().length > 0) return true
+  return context.fuelTransactions.some((row) => row.status === 'complete')
+}
+
+/** Gasboy fuel was recorded but the workflow Complete step was not acknowledged yet. */
+export function shouldRequireFuelCompleteBeforeExit(
+  sections: WorkflowSection[],
+  sectionStatus: Record<WorkflowSection, SectionStatus>,
+  acknowledgedSections: WorkflowSection[],
+  context: Pick<
+    FlowContext,
+    'locationType' | 'fuelComplete' | 'fuelStep' | 'fuelTransactions' | 'fuelGallonsDispensed'
+  >,
+): boolean {
+  if (context.locationType !== 'gasboy') return false
+  if (!sections.includes('fuel')) return false
+  if (!hasDefiniteGasboyFuelingRecorded(context)) return false
+  if (sectionStatus.fuel !== 'complete') return false
+  return !acknowledgedSections.includes('fuel')
+}
+
+function isGasboyFuelSessionBlockingExit(
+  context: Pick<
+    FlowContext,
+    'locationType' | 'fuelComplete' | 'fuelStep' | 'isAdditionalFueling'
+  >,
+): boolean {
+  if (context.locationType !== 'gasboy') return false
+  return isFuelWorkflowInProgress(context)
+}
+
+/** Block workflow exit while Gasboy fuel is active or awaiting workflow completion. */
+export function getGasboyFuelExitBlockMode(
+  sections: WorkflowSection[],
+  sectionStatus: Record<WorkflowSection, SectionStatus>,
+  acknowledgedSections: WorkflowSection[],
+  context: Pick<
+    FlowContext,
+    | 'locationType'
+    | 'fuelComplete'
+    | 'fuelStep'
+    | 'fuelTransactions'
+    | 'fuelGallonsDispensed'
+    | 'isAdditionalFueling'
+  >,
+): 'complete-fuel' | 'fuel-in-progress' | null {
+  if (context.locationType !== 'gasboy') return null
+  if (!sections.includes('fuel')) return null
+
+  if (
+    shouldRequireFuelCompleteBeforeExit(
+      sections,
+      sectionStatus,
+      acknowledgedSections,
+      context,
+    )
+  ) {
+    return 'complete-fuel'
+  }
+
+  if (isGasboyFuelSessionBlockingExit(context)) {
+    return 'fuel-in-progress'
   }
 
   return null
@@ -527,6 +605,7 @@ export function getCompleteDisabledReason(
   mileageOptions?: MileageResolutionOptions,
   vehicleCopy?: Pick<Messages['vehicle'], 'odometerFloorError' | 'milesUnit'>,
   locale = 'en-US',
+  workflowKind?: WorkflowKind,
 ): string | undefined {
   if (
     hasBlockingSectionInProgress(
@@ -534,23 +613,31 @@ export function getCompleteDisabledReason(
       sectionStatus,
       completableSection,
       fuelContext,
+      workflowKind,
     )
   ) {
     return copy.finishActiveSection
   }
-  if (!completableSection) {
-    if (workflowReady) {
-      return undefined
-    }
+  if (!completableSection && !workflowReady) {
     if (sections.includes('movement') && sectionStatus.movement !== 'complete') {
       return copy.finishMovement
     }
-    if (isVsaWorkflow(sections)) {
-      return sections.includes('stall')
-        ? copy.finishCleaningOrFuelWithStall
-        : copy.finishCleaningOrFuel
+    if (isVsaWorkflow(sections, workflowKind)) {
+      const optional = getOptionalSections(sections, workflowKind)
+      const pendingRequired = sections.some(
+        (section) =>
+          !optional.includes(section) &&
+          sectionStatus[section] !== 'complete' &&
+          sectionStatus[section] !== 'not-started',
+      )
+      if (pendingRequired) {
+        return sections.includes('stall')
+          ? copy.finishFuelWithStall
+          : copy.finishFuel
+      }
+      return copy.finishSection
     }
-    const optional = getOptionalSections(sections)
+    const optional = getOptionalSections(sections, workflowKind)
     if (optional.includes('fuel')) {
       return copy.finishMovementFuelOptional
     }
@@ -569,6 +656,9 @@ export function getCompleteDisabledReason(
       if (odometerError) return odometerError
     }
     return copy.enterOdometer
+  }
+  if (!completableSection) {
+    return undefined
   }
   return copy.acknowledgeSection.replace('{section}', sectionTitles[completableSection])
 }

@@ -10,6 +10,7 @@ import {
   hasVsaCoreServiceComplete,
   isStallSectionUnlocked,
   isVsaWorkflow,
+  type WorkflowKind,
 } from './workflowProgress'
 
 export type VehiclePriority = 'high' | 'medium' | 'low'
@@ -272,10 +273,11 @@ function derivePriority(
 function deriveOverallStatus(
   sectionStatus: Record<WorkflowSection, SectionStatus>,
   sections: WorkflowSection[],
+  workflowKind?: WorkflowKind,
 ): SectionStatus {
-  if (isVsaWorkflow(sections)) {
-    const parallel = ['cleaning', 'fuel'] as const
-    if (parallel.some((section) => sectionStatus[section] === 'missing')) {
+  if (isVsaWorkflow(sections, workflowKind)) {
+    const coreSections = ['fuel'] as const
+    if (coreSections.some((section) => sectionStatus[section] === 'missing')) {
       return 'missing'
     }
     if (
@@ -284,15 +286,15 @@ function deriveOverallStatus(
     ) {
       return sectionStatus.stall === 'missing' ? 'missing' : 'in-progress'
     }
-    if (parallel.some((section) => sectionStatus[section] === 'in-progress')) {
+    if (coreSections.some((section) => sectionStatus[section] === 'in-progress')) {
       return 'in-progress'
     }
     if (hasVsaCoreServiceComplete(sectionStatus)) return 'complete'
     return 'not-started'
   }
 
-  const required = getRequiredSections(sections)
-  const optional = getOptionalSections(sections)
+  const required = getRequiredSections(sections, workflowKind)
+  const optional = getOptionalSections(sections, workflowKind)
   const requiredStatuses = required.map((section) => sectionStatus[section])
 
   if (requiredStatuses.every((status) => status === 'complete')) {
@@ -315,27 +317,29 @@ export function getVehicleSummary(
   context: FlowContext,
   vehicle: VehicleProfile = TRANSPORT_VEHICLE,
   copy: Messages,
+  workflowKind?: WorkflowKind,
 ): VehicleSummary {
-  const optionalSections = getOptionalSections(sections)
-  const progressCounts = isVsaWorkflow(sections)
+  const optionalSections = getOptionalSections(sections, workflowKind)
+  const progressCounts = isVsaWorkflow(sections, workflowKind)
     ? getVsaProgressCounts(sectionStatus)
     : {
-        completed: getRequiredSections(sections).filter(
+        completed: getRequiredSections(sections, workflowKind).filter(
           (section) => sectionStatus[section] === 'complete',
         ).length,
-        total: getRequiredSections(sections).length,
+        total: getRequiredSections(sections, workflowKind).length,
       }
   const completedSections = progressCounts.completed
   const totalSections = progressCounts.total
   const progressPercent =
     totalSections === 0 ? 0 : Math.round((completedSections / totalSections) * 100)
 
-  const overallStatus = deriveOverallStatus(sectionStatus, sections)
+  const overallStatus = deriveOverallStatus(sectionStatus, sections, workflowKind)
   const { priority, priorityLabel } = vehicle.holdWarning
     ? { priority: 'high' as const, priorityLabel: copy.vehicle.status.onHold }
     : derivePriority(sectionStatus, sections, copy)
 
-  const stallUnlocked = isStallSectionUnlocked(context)
+  const stallUnlocked =
+    isVsaWorkflow(sections, workflowKind) || isStallSectionUnlocked(context)
   const isActionableSection = (section: WorkflowSection) =>
     section !== 'stall' || stallUnlocked
 
@@ -356,15 +360,12 @@ export function getVehicleSummary(
   const nextAction =
     overallStatus === 'complete'
       ? copy.vehicle.allStepsComplete
-      : isVsaWorkflow(sections) &&
-          sectionStatus.cleaning === 'complete' &&
-          sectionStatus.fuel === 'not-started'
-        ? copy.vehicle.cleaningCompleteOptional
-        : isVsaWorkflow(sections) &&
-            sectionStatus.fuel === 'complete' &&
-            sectionStatus.cleaning === 'not-started'
-          ? copy.vehicle.fuelingCompleteOptional
-          : sectionStatus.movement === 'complete' &&
+      : isVsaWorkflow(sections, workflowKind) &&
+          sectionStatus.fuel === 'complete' &&
+          sections.includes('stall') &&
+          sectionStatus.stall === 'not-started'
+        ? copy.vehicle.fuelingCompleteOptional
+        : sectionStatus.movement === 'complete' &&
               optionalSections.includes('fuel') &&
               sectionStatus.fuel === 'not-started'
             ? copy.vehicle.movementCompleteOptional

@@ -24,12 +24,12 @@ export function CompleteButton({
       aria-disabled={disabled ? true : undefined}
       aria-describedby={ariaDescribedBy}
       onClick={onClick}
-      className={`fleet-btn fleet-btn-lg fleet-btn-contained-success fleet-btn-elevated w-full${
+      className={`fleet-btn fleet-btn-lg fleet-btn-contained-brand fleet-btn-complete w-full${
         disabled ? ' fleet-btn--aria-disabled' : ''
       }`}
       {...trackProps(trackTag)}
     >
-      <Check className="h-6 w-6" aria-hidden />
+      <Check className="h-6 w-6" strokeWidth={2} aria-hidden />
       {t('common.complete')}
     </button>
   )

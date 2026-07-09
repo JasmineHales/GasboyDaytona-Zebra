@@ -31,10 +31,15 @@ export const en = {
     brandTaglineWeb: 'Remote Off · Web',
     menu: {
       replayTutorial: 'Replay tutorial',
+      tutorialModeOn: 'Tutorial mode: On',
+      tutorialModeOff: 'Tutorial mode: Off',
       reportIssue: 'Report Issue',
       languageSettings: 'Settings',
       signOut: 'Sign Out',
     },
+  },
+  tutorial: {
+    modeBanner: 'Tutorial mode — walkthrough only. Nothing is saved or sent.',
   },
   language: {
     title: 'Settings',
@@ -77,6 +82,17 @@ export const en = {
       body: 'You will return to the home screen. Your session timer will restart when you return.',
       continue: 'Keep working',
       leave: 'Leave',
+    },
+    completeFuel: {
+      title: 'Complete fueling first?',
+      body: 'A fuel transaction was recorded on this Gasboy pump. Tap Complete to finish and send it to Daytona before leaving.',
+      continue: 'Keep working',
+      complete: 'Complete fueling',
+    },
+    fuelInProgress: {
+      title: 'Fueling in progress',
+      body: 'Finish this Gasboy fuel session before leaving so the transaction is recorded in Daytona.',
+      continue: 'Keep working',
     },
   },
   auth: {
@@ -133,6 +149,11 @@ export const en = {
       allLocationsLabel: 'All locations',
       noResultsTitle: 'No locations found',
       noResultsHint: 'No matches for "{query}". Try a different search.',
+    },
+    availableToday: 'Available Today',
+    comingSoon: {
+      label: 'Coming Soon ({count})',
+      aria: '{count} workflows coming soon',
     },
     groups: {
       turnaround: {
@@ -200,9 +221,9 @@ export const en = {
       },
     },
     workflows: {
-      vsa: { title: 'VSA', description: 'Vehicle service & cleaning' },
-      transport: { title: 'Transport', description: 'Move vehicle to destination' },
-      fuel: { title: 'Fuel', description: 'Fuel vehicle' },
+      vsa: { title: 'VSA', description: 'Clean vehicle\nOptional fuel & stall' },
+      transport: { title: 'Transporter', description: 'Move or stall vehicle\nOptional fuel' },
+      fuel: { title: 'Fuel Only', description: 'Fuel only transaction' },
       'chase-van': { title: 'Chase Van', description: 'Retrieve customer chase van' },
       dispatcher: { title: 'Dispatcher', description: 'Coordinate fleet dispatch' },
       inspection: { title: 'Inspection', description: 'Pre-rental vehicle check' },
@@ -387,6 +408,7 @@ export const en = {
     },
     inProgress: {
       pump: 'Pump',
+      pumpTitle: 'Pump {pump}',
       elapsed: 'Elapsed',
       pickUpNozzle: 'Pick up the nozzle',
       fuelingAtPump: 'Fueling at pump',
@@ -397,26 +419,44 @@ export const en = {
       pickupWaitingHint: 'Pump data can take a moment to sync.',
     },
     transport: {
-      title: 'Transport',
+      title: 'Transporter',
       subtitle: 'Move vehicle to destination',
+      timer: 'Transporter Timer',
     },
     vsa: {
       title: 'VSA',
       subtitle: 'Vehicle Service Attendant',
+      timer: 'VSA Timer',
     },
     fuelOnly: {
       title: 'Fuel',
       subtitle: 'Fuel vehicle',
+      timer: 'Fuel Timer',
+    },
+    sectionRequired: 'Required',
+    sectionOptional: 'Optional',
+    required: 'Required',
+    optional: 'Optional',
+    statusInProgress: '{section} in progress',
+    statusBannerSubtitle: 'Complete required steps to finish',
+    mileageRequiredNotice: 'Mileage is required before you can complete.',
+    sectionSubtitles: {
+      movement: 'Move vehicle to destination',
+      fuel: 'Add fuel details if applicable',
+      stall: 'Add stall location if applicable',
+      cleaning: 'Record cleaning at cleaning stall',
     },
     complete: {
       finishActiveSection: 'Finish the active workflow section before completing.',
       finishMovement: 'Finish Movement to continue.',
       finishMovementFuelOptional: 'Finish Movement to continue. Fuel is optional.',
+      finishFuel: 'Finish Fuel to continue.',
+      finishFuelWithStall: 'Finish Fuel to continue. Stall is optional.',
       finishCleaningOrFuel: 'Finish Cleaning or Fuel to continue.',
       finishCleaningOrFuelWithStall:
         'Finish Cleaning or Fuel to continue. Other services are optional.',
       finishSection: 'Finish a workflow section to continue.',
-      enterOdometer: 'Enter odometer reading to continue.',
+      enterOdometer: 'Enter mileage to enable completion.',
       acknowledgeSection: 'Acknowledge {section} when ready.',
       sectionComplete: '{section} complete',
     },
@@ -428,8 +468,8 @@ export const en = {
     stallSelected: 'Stall Selected',
     stallVerify: 'Stall selected — verify stall',
     verifyPump: 'Enter pump number',
-    enterCleanLocation: 'Enter Workstation',
-    workstationReady: 'Workstation ready',
+    enterCleanLocation: 'Enter cleaning stall',
+    workstationReady: 'Cleaning stall ready',
     unlockingPump: 'Turning on pump',
     pumpReady: 'Pump ready',
     startFueling: 'Start Fueling',
@@ -528,15 +568,16 @@ export const en = {
   },
   cleaning: {
     manualEntry: 'Workstation Number',
-    enterWorkstationNo: 'Enter workstation no.',
-    selectAnotherWorkstation: 'Select another workstation',
-    scanWorkstation: 'Scan Workstation',
-    enterWorkstationNumber: 'Enter workstation number',
-    confirmWorkstation: 'Confirm Workstation',
-    backToScan: 'Back to QR Scanning',
-    atWorkstation: "You're at Workstation {workstation}",
-    workstationConfirmed: 'Workstation confirmed. Begin cleaning when ready.',
-    tableWorkstation: 'Workstation',
+    enterWorkstationNo: 'Enter workstation number',
+    selectAnotherWorkstation: 'Select another cleaning stall',
+    scanWorkstation: 'Scan workstation',
+    scanWorkstationHint: 'Fastest and recommended',
+    enterWorkstationNumber: 'Manually Enter',
+    confirmWorkstation: 'Confirm cleaning stall',
+    backToScan: '← Return to QR scanning',
+    atWorkstation: "You're at cleaning stall {workstation}",
+    workstationConfirmed: 'Cleaning stall confirmed. Begin cleaning when ready.',
+    tableWorkstation: 'Cleaning stall',
     startCleaning: 'Start Cleaning',
     finishCleaning: 'Finish Cleaning',
     statusComplete: 'Complete',
@@ -602,11 +643,13 @@ export const en = {
     verifyPump: 'Confirm pump',
     unlockPump: 'Turn on pump',
     scanPump: 'Scan pump',
-    backToScan: 'Back to scan',
+    backToScan: '← Return to QR scanning',
     cancelUnlock: 'Cancel Unlock',
     gallonsPending: 'Gallons will be added automatically.',
     needMoreFuel: 'Need more fuel?',
     needMoreFuelDesc: 'Report a problem to request additional fueling.',
+    pumpIssuesTitle: 'Pump Issues?',
+    pumpIssuesDesc: 'Report if fueling stopped early or fuel isn\'t dispensing.',
     reportAndContinue: 'Report & Continue',
     connectionLost: 'Pump {pump} Connection Lost',
     onSiteUnlock: 'Unlock at pump',
@@ -649,20 +692,20 @@ export const en = {
         description: 'Scan or enter the pump number',
         scanLabel: 'Scan pump',
         scanHint: 'Point at the QR on your pump',
-        manualEntryLabel: 'Enter pump number',
+        manualEntryLabel: 'Manual entry',
       },
       remote: {
-        label: 'Unlock with device',
+        label: 'Device',
         description: 'Scan or enter the pump number to turn on the pump from this device',
         scanLabel: 'Scan pump',
         scanHint: 'Point at the QR on your pump',
-        manualEntryLabel: 'Enter pump number',
+        manualEntryLabel: 'Manual entry',
       },
       onSite: {
         description: 'Turn on the pump at the terminal, then confirm here',
         scanLabel: 'Scan pump',
         scanHint: 'Confirm you are at the correct pump',
-        manualEntryLabel: 'Enter pump number',
+        manualEntryLabel: 'Manual entry',
       },
     },
     unlockMode: {
@@ -670,12 +713,12 @@ export const en = {
       infoAriaLabel: 'About unlock methods',
       overlayTitle: 'Unlock methods',
       remote: {
-        label: 'Unlock with device',
+        label: 'Device',
         text: 'The pump unlocks in this app when you scan or enter the number.',
         switchLabel: 'Switch to unlock at pump',
       },
       onSite: {
-        label: 'Unlock at pump',
+        label: 'Pump',
         text: 'Start your work timer in the app and unlock the pump at the terminal.',
         switchLabel: 'Switch to unlock with device',
       },
@@ -690,8 +733,15 @@ export const en = {
     remoteFueling: {
       timeLeft: 'Time left',
       fuelWithinSeconds: 'Fuel within {seconds} sec or pump locks.',
-      automaticCompleteHint: 'If not completed automatically.',
-      completeButton: 'Complete manually',
+      completeButton: 'Returned nozzle but not complete?',
+      completeConfirm: {
+        title: 'Nozzle returned?',
+        body: 'Confirm the nozzle is back on the pump before completing this session.',
+        graphicStep: 'Push nozzle into holster',
+        graphicLabel: 'Seat the nozzle fully in the pump holster.',
+        confirm: 'Yes, nozzle returned',
+        cancel: 'Not yet',
+      },
     },
     quickSelect: {
       label: 'Quick select',
@@ -929,7 +979,7 @@ export const en = {
     transport: {
       welcome: {
         title: 'Transport workflow',
-        body: 'This guided walkthrough shows movement, stall photos, and fueling. Tap Next to follow along — your session is not changed.',
+        body: 'This walkthrough shows movement, stall photos, and fueling. Tap Next to follow along — nothing runs and nothing is saved.',
       },
       vehicle: {
         title: 'Check your vehicle',
@@ -963,7 +1013,7 @@ export const en = {
     vsa: {
       welcome: {
         title: 'VSA workflow',
-        body: 'This guided walkthrough shows cleaning, fuel, and stall steps. Tap Next to follow along — your session is not changed.',
+        body: 'This walkthrough shows cleaning, fuel, and stall steps. Tap Next to follow along — nothing runs and nothing is saved.',
       },
       vehicle: {
         title: 'Check your vehicle',
@@ -974,8 +1024,8 @@ export const en = {
         body: 'Verified mileage is captured automatically. Enter the current reading if prompted before you complete the workflow.',
       },
       cleaning: {
-        title: 'Cleaning (optional)',
-        body: 'Scan or enter the workstation, start cleaning, and mark the section complete when finished.',
+        title: 'Cleaning',
+        body: 'Scan or enter the cleaning stall number, start cleaning, and mark the section complete when finished.',
       },
       fuel: {
         title: 'Fuel (optional)',
@@ -983,7 +1033,7 @@ export const en = {
       },
       stall: {
         title: 'Stall',
-        body: 'Stall stays locked until fueling or cleaning is complete. Once unlocked, assign a stall number and report occupancy issues with a photo if needed.',
+        body: 'Optional — assign a stall number and report occupancy issues with a photo if needed.',
       },
       complete: {
         title: 'Finish the session',

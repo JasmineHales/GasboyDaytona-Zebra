@@ -9,8 +9,9 @@ type VehicleOdometerFieldProps = {
   odometerReading: string
   onOdometerChange: (value: string) => void
   verified?: boolean
-  hint?: string
   minimumMiles?: number | null
+  /** Inside workflow-odometer-card — heading rendered by parent. */
+  embedded?: boolean
 }
 
 function formatOdometerDisplay(digits: string, locale: string) {
@@ -20,14 +21,19 @@ function formatOdometerDisplay(digits: string, locale: string) {
 
 export const VehicleOdometerField = forwardRef<HTMLDivElement, VehicleOdometerFieldProps>(
   function VehicleOdometerField(
-    { odometerReading, onOdometerChange, verified = false, hint, minimumMiles = null },
+    {
+      odometerReading,
+      onOdometerChange,
+      verified = false,
+      minimumMiles = null,
+      embedded = false,
+    },
     ref,
   ) {
     const { language, messages, t } = useI18n()
     const locale = localeForLanguage(language)
     const vehicleCopy = messages.vehicle
     const odometerId = useId()
-    const hintId = `${odometerId}-hint`
     const errorId = `${odometerId}-error`
     const [odometerFocused, setOdometerFocused] = useState(false)
     const [odometerTouched, setOdometerTouched] = useState(() => {
@@ -50,11 +56,12 @@ export const VehicleOdometerField = forwardRef<HTMLDivElement, VehicleOdometerFi
       return (
         <div
           ref={ref}
-          className="vehicle-card__odometer vehicle-card__odometer--verified"
-          data-tutorial="vehicle-odometer"
+          className={`vehicle-card__odometer vehicle-card__odometer--verified${embedded ? ' vehicle-card__odometer--embedded' : ''}`}
         >
           <div className="vehicle-card__odometer-compact">
-            <span className="vehicle-card__odometer-compact-label">{t('vehicle.odometer')}</span>
+            {!embedded ? (
+              <span className="vehicle-card__odometer-compact-label">{t('vehicle.odometer')}</span>
+            ) : null}
             <span className="vehicle-card__odometer-compact-value">
               {formattedMiles} {vehicleCopy.milesUnit}
             </span>
@@ -75,24 +82,21 @@ export const VehicleOdometerField = forwardRef<HTMLDivElement, VehicleOdometerFi
       locale,
     })
     const showError = Boolean(error)
-    const describedBy = [hint ? hintId : null, showError ? errorId : null]
-      .filter(Boolean)
-      .join(' ') || undefined
+    const describedBy = showError ? errorId : undefined
 
     return (
       <div
         ref={ref}
-        className="vehicle-card__odometer vehicle-card__odometer--required"
-        data-tutorial="vehicle-odometer"
+        className={`vehicle-card__odometer vehicle-card__odometer--required${embedded ? ' vehicle-card__odometer--embedded' : ''}`}
       >
-        <label htmlFor={odometerId} className="vehicle-card__odometer-label">
-          {t('vehicle.odometer')}
-        </label>
-        {hint && (
-          <p id={hintId} className="vehicle-card__odometer-hint">
-            {hint}
-          </p>
-        )}
+        {!embedded ? (
+          <div className="vehicle-card__odometer-heading">
+            <label htmlFor={odometerId} className="vehicle-card__odometer-label">
+              {t('vehicle.odometer')}
+            </label>
+            <span className="vehicle-card__odometer-required-chip">{t('workflow.required')}</span>
+          </div>
+        ) : null}
         <div
           className={`vehicle-card__odometer-field${showError ? ' vehicle-card__odometer-field--error' : ''}`}
         >

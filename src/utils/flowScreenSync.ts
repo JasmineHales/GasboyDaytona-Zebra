@@ -34,7 +34,7 @@ export function resolveCleaningScreen(step: CleaningStep): ScreenId {
     case 'manual-entry-error':
       return 'cleaning-manual-entry-error'
     case 'pump-verified':
-      return 'cleaning-pump-verified'
+      return 'cleaning-in-progress'
     case 'cleaning-in-progress':
       return 'cleaning-in-progress'
     case 'cleaning-complete':

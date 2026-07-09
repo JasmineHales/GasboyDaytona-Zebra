@@ -1,4 +1,4 @@
-import { ChevronRight, Keyboard, ScanQrCode } from 'lucide-react'
+import { ChevronRight, ScanQrCode } from 'lucide-react'
 import { useI18n } from '../../i18n/I18nProvider'
 import { trackProps } from '../../utils/tracking'
 
@@ -44,9 +44,7 @@ export function PumpVerifyCard({
     quickSelectHint ?? quickSelectCopy.cleaningInProgress
 
   return (
-    <div
-      className={`pump-verify-card${unlockMode === 'remote' ? ' pump-verify-card--remote' : ''}`}
-    >
+    <div className="pump-verify-card">
       {(title || subtitle) && (
         <div className="pump-verify-card__copy">
           {title && <p className="pump-verify-card__title">{title}</p>}
@@ -57,8 +55,18 @@ export function PumpVerifyCard({
       <button
         type="button"
         onClick={onClick}
-        className={`pump-verify-scan-graphic${unlockMode === 'remote' ? ' pump-verify-scan-graphic--remote' : ''}`}
-        aria-label={resolvedButtonLabel}
+        className={`pump-verify-scan-graphic${
+          scanHint ? ' pump-verify-scan-graphic--with-hint' : ''
+        }${
+          unlockMode === 'remote'
+            ? ' pump-verify-scan-graphic--remote'
+            : unlockMode === 'on-site'
+              ? ' pump-verify-scan-graphic--on-site'
+              : ''
+        }`}
+        aria-label={
+          scanHint ? `${resolvedButtonLabel}. ${scanHint}` : resolvedButtonLabel
+        }
         {...trackProps(trackScan)}
       >
         <span className="pump-verify-scan-graphic__icon-slot" aria-hidden>
@@ -81,7 +89,6 @@ export function PumpVerifyCard({
           className="pump-verify-manual"
           {...trackProps(trackManual)}
         >
-          <Keyboard className="pump-verify-manual__icon" aria-hidden />
           <span className="pump-verify-manual__label">{resolvedManualEntryLabel}</span>
           <ChevronRight className="pump-verify-manual__chevron" aria-hidden />
         </button>
@@ -93,7 +100,9 @@ export function PumpVerifyCard({
           <button
             type="button"
             onClick={() => onQuickSelectPump(quickSelectPump)}
-            className={`pump-verify-quick-select__option${unlockMode === 'remote' ? ' pump-verify-quick-select__option--remote' : ''}`}
+            className={`pump-verify-quick-select__option${
+              unlockMode === 'remote' ? ' pump-verify-quick-select__option--remote' : ''
+            }`}
             {...trackProps(trackQuickSelect)}
           >
             <span className="pump-verify-quick-select__pump">

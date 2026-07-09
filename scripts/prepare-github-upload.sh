@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Minimal zip for GitHub web upload (~500 KB). Excludes node_modules, dist, dev assets.
+# Creates a small zip for GitHub web upload (excludes node_modules, dist, .git).
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
@@ -22,16 +22,14 @@ zip -r "$ZIP" . \
   -x '*.zip' \
   -x '*-upload/*' \
   -x '*-upload/**' \
+  -x '.cursor/*' \
+  -x '.cursor/**' \
   -x '.flow-captures/*' \
   -x '.flow-captures/**' \
   -x 'eng.traineddata' \
-  -x 'scripts/*' \
-  -x 'scripts/**' \
-  -x 'docs/*' \
-  -x 'docs/**' \
-  -x '.cursor/*' \
-  -x '.cursor/**' \
-  -x 'public/stall-issue-photo.png'
+  -x 'scripts/miro-*' \
+  -x 'scripts/capture-*' \
+  -x 'scripts/mermaid-to-miro-dsl.mjs' \
+  -x 'scripts/_*'
 
 echo "Created: $ZIP ($(du -h "$ZIP" | cut -f1))"
-echo "Upload: unzip locally, then drag folder contents into GitHub (not the .zip itself)."

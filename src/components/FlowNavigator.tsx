@@ -9,11 +9,10 @@ import {
   type WorkflowView,
 } from '../utils/flowNavigation'
 import { VEHICLE_SEARCH_DEV_GROUPS } from '../utils/vehicleSearchDevStates'
-import type { DesignVersion } from '../utils/designVersion'
 import { formatDevScenarioSummary } from '../utils/devPanel'
 import { trackProps } from '../utils/tracking'
-import { DesignVersionSwitcher } from './dev/DesignVersionSwitcher'
 import { DevScenarioPanel } from './dev/DevScenarioPanel'
+import { DevToggleGroup } from './dev/DevToggleGroup'
 import { DevWidgetStatesPanel } from './dev/DevWidgetStatesPanel'
 
 type DevPanelTab = 'navigate' | 'scenario' | 'states'
@@ -34,8 +33,6 @@ type FlowNavigatorProps = {
   vehicleSearchActive?: boolean
   vehicleSearchDevState?: string | null
   onVehicleSearchDevStateSelect?: (stateKey: string) => void
-  designVersion?: DesignVersion
-  onDesignVersionChange?: (version: DesignVersion) => void
 }
 
 const TAB_ITEMS: { id: DevPanelTab; label: string }[] = [
@@ -64,8 +61,6 @@ export function FlowNavigator({
   vehicleSearchActive = false,
   vehicleSearchDevState = null,
   onVehicleSearchDevStateSelect,
-  designVersion = 'v2',
-  onDesignVersionChange,
 }: FlowNavigatorProps) {
   const [tab, setTab] = useState<DevPanelTab>('navigate')
   const widgetGroups = workflowView ? widgetGroupsForView(workflowView) : []
@@ -91,7 +86,7 @@ export function FlowNavigator({
     <aside className="dev-flow-nav hidden shrink-0 md:flex" aria-label="Dev panel">
       <div className="dev-flow-nav__sticky">
         <header className="dev-flow-nav__header">
-          <p className="dev-flow-nav__eyebrow">Daytona prototype</p>
+          <p className="dev-flow-nav__eyebrow">Daytona · V3</p>
           <div className="dev-flow-nav__context">
             <p className="dev-flow-nav__context-page">{activePageLabel(activePageKey)}</p>
             {!showLogin && workflowView && (
@@ -108,12 +103,17 @@ export function FlowNavigator({
           ))}
         </div>
 
-        {onDesignVersionChange ? (
-          <DesignVersionSwitcher
-            designVersion={designVersion}
-            onDesignVersionChange={onDesignVersionChange}
-          />
-        ) : null}
+        <DevToggleGroup
+          label="Experience"
+          hint="Zebra emulator vs browser SSO"
+          value={loginVariant}
+          options={[
+            { value: 'device', label: 'Zebra emulator' },
+            { value: 'browser', label: 'Browser' },
+          ]}
+          onChange={onLoginVariantChange}
+          trackTag="dev.experience"
+        />
 
         <div className="dev-tabs" role="tablist" aria-label="Dev panel sections">
           {TAB_ITEMS.map((item) => (
@@ -163,14 +163,12 @@ export function FlowNavigator({
         {tab === 'scenario' && (
           <section aria-label="Scenario toggles">
             <p className="dev-panel-section__intro">
-              Location and experience settings for the current page.
+              Location settings for the current page.
             </p>
             <DevScenarioPanel
               context={context}
               view={view}
               showLogin={showLogin}
-              loginVariant={loginVariant}
-              onLoginVariantChange={onLoginVariantChange}
               onPatchContext={onPatchContext}
             />
           </section>

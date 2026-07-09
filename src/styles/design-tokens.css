@@ -7,7 +7,7 @@
   color-scheme: light;
 
   /* ── Color: surfaces & text (light) ── */
-  --ds-color-bg-app: #f7f8fa;
+  --ds-color-bg-app: #ffffff;
   --ds-color-bg-surface: #ffffff;
   --ds-color-bg-elevated: #ffffff;
   --ds-color-text-primary: #101010;
@@ -28,6 +28,8 @@
   /* ── Semantic colors ── */
   --ds-color-success: #22c55e;
   --ds-color-success-surface: #ecfdf5;
+  --ds-color-remote-scan: #15803d;
+  --ds-color-remote-scan-pressed: #14532d;
   --ds-color-warning: #f59e0b;
   --ds-color-warning-surface: #fffbeb;
   --ds-color-error: #dc2626;
@@ -38,7 +40,7 @@
   --ds-color-disabled-bg: #e5e7eb;
   --ds-color-disabled-border: #d1d5db;
 
-  /* ── Spacing (4px base) ── */
+  /* ── Spacing (8dp grid) ── */
   --ds-spacing-1: 4px;
   --ds-spacing-2: 8px;
   --ds-spacing-3: 12px;
@@ -48,39 +50,77 @@
   --ds-spacing-12: 48px;
   --ds-spacing-16: 64px;
 
-  /* ── Typography ── */
+  /* ── Typography (24 / 20 / 18 / 16 / 14sp only) ── */
+  --ds-type-24: 1.5rem;
+  --ds-type-20: 1.25rem;
+  --ds-type-18: 1.125rem;
+  --ds-type-16: 1rem;
+  --ds-type-14: 0.875rem;
+
   --ds-font-family: Inter, "Segoe UI", "IBM Plex Sans", system-ui, sans-serif;
-  --ds-font-page-title-size: 2rem;
-  --ds-font-page-title-line: 2.5rem;
+  --ds-font-page-title-size: var(--ds-type-20);
+  --ds-font-page-title-line: 1.5rem;
   --ds-font-page-title-weight: 700;
-  --ds-font-section-title-size: 1.5rem;
-  --ds-font-section-title-line: 2rem;
+  --ds-font-section-title-size: var(--ds-type-18);
+  --ds-font-section-title-line: 1.375rem;
   --ds-font-section-title-weight: 600;
-  --ds-font-card-title-size: 1.25rem;
-  --ds-font-card-title-line: 1.75rem;
+  --ds-font-card-title-size: var(--ds-type-20);
+  --ds-font-card-title-line: 1.5rem;
   --ds-font-card-title-weight: 600;
-  --ds-font-body-lg-size: 1.125rem;
-  --ds-font-body-lg-line: 1.75rem;
+  --ds-font-body-lg-size: var(--ds-type-18);
+  --ds-font-body-lg-line: 1.375rem;
   --ds-font-body-lg-weight: 400;
-  --ds-font-body-size: 1rem;
-  --ds-font-body-line: 1.5rem;
+  --ds-font-body-size: var(--ds-type-16);
+  --ds-font-body-line: 1.25rem;
   --ds-font-body-weight: 400;
-  --ds-font-label-size: 0.875rem;
-  --ds-font-label-line: 1.25rem;
-  --ds-font-label-weight: 600;
-  --ds-font-caption-size: 0.875rem;
-  --ds-font-caption-line: 1.25rem;
+  --ds-font-label-size: var(--ds-type-14);
+  --ds-font-label-line: 1.125rem;
+  --ds-font-label-weight: 500;
+  --ds-font-caption-size: var(--ds-type-14);
+  --ds-font-caption-line: 1.125rem;
   --ds-font-caption-weight: 400;
 
-  /* ── Touch & layout ── */
+  /* Workflow field screens — EM45 enterprise scale */
+  --ds-font-workflow-page-title-size: var(--ds-type-20);
+  --ds-font-workflow-page-title-weight: 700;
+  --ds-font-workflow-subtitle-size: var(--ds-type-16);
+  --ds-font-workflow-subtitle-weight: 500;
+  --ds-font-workflow-section-title-size: var(--ds-type-18);
+  --ds-font-workflow-section-title-weight: 600;
+  --ds-font-workflow-vehicle-reg-size: var(--ds-type-24);
+  --ds-font-workflow-vehicle-reg-weight: 700;
+  --ds-font-workflow-vehicle-detail-size: var(--ds-type-16);
+  --ds-font-workflow-vehicle-detail-weight: 500;
+  --ds-font-workflow-label-size: var(--ds-type-16);
+  --ds-font-workflow-label-weight: 500;
+  --ds-font-workflow-field-size: var(--ds-type-18);
+  --ds-font-workflow-field-weight: 600;
+  --ds-font-workflow-field-placeholder-weight: 500;
+  --ds-font-workflow-input-value-size: var(--ds-font-workflow-field-size);
+  --ds-font-workflow-input-value-weight: var(--ds-font-workflow-field-weight);
+  --ds-font-workflow-button-text-size: var(--ds-type-18);
+  --ds-font-workflow-button-text-weight: 600;
+  --ds-font-workflow-chip-size: var(--ds-type-14);
+  --ds-font-workflow-chip-weight: 500;
+  --ds-font-workflow-helper-size: var(--ds-type-14);
+  --ds-font-workflow-helper-weight: 400;
+  --ds-font-workflow-timer-size: var(--ds-type-20);
+  --ds-font-workflow-timer-weight: 700;
+
+  /* ── Touch & layout (Zebra EM45) ── */
   --ds-touch-min: 48px;
-  --ds-touch-preferred: 56px;
-  --ds-touch-critical: 64px;
+  --ds-touch-accordion: 56px;
+  --ds-touch-segmented: 56px;
+  --ds-touch-standard: 60px;
+  --ds-touch-primary: 64px;
+  --ds-touch-preferred: var(--ds-touch-standard);
+  --ds-touch-critical: var(--ds-touch-primary);
   --ds-touch-gap: 8px;
-  --ds-touch-nav-height: 72px;
+  --ds-touch-nav-height: 64px;
   --ds-touch-input-min: 56px;
-  --ds-touch-row-min: 80px;
-  --ds-touch-row-max: 88px;
+  --ds-touch-row-min: 64px;
+  --ds-touch-row-max: 72px;
+  --ds-touch-scan-cta: 80px;
   --ds-touch-menu: 48px;
 
   /* ── Radius ── */
@@ -150,6 +190,8 @@
   --color-fleet-info-ring: color-mix(in srgb, var(--ds-color-accent) 35%, white);
   --color-fleet-warning-surface: var(--ds-color-warning-surface);
   --color-fleet-positive-surface: var(--ds-color-success-surface);
+  --color-fleet-remote-scan: var(--ds-color-remote-scan);
+  --color-fleet-remote-scan-pressed: var(--ds-color-remote-scan-pressed);
 
   --color-fleet-disabled-bg: var(--ds-color-disabled-bg);
   --color-fleet-disabled-text: var(--ds-color-text-secondary);
@@ -235,23 +277,27 @@
   --color-text-success: #6ee7b7;
 }
 
-/* ── Field mode: larger controls, higher contrast ── */
+/* ── Field mode: glove-friendly bump without breaking EM45 scale ── */
 [data-field-mode="true"] {
-  --ds-font-body-size: 1.125rem;
-  --ds-font-body-line: 1.75rem;
-  --ds-font-label-size: 1rem;
-  --ds-font-label-line: 1.5rem;
-  --ds-touch-preferred: 64px;
-  --ds-touch-input-min: 64px;
-  --ds-touch-row-min: 88px;
-  --ds-touch-row-max: 96px;
-  --ds-touch-nav-height: 80px;
-  --ds-touch-menu: 56px;
+  --ds-font-body-size: var(--ds-type-18);
+  --ds-font-body-line: 1.375rem;
+  --ds-font-label-size: var(--ds-type-16);
+  --ds-font-label-line: 1.25rem;
+  --ds-touch-accordion: 56px;
+  --ds-touch-segmented: 56px;
+  --ds-touch-standard: 60px;
+  --ds-touch-primary: 64px;
+  --ds-touch-input-min: 56px;
+  --ds-touch-row-min: 72px;
+  --ds-touch-row-max: 80px;
+  --ds-touch-scan-cta: 88px;
+  --ds-touch-nav-height: 72px;
+  --ds-touch-menu: 48px;
 
   --text-ui-md: var(--ds-font-body-size);
   --text-ui-sm: var(--ds-font-label-size);
   --text-ui-lg: var(--ds-font-body-lg-size);
-  --touch-target: var(--ds-touch-preferred);
+  --touch-target: var(--ds-touch-standard);
 }
 
 @media (prefers-reduced-motion: reduce) {

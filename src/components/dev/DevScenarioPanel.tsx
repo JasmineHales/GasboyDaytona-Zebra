@@ -8,8 +8,6 @@ type DevScenarioPanelProps = {
   context: FlowContext
   view: AppView
   showLogin: boolean
-  loginVariant: 'device' | 'browser'
-  onLoginVariantChange: (variant: 'device' | 'browser') => void
   onPatchContext: (patch: Partial<FlowContext>) => void
 }
 
@@ -17,32 +15,15 @@ export function DevScenarioPanel({
   context,
   view,
   showLogin,
-  loginVariant,
-  onLoginVariantChange,
   onPatchContext,
 }: DevScenarioPanelProps) {
   const showFuelLocation =
     !showLogin && (view === 'transport' || view === 'fuel' || view === 'vsa')
   const showUnlockMode = showFuelLocation && isGasboyLocation(context)
-  const showExperienceToggle = showLogin || view === 'home'
   const showStallToggle = !showLogin && view === 'vsa'
 
   return (
     <div className="dev-scenario-panel">
-      {showExperienceToggle && (
-        <DevToggleGroup
-          label="Experience"
-          hint="Device SSO vs browser SSO"
-          value={loginVariant}
-          options={[
-            { value: 'device', label: 'Device' },
-            { value: 'browser', label: 'Browser' },
-          ]}
-          onChange={onLoginVariantChange}
-          trackTag="dev.scenario.experience"
-        />
-      )}
-
       {showFuelLocation && (
         <DevToggleGroup
           label="Gasboy location"

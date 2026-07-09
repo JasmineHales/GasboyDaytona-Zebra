@@ -1,7 +1,6 @@
 import { Barcode, ScanLine, ScanQrCode, Search } from 'lucide-react'
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react'
 import { useI18n } from '../../i18n/I18nProvider'
-import { useDesignVersion } from '../../context/DesignVersionContext'
 import { useCameraCapture } from '../../hooks/useCameraCapture'
 import type { VehicleSearchProps } from '../../types/vehicleSearch'
 import { parseVehicleFromBarcode, parseVehicleFromQr } from '../../utils/parseVehicleScan'
@@ -135,7 +134,6 @@ export function VehicleSearch({
   devPreviewState = null,
 }: VehicleSearchProps) {
   const { messages, t } = useI18n()
-  const { isV3 } = useDesignVersion()
   const copy = messages.vehicleSearch
   const titleId = useId()
   const radioGroupName = useId()
@@ -271,13 +269,6 @@ export function VehicleSearch({
 
   const handleSelectVehicle = (vehicleId: string) => {
     setSelectedVehicleId(vehicleId)
-    if (!isV3) {
-      const entry = results.find((vehicle) => vehicle.vehicleId === vehicleId)
-      if (entry && vehicleEntryRequiresHoldConfirmation(entry)) {
-        openHoldConfirmForEntry(entry)
-        return
-      }
-    }
     setPendingHoldEntry(null)
     setPendingHoldWarning(null)
   }
@@ -334,14 +325,9 @@ export function VehicleSearch({
 
   useEffect(() => {
     if (results.length === 1) {
-      const only = results[0]
-      setSelectedVehicleId(only.vehicleId)
-      if (!isV3 && vehicleEntryRequiresHoldConfirmation(only)) {
-        openHoldConfirmForEntry(only)
-      } else {
-        setPendingHoldEntry(null)
-        setPendingHoldWarning(null)
-      }
+      setSelectedVehicleId(results[0].vehicleId)
+      setPendingHoldEntry(null)
+      setPendingHoldWarning(null)
       return
     }
 
@@ -354,7 +340,7 @@ export function VehicleSearch({
       setPendingHoldEntry(null)
       setPendingHoldWarning(null)
     }
-  }, [isV3, results, selectedVehicleId])
+  }, [results, selectedVehicleId])
 
   const openManualEntry = () => {
     setManualEntry(EMPTY_MANUAL_VEHICLE_ENTRY)

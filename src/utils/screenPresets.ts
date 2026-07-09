@@ -238,13 +238,15 @@ export const SCREEN_PRESETS: Record<ScreenId, Partial<FlowContext>> = {
   },
   'cleaning-pump-verified': {
     ...VSA_WORKFLOW_BASE,
-    cleaningStep: 'pump-verified',
+    cleaningStep: 'cleaning-in-progress',
     cleaningPumpNumber: '5',
+    cleaningStartedAt: Date.now() - 120_000,
   },
   'cleaning-in-progress': {
     ...VSA_WORKFLOW_BASE,
-    cleaningStep: 'cleaning-in-progress',
+    cleaningStep: 'cleaning-complete',
     cleaningPumpNumber: '5',
+    cleaningComplete: true,
     cleaningStartedAt: Date.now() - 120_000,
   },
   'cleaning-complete': {

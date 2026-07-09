@@ -7,6 +7,7 @@ type PumpVerifyDefaultProps = {
   onScanPump: () => void
   onManualEntry: () => void
   scanLabel?: string
+  scanHint?: string
   manualEntryLabel?: string
   quickSelectPump?: string
   quickSelectHint?: string
@@ -20,6 +21,7 @@ export function PumpVerifyDefault({
   onScanPump,
   onManualEntry,
   scanLabel,
+  scanHint,
   manualEntryLabel,
   quickSelectPump,
   quickSelectHint,
@@ -34,8 +36,19 @@ export function PumpVerifyDefault({
 
   return (
     <div className="workflow-stack">
+      {unlockMode && (
+        <FuelUnlockModeInfo
+          mode={unlockMode}
+          onModeChange={(next) => {
+            if (next !== unlockMode) onSwitchUnlockMode?.()
+          }}
+          trackPrefix={trackPrefix}
+        />
+      )}
+
       <PumpVerifyCard
         buttonLabel={scanLabel ?? modeCopy.scanLabel}
+        scanHint={scanHint ?? modeCopy.scanHint}
         manualEntryLabel={manualEntryLabel ?? modeCopy.manualEntryLabel}
         onClick={onScanPump}
         onManualEntry={onManualEntry}
@@ -47,16 +60,6 @@ export function PumpVerifyDefault({
         trackManual={`${trackPrefix}.manual-entry`}
         trackQuickSelect={`${trackPrefix}.quick-select`}
       />
-
-      {unlockMode && (
-        <FuelUnlockModeInfo
-          mode={unlockMode}
-          onModeChange={(next) => {
-            if (next !== unlockMode) onSwitchUnlockMode?.()
-          }}
-          trackPrefix={trackPrefix}
-        />
-      )}
     </div>
   )
 }

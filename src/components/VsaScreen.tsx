@@ -35,9 +35,8 @@ export function VsaScreen({
   return (
     <TransportScreen
       title={messages.workflow.vsa.title}
-      subtitle={messages.workflow.vsa.subtitle}
       sections={sections}
-      defaultExpanded={null}
+      defaultExpanded="cleaning"
       vehicleProfile={vehicleProfile}
       site={site}
       workflowFinishId="vsa"

@@ -6,6 +6,7 @@ import {
   ShieldCheck,
   Star,
   Users,
+  X,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { useCallback, useId, useMemo, useState } from 'react'
@@ -23,6 +24,7 @@ import {
   type RecognitionBadgeVariant,
 } from '../../utils/gamificationMock'
 import { BottomSheetOverlay } from '../ui/BottomSheetOverlay'
+import { trackProps } from '../../utils/tracking'
 import {
   PerformanceAlertCard,
   PerformanceAlertStack,
@@ -251,9 +253,20 @@ function NeedsAttentionSection({
         sheetClassName="content-height"
       >
         <div className="performance-alert-sheet">
-          <h3 id={detailSheetTitleId} className="performance-alert-sheet__heading">
-            {showAllAlerts && !selectedAlert ? copy.detailSheetTitle : selectedAlert ? resolveAlertCopy(selectedAlert.kind, selectedAlert.count, copy, t).title : copy.detailSheetTitle}
-          </h3>
+          <div className="performance-alert-sheet__header">
+            <h3 id={detailSheetTitleId} className="performance-alert-sheet__heading">
+              {showAllAlerts && !selectedAlert ? copy.detailSheetTitle : selectedAlert ? resolveAlertCopy(selectedAlert.kind, selectedAlert.count, copy, t).title : copy.detailSheetTitle}
+            </h3>
+            <button
+              type="button"
+              onClick={dismissDetail}
+              className="performance-alert-sheet__close field-target"
+              aria-label={t('common.close')}
+              {...trackProps('home.performance.alerts.close')}
+            >
+              <X className="performance-alert-sheet__close-icon" aria-hidden />
+            </button>
+          </div>
           {showAllAlerts && !selectedAlert ? (
             <ul className="performance-alert-sheet__list">
               {alerts.map((alert) => (

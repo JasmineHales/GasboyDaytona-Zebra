@@ -1,5 +1,6 @@
 import type { GallonsCaptureRecord } from '../types/gallonsCapture'
 import { readSsoUser } from './auth'
+import { isTutorialModeActive } from './tutorialModeState'
 
 const AUDIT_LOG_KEY = 'remote-off-gallons-capture-audit'
 
@@ -32,6 +33,8 @@ export function buildGallonsCaptureAudit(
 }
 
 export function persistGallonsCaptureAudit(record: GallonsCaptureRecord) {
+  if (isTutorialModeActive()) return
+
   try {
     const raw = sessionStorage.getItem(AUDIT_LOG_KEY)
     const existing = raw ? (JSON.parse(raw) as GallonsCaptureRecord[]) : []

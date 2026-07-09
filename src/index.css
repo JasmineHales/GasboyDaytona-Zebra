@@ -1,6 +1,8 @@
 @import "tailwindcss";
 @import "./styles/design-tokens.css";
+@import "./styles/touch-targets.css";
 @import "./styles/high-demand-card.css";
+@import "./styles/workflow-enterprise.css";
 @import "./styles/performance-alert-card.css";
 
 @theme {
@@ -476,22 +478,22 @@ button {
 
 /* Outdoor / gloved-hand touch — rem-based so system font scaling propagates */
 :root {
-  --touch-target: var(--ds-touch-preferred, 3.5rem);
+  --touch-target: var(--ds-touch-standard, 3.75rem);
   --touch-gap: var(--ds-touch-gap, 0.5rem);
   --text-ui-sm: var(--ds-font-label-size, 0.875rem);
   --text-ui-md: var(--ds-font-body-size, 1rem);
   --text-ui-lg: var(--ds-font-body-lg-size, 1.125rem);
-  --outdoor-btn-border: 2px;
+  --outdoor-btn-border: 1px;
   --fleet-container-border: 1px;
   --space-1: var(--ds-spacing-1, 0.25rem);
   --space-2: var(--ds-spacing-2, 0.5rem);
   --space-3: var(--ds-spacing-3, 0.75rem);
   --space-4: var(--ds-spacing-4, 1rem);
   --space-6: var(--ds-spacing-6, 1.5rem);
-  --workflow-inset: var(--space-4);
-  --workflow-inset-compact: var(--ds-spacing-3, 0.75rem);
-  --home-inset: var(--space-3);
-  --home-list-inset: var(--space-3);
+  --workflow-inset: var(--ds-spacing-3, 12px);
+  --workflow-inset-compact: var(--ds-spacing-2, 8px);
+  --home-inset: var(--ds-spacing-2, 8px);
+  --home-list-inset: var(--ds-spacing-2, 8px);
   --radius-sm: var(--ds-radius-input, 10px);
   --radius-md: var(--ds-radius-button, 10px);
   --radius-lg: var(--ds-radius-card, 12px);
@@ -636,7 +638,7 @@ button {
   scrollbar-gutter: auto;
 }
 
-.app-workflow-main:not(.home-workflow-main--tab-history):not(.home-workflow-main--tab-performance):not(.home-workflow-main--tab-team):not(.vehicle-search-main--results) {
+.app-workflow-main:not(.home-workflow-main--tab-history):not(.home-workflow-main--tab-performance):not(.home-workflow-main--tab-team):not(.home-workflow-main--tab-work):not(.vehicle-search-main--results) {
   padding-inline: var(--home-inset);
 }
 
@@ -670,7 +672,7 @@ button {
 }
 
 @container app (min-width: 640px) {
-  .app-workflow-main:not(.home-workflow-main--tab-history):not(.home-workflow-main--tab-performance):not(.home-workflow-main--tab-team):not(.vehicle-search-main--results),
+  .app-workflow-main:not(.home-workflow-main--tab-history):not(.home-workflow-main--tab-performance):not(.home-workflow-main--tab-team):not(.home-workflow-main--tab-work):not(.vehicle-search-main--results),
   .app-workflow-footer {
     padding-inline: 16px;
   }
@@ -681,7 +683,7 @@ button {
 }
 
 @container app (min-width: 768px) {
-  .app-workflow-main:not(.home-workflow-main--tab-history):not(.home-workflow-main--tab-performance):not(.home-workflow-main--tab-team):not(.vehicle-search-main--results),
+  .app-workflow-main:not(.home-workflow-main--tab-history):not(.home-workflow-main--tab-performance):not(.home-workflow-main--tab-team):not(.home-workflow-main--tab-work):not(.vehicle-search-main--results),
   .app-workflow-footer {
     padding-inline: 24px;
   }
@@ -726,13 +728,13 @@ button {
     0px 3px 1px -2px rgba(0, 0, 0, 0.2);
 }
 
-/* Fleet — buttons (60px touch target, shared radius, 2px borders for outdoor glare) */
+/* Fleet — buttons (60dp standard / 68dp primary, shared radius, 2px borders for outdoor glare) */
 .fleet-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 10px;
-  min-height: var(--touch-target);
+  min-height: var(--ds-touch-standard, var(--touch-target));
   border: var(--outdoor-btn-border) solid transparent;
   border-radius: var(--radius-btn);
   font-size: var(--text-ui-md);
@@ -763,19 +765,11 @@ button:focus-visible,
   outline-offset: var(--ds-focus-ring-offset, 2px);
 }
 
-.fleet-btn-lg {
-  height: var(--ds-touch-preferred, var(--touch-target));
-  min-height: var(--ds-touch-preferred, var(--touch-target));
-  max-height: var(--ds-touch-critical, 4rem);
-  padding: var(--ds-spacing-4, 16px) var(--ds-spacing-6, 24px);
-  font-size: var(--text-ui-md);
-}
-
-.fleet-btn-md {
-  height: var(--touch-target);
-  min-height: var(--touch-target);
-  padding: var(--ds-spacing-4, 16px) var(--ds-spacing-6, 24px);
-  font-size: var(--text-ui-md);
+.fleet-btn-lg:not(.fleet-btn-outlined),
+.fleet-btn-md,
+.fleet-btn-link {
+  padding: var(--ds-spacing-2, 8px) var(--ds-spacing-4, 16px);
+  font-size: var(--text-ui-lg);
 }
 
 .fleet-btn-link {
@@ -945,10 +939,6 @@ button:focus-visible,
   color: var(--color-fleet-text-blue-secondary);
 }
 
-.pump-verify-card--remote .pump-verify-card__title {
-  color: var(--color-fleet-text-green);
-}
-
 .pump-verify-card__subtitle {
   margin: 0;
   font-size: var(--text-ui-sm);
@@ -962,18 +952,25 @@ button:focus-visible,
   flex-direction: row;
   align-items: center;
   gap: 0;
-  min-height: calc(var(--touch-target) + 32px);
-  border: var(--outdoor-btn-border) solid var(--color-fleet-secondary-border);
+  height: var(--ds-touch-primary, 4.25rem);
+  min-height: var(--ds-touch-primary, 4.25rem);
+  max-height: var(--ds-touch-primary, 4.25rem);
+  border: var(--outdoor-btn-border) solid var(--color-hertz-yellow);
   border-radius: var(--radius-btn);
-  background: var(--color-fleet-surface);
-  padding: 14px 16px;
+  background: var(--color-hertz-yellow);
+  padding: 0 16px;
   text-align: left;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
-  animation: pump-scan-attention 2.4s ease-in-out infinite;
+  box-shadow: none;
   transition:
     background-color 0.15s ease,
-    border-color 0.15s ease,
-    box-shadow 0.15s ease;
+    border-color 0.15s ease;
+}
+
+.pump-verify-scan-graphic--with-hint {
+  height: auto;
+  min-height: var(--ds-touch-scan-cta, 5rem);
+  max-height: none;
+  padding-block: 12px;
 }
 
 @keyframes pump-scan-attention {
@@ -990,48 +987,86 @@ button:focus-visible,
 }
 
 .pump-verify-scan-graphic:hover {
-  border-color: var(--color-hertz-black);
-  background: var(--color-fleet-surface);
+  border-color: var(--color-hertz-yellow-pressed);
+  background: var(--color-hertz-yellow-pressed);
 }
 
 .pump-verify-scan-graphic:focus-visible {
-  border-color: var(--color-hertz-black);
-  outline: 2px solid var(--color-hertz-yellow-surface);
-  outline-offset: 2px;
+  border-color: var(--color-hertz-yellow-pressed);
+  outline: var(--ds-focus-ring-width, 3px) solid var(--color-hertz-black);
+  outline-offset: var(--ds-focus-ring-offset, 2px);
+}
+
+.pump-verify-scan-graphic .pump-verify-scan-graphic__icon,
+.pump-verify-scan-graphic .pump-verify-scan-graphic__label,
+.pump-verify-scan-graphic .pump-verify-scan-graphic__chevron {
+  color: var(--color-hertz-black);
+}
+
+.pump-verify-scan-graphic .pump-verify-scan-graphic__divider {
+  background: color-mix(in srgb, var(--color-hertz-black) 18%, transparent);
+}
+
+.pump-verify-scan-graphic .pump-verify-scan-graphic__hint {
+  color: color-mix(in srgb, var(--color-hertz-black) 72%, transparent);
 }
 
 .pump-verify-scan-graphic--remote {
-  border-color: var(--color-fleet-positive-500);
-  background: var(--color-fleet-surface);
-  box-shadow: none;
-  animation: none;
+  border-color: var(--color-fleet-remote-scan, #15803d);
+  background: var(--color-fleet-remote-scan, #15803d);
 }
 
 .pump-verify-scan-graphic--remote:hover {
-  border-color: var(--color-fleet-success);
-  background: var(--color-fleet-surface);
+  border-color: var(--color-fleet-remote-scan-pressed, #14532d);
+  background: var(--color-fleet-remote-scan-pressed, #14532d);
 }
 
 .pump-verify-scan-graphic--remote:focus-visible {
-  border-color: var(--color-fleet-success);
-  outline: 2px solid var(--color-fleet-positive-100);
-  outline-offset: 2px;
+  border-color: var(--color-fleet-remote-scan-pressed, #14532d);
+  outline-color: #ffffff;
 }
 
-.pump-verify-scan-graphic--remote .pump-verify-scan-graphic__icon {
-  color: var(--color-fleet-positive-500);
+.pump-verify-scan-graphic--remote .pump-verify-scan-graphic__icon,
+.pump-verify-scan-graphic--remote .pump-verify-scan-graphic__label,
+.pump-verify-scan-graphic--remote .pump-verify-scan-graphic__chevron {
+  color: var(--color-fleet-text-white);
 }
 
 .pump-verify-scan-graphic--remote .pump-verify-scan-graphic__divider {
-  background: color-mix(in srgb, var(--color-fleet-positive-500) 28%, var(--color-fleet-secondary-border));
+  background: color-mix(in srgb, var(--color-fleet-text-white) 36%, transparent);
 }
 
-.pump-verify-scan-graphic--remote .pump-verify-scan-graphic__label {
-  color: var(--color-fleet-positive-500);
+.pump-verify-scan-graphic--remote .pump-verify-scan-graphic__hint {
+  color: rgba(255, 255, 255, 0.92);
 }
 
-.pump-verify-scan-graphic--remote .pump-verify-scan-graphic__chevron {
-  color: var(--color-fleet-positive-500);
+.pump-verify-scan-graphic--on-site {
+  border-color: var(--color-fleet-primary-600);
+  background: var(--color-fleet-primary-600);
+}
+
+.pump-verify-scan-graphic--on-site:hover {
+  border-color: var(--color-fleet-primary-500);
+  background: var(--color-fleet-primary-500);
+}
+
+.pump-verify-scan-graphic--on-site:focus-visible {
+  border-color: var(--color-fleet-primary-500);
+  outline-color: var(--color-fleet-info-surface);
+}
+
+.pump-verify-scan-graphic--on-site .pump-verify-scan-graphic__icon,
+.pump-verify-scan-graphic--on-site .pump-verify-scan-graphic__label,
+.pump-verify-scan-graphic--on-site .pump-verify-scan-graphic__chevron {
+  color: var(--color-fleet-text-white);
+}
+
+.pump-verify-scan-graphic--on-site .pump-verify-scan-graphic__divider {
+  background: color-mix(in srgb, var(--color-fleet-text-white) 36%, transparent);
+}
+
+.pump-verify-scan-graphic--on-site .pump-verify-scan-graphic__hint {
+  color: color-mix(in srgb, var(--color-fleet-text-white) 88%, transparent);
 }
 
 .pump-verify-scan-graphic__icon-slot {
@@ -1039,22 +1074,32 @@ button:focus-visible,
   flex-shrink: 0;
   align-items: center;
   justify-content: center;
-  width: 56px;
-  height: 56px;
+  width: 2.5rem;
+  height: 2.5rem;
+}
+
+.pump-verify-scan-graphic--with-hint .pump-verify-scan-graphic__icon-slot {
+  width: 3rem;
+  height: 3rem;
 }
 
 .pump-verify-scan-graphic__divider {
   align-self: stretch;
   flex-shrink: 0;
   width: 1px;
-  margin: 12px 16px;
+  margin: 10px 12px;
   background: var(--color-fleet-secondary-border);
 }
 
 .pump-verify-scan-graphic__icon {
-  height: 36px;
-  width: 36px;
+  height: 1.75rem;
+  width: 1.75rem;
   color: var(--color-hertz-black);
+}
+
+.pump-verify-scan-graphic--with-hint .pump-verify-scan-graphic__icon {
+  height: 2rem;
+  width: 2rem;
 }
 
 .pump-verify-scan-graphic__copy {
@@ -1066,8 +1111,12 @@ button:focus-visible,
   gap: 2px;
 }
 
+.pump-verify-scan-graphic--with-hint .pump-verify-scan-graphic__copy {
+  gap: 4px;
+}
+
 .pump-verify-scan-graphic__label {
-  font-size: 20px;
+  font-size: var(--ds-type-18, 1.125rem);
   font-weight: 700;
   line-height: 1.2;
   color: var(--color-fleet-text);
@@ -1087,50 +1136,43 @@ button:focus-visible,
 }
 
 .pump-verify-manual {
-  display: flex;
+  display: inline-flex;
   width: 100%;
   align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  min-height: var(--touch-target);
-  border: var(--outdoor-btn-border) solid var(--color-fleet-secondary-border);
+  justify-content: center;
+  gap: 4px;
+  height: var(--ds-touch-standard, 3.75rem);
+  min-height: var(--ds-touch-standard, 3.75rem);
+  max-height: var(--ds-touch-standard, 3.75rem);
+  border: 0;
   border-radius: var(--radius-btn);
-  background: var(--color-fleet-surface);
-  padding: 8px 12px;
+  background: transparent;
+  padding: 0 14px;
   font-size: var(--text-ui-md);
   font-weight: 600;
   line-height: 1.3;
-  color: var(--color-fleet-text);
-  text-align: left;
+  color: var(--ds-color-info, #3b82f6);
+  text-align: center;
 }
 
 .pump-verify-manual__label {
-  flex: 1;
   min-width: 0;
-}
-
-.pump-verify-manual__icon {
-  flex-shrink: 0;
-  height: 20px;
-  width: 20px;
-  color: var(--color-fleet-text-secondary);
 }
 
 .pump-verify-manual__chevron {
   flex-shrink: 0;
   height: 20px;
   width: 20px;
-  color: var(--color-fleet-text-secondary);
+  color: currentColor;
 }
 
-.pump-verify-manual:hover {
-  border-color: var(--color-fleet-info);
-  color: var(--color-fleet-text-blue);
+.pump-verify-manual:active {
+  color: color-mix(in srgb, var(--ds-color-info, #3b82f6) 82%, var(--ds-color-text-primary, #101010));
 }
 
-.pump-verify-card--remote .pump-verify-manual:hover {
-  border-color: var(--color-fleet-positive-500);
-  color: var(--color-fleet-text-green);
+.pump-verify-manual:focus-visible {
+  outline: 2px solid var(--ds-color-info, #3b82f6);
+  outline-offset: 2px;
 }
 
 .pump-verify-quick-select {
@@ -1274,44 +1316,6 @@ button:focus-visible,
 }
 
 /* Scanner overlay */
-
-.fuel-heads-up {
-  border: 1px solid color-mix(in srgb, var(--color-hertz-yellow) 45%, #c9a000);
-  border-radius: var(--radius-md);
-  background: var(--color-hertz-yellow-surface);
-  padding: 0.875rem 1rem;
-}
-
-.fuel-heads-up__text {
-  margin: 0;
-  font-size: var(--text-ui-sm);
-  font-weight: 600;
-  line-height: 1.45;
-  color: var(--color-fleet-text);
-  text-align: center;
-}
-
-.remote-fueling-active__confirm {
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-  border-radius: var(--radius-md);
-  background: rgba(255, 255, 255, 0.08);
-  padding: 1rem;
-}
-
-.remote-fueling-active__confirm-text {
-  margin: 0;
-  font-size: var(--text-ui-sm);
-  line-height: 1.45;
-  color: rgba(255, 255, 255, 0.92);
-}
-
-.remote-fueling-active__confirm-actions {
-  display: flex;
-  flex-direction: column;
-  gap: 0.625rem;
-}
 
 .scanner-screen {
   background: #1a1a2e;
@@ -1901,8 +1905,6 @@ button:focus-visible,
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-height: var(--ds-touch-menu, var(--touch-target));
-  min-width: var(--ds-touch-menu, var(--touch-target));
 }
 
 .fleet-btn-contained-info {
@@ -1923,8 +1925,14 @@ button:focus-visible,
 }
 
 .fleet-btn-contained-success {
-  background: var(--color-fleet-success);
-  border-color: var(--color-fleet-text-green);
+  background: var(--color-fleet-remote-scan, #15803d);
+  border-color: var(--color-fleet-remote-scan, #15803d);
+  color: var(--color-fleet-text-white);
+}
+
+.fleet-btn-contained-success:hover:not(:disabled) {
+  background: var(--color-fleet-remote-scan-pressed, #14532d);
+  border-color: var(--color-fleet-remote-scan-pressed, #14532d);
   color: var(--color-fleet-text-white);
 }
 
@@ -1950,6 +1958,40 @@ button:focus-visible,
   background: var(--color-fleet-surface);
   border-color: var(--color-fleet-secondary);
   color: var(--color-fleet-text);
+}
+
+.fleet-btn-borderless {
+  background: transparent;
+  border-color: transparent;
+  color: var(--color-fleet-text);
+}
+
+.fleet-btn-borderless:hover:not(:disabled) {
+  background: var(--color-fleet-secondary-light);
+  border-color: transparent;
+}
+
+.fleet-btn-borderless:focus-visible {
+  outline: var(--ds-focus-ring-width, 3px) solid var(--ds-focus-ring-color, var(--ds-color-info));
+  outline-offset: var(--ds-focus-ring-offset, 2px);
+}
+
+.workflow-scan-link {
+  justify-content: center;
+  font-size: var(--ds-type-18, 1.125rem);
+  font-weight: 600;
+  line-height: 1.3;
+  color: var(--ds-color-info, #3b82f6);
+}
+
+.workflow-scan-link:hover:not(:disabled) {
+  background: transparent;
+  color: color-mix(in srgb, var(--ds-color-info, #3b82f6) 82%, var(--ds-color-text-primary, #101010));
+}
+
+.workflow-scan-link--start {
+  justify-content: flex-start;
+  text-align: left;
 }
 
 .fleet-btn:disabled,
@@ -2014,18 +2056,18 @@ button:focus-visible,
   display: inline-flex;
   flex-shrink: 0;
   align-items: center;
-  gap: 6px;
+  gap: 4px;
   align-self: flex-start;
   width: fit-content;
   max-width: 100%;
   border-radius: 4px;
-  border: 2px solid var(--color-hertz-black);
-  padding: 6px 10px;
+  border: 1px solid var(--color-hertz-black);
+  padding: 2px 8px;
   font-size: var(--text-ui-sm);
-  font-weight: 700;
-  line-height: 1;
-  letter-spacing: 0.03em;
-  text-transform: uppercase;
+  font-weight: 600;
+  line-height: 1.2;
+  letter-spacing: normal;
+  text-transform: none;
 }
 
 .fleet-status-chip--in-progress {
@@ -2058,8 +2100,8 @@ button:focus-visible,
 /* Accordion headers — softer than in-widget status chips */
 .fleet-status-chip--inline {
   border-width: 1px;
-  padding: 4px 10px;
-  font-weight: 600;
+  padding: 2px 8px;
+  font-weight: 500;
   line-height: 1.2;
   letter-spacing: normal;
   text-transform: none;
@@ -2085,10 +2127,26 @@ button:focus-visible,
 }
 
 .fleet-status-chip--inline.fleet-status-chip--optional {
-  border: 1px dashed var(--color-fleet-secondary-border);
+  border: 0;
   background: transparent;
+  padding: 0;
   color: var(--color-fleet-text-secondary);
-  font-weight: 600;
+  font-weight: 500;
+}
+
+/* Required badge — shared pill (global fallback; workflow uses subtle text) */
+.vehicle-card__odometer-required-chip,
+.fleet-status-chip--inline.fleet-status-chip--required {
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  font-size: var(--ds-type-14, 0.875rem);
+  font-weight: 500;
+  line-height: 1.2;
+  letter-spacing: normal;
+  text-transform: none;
+  background: transparent;
+  color: var(--color-fleet-text-red-secondary);
 }
 
 .fleet-status-chip--inline.fleet-status-chip--missing {
@@ -2144,7 +2202,7 @@ button:focus-visible,
   font-size: 14px;
 }
 
-/* Fleet — text fields (56px height, 4px radius, outlined) */
+/* Fleet — text fields (60dp height, outlined) */
 .fleet-field__label {
   font-size: var(--text-ui-md);
   font-weight: 700;
@@ -2167,12 +2225,13 @@ button:focus-visible,
   display: flex;
   width: 100%;
   align-items: center;
-  gap: 10px;
-  min-height: var(--ds-touch-input-min, var(--touch-target));
+  gap: var(--ds-spacing-2, 8px);
+  height: var(--ds-touch-input-min, 3.5rem);
+  min-height: var(--ds-touch-input-min, 3.5rem);
   border-radius: var(--ds-radius-input, var(--radius-btn));
   border: var(--outdoor-btn-border) solid var(--color-fleet-secondary-border);
   background: var(--color-fleet-surface);
-  padding: 0 14px;
+  padding: 0 var(--ds-spacing-3, 12px);
   transition: border-color 0.15s ease;
 }
 
@@ -2219,7 +2278,7 @@ button.fleet-field:focus-visible {
 }
 
 .fleet-field__input {
-  height: 58px;
+  height: calc(var(--ds-touch-input-min, 3.5rem) - 2px);
 }
 
 .fleet-field__input::placeholder,
@@ -2238,6 +2297,15 @@ button.fleet-field:focus-visible {
   font-size: 16px;
   line-height: 1.4;
   color: var(--color-fleet-text);
+}
+
+.fleet-field__placeholder {
+  flex: 1;
+  min-width: 0;
+  font-size: var(--text-ui-md);
+  font-weight: 500;
+  line-height: 1.4;
+  color: var(--color-fleet-text-secondary);
 }
 
 /* Fleet — fuel issue notification (title + description + optional action) */
@@ -2310,20 +2378,33 @@ button.fleet-field:focus-visible {
 
 /* Fleet — prior fueling summary (additional fueling context) */
 .prior-fuel-summary {
+  display: flex;
+  align-items: center;
+  gap: 6px;
   margin: 0;
-  border: 1px solid #bfdbfe;
-  border-radius: 4px;
-  background: #eff6ff;
-  padding: 10px 12px;
-  font-size: var(--text-ui-md);
-  font-weight: 600;
+  padding: 0;
+  font-size: var(--text-ui-sm);
+  font-weight: 500;
   line-height: 1.4;
-  color: var(--color-fleet-text);
+  color: var(--color-fleet-text-secondary);
+}
+
+.prior-fuel-summary__icon {
+  flex-shrink: 0;
+  height: 14px;
+  width: 14px;
+  color: var(--color-fleet-text-secondary);
 }
 
 .prior-fuel-summary__label {
-  font-weight: 700;
-  color: #1d4ed8;
+  font-weight: 600;
+  color: var(--color-fleet-text-secondary);
+}
+
+.prior-fuel-summary + .remote-fueling-active {
+  margin-top: 8px;
+  border-top: 1px solid var(--color-fleet-secondary-border);
+  padding-top: 4px;
 }
 
 .fuel-complete-summary {
@@ -2493,113 +2574,164 @@ button.fleet-field:focus-visible {
 }
 
 /* Pump issue — in-progress fueling assistance card */
-.pump-issue-card {
-  --pump-issue-blue: #2563eb;
-  --pump-issue-blue-hover: #1d4ed8;
-  --pump-issue-blue-pressed: #1e40af;
-  --pump-issue-blue-border: #bfdbfe;
-  --pump-issue-blue-surface: #eff6ff;
+
+.expandable-assistance-card {
+  --expandable-accent: var(--color-fleet-primary-600);
+  --expandable-accent-hover: #1d4ed8;
+  --expandable-accent-pressed: #1e40af;
+  --expandable-border: var(--color-fleet-secondary-border);
+  --expandable-surface: var(--color-fleet-surface);
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  border: 1px solid var(--pump-issue-blue-border);
+  border: 1px solid var(--expandable-border);
   border-radius: 4px;
-  background: var(--pump-issue-blue-surface);
-  padding: 14px 16px;
+  background: var(--expandable-surface);
+  overflow: hidden;
 }
 
-.pump-issue-card--horizontal {
-  flex-direction: column;
-  align-items: stretch;
-  gap: 12px;
-  padding: 14px 16px;
+.expandable-assistance-card--fuel-complete {
+  margin-top: 12px;
 }
 
-.pump-issue-card--horizontal .pump-issue-card__copy {
-  gap: 4px;
-}
-
-.pump-issue-card--horizontal .pump-issue-card__title {
-  font-size: var(--text-ui-md);
-  font-weight: 700;
-}
-
-.pump-issue-card--horizontal .pump-issue-card__message {
-  font-size: var(--text-ui-sm);
-  line-height: 1.45;
-}
-
-.pump-issue-card--horizontal .pump-issue-card__action {
-  width: 100%;
-  align-self: stretch;
-  flex-shrink: 0;
-  margin-top: auto;
-  min-height: var(--touch-target);
-  height: auto;
-  padding: 12px 16px;
-  font-size: var(--text-ui-md);
-  text-wrap: balance;
-  white-space: normal;
-}
-
-.pump-issue-card__copy {
+.fuel-assistance-row {
   display: flex;
-  flex-direction: column;
-  gap: 4px;
+  width: 100%;
+  align-items: center;
+  gap: 12px;
+  min-height: var(--ds-touch-standard, 3.75rem);
+  border: 1px solid var(--color-fleet-secondary-border);
+  border-radius: var(--radius-btn, 10px);
+  background: var(--color-fleet-surface);
+  padding: 12px 14px;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    border-color 0.15s ease,
+    background-color 0.15s ease;
 }
 
-.pump-issue-card__title {
+.fuel-assistance-row:hover:not(:disabled) {
+  background: var(--color-fleet-surface-muted);
+}
+
+.fuel-assistance-row:focus-visible {
+  outline: 2px solid var(--ds-focus-ring-color, var(--color-fleet-primary-500));
+  outline-offset: 2px;
+}
+
+.fuel-assistance-row__icon-wrap {
+  display: flex;
+  height: 40px;
+  width: 40px;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: var(--color-fleet-secondary-light);
+  color: var(--color-fleet-text-secondary);
+}
+
+.fuel-assistance-row__icon {
+  height: 18px;
+  width: 18px;
+}
+
+.expandable-assistance-card__toggle {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: var(--touch-target);
+  padding: 10px 12px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  text-align: left;
+}
+
+.expandable-assistance-card__toggle:focus-visible {
+  outline: 2px solid var(--ds-focus-ring-color, var(--color-fleet-primary-500));
+  outline-offset: -2px;
+}
+
+.expandable-assistance-card__title {
   margin: 0;
-  font-size: var(--text-ui-md);
+  flex: 1;
+  min-width: 0;
+  font-size: var(--text-ui-sm);
   font-weight: 600;
   line-height: 1.3;
   color: var(--color-fleet-text);
 }
 
-.pump-issue-card__message {
+.expandable-assistance-card__chevron {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+  color: var(--color-fleet-text-secondary);
+}
+
+.expandable-assistance-card__panel {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 0 12px 12px;
+  border-top: 1px solid var(--expandable-border);
+}
+
+.expandable-assistance-card__message {
   margin: 0;
+  padding-top: 12px;
   font-size: var(--text-ui-sm);
   line-height: 1.45;
   color: var(--color-fleet-text-secondary);
 }
 
-.pump-issue-card__action {
-  height: auto;
+.expandable-assistance-card__action {
   min-height: var(--touch-target);
+  height: auto;
   padding-block: 12px;
-  text-wrap: balance;
-  border-color: var(--pump-issue-blue);
-  background: var(--pump-issue-blue);
+  border-color: var(--expandable-accent);
+  background: var(--expandable-accent);
   color: var(--color-fleet-text-white);
   font-weight: 600;
+  text-wrap: balance;
 }
 
-.pump-issue-card__action:hover:not(:disabled) {
-  border-color: var(--pump-issue-blue-hover);
-  background: var(--pump-issue-blue-hover);
+.expandable-assistance-card__action:hover:not(:disabled) {
+  border-color: var(--expandable-accent-hover);
+  background: var(--expandable-accent-hover);
   color: var(--color-fleet-text-white);
 }
 
-.pump-issue-card__action:active:not(:disabled) {
-  border-color: var(--pump-issue-blue-pressed);
-  background: var(--pump-issue-blue-pressed);
+.expandable-assistance-card__action:active:not(:disabled) {
+  border-color: var(--expandable-accent-pressed);
+  background: var(--expandable-accent-pressed);
   color: var(--color-fleet-text-white);
 }
 
-.pump-issue-card__action:focus-visible {
-  outline: 3px solid var(--pump-issue-blue);
+.expandable-assistance-card__action:focus-visible {
+  outline: 3px solid var(--expandable-accent);
   outline-offset: 2px;
 }
 
-.pump-issue-card__action--loading {
+.expandable-assistance-card__action--loading {
   cursor: wait;
 }
 
-.pump-issue-card__action--loading:disabled {
+.expandable-assistance-card__action--loading:disabled {
   opacity: 1;
-  background: var(--pump-issue-blue);
-  border-color: var(--pump-issue-blue);
+  background: var(--expandable-accent);
+  border-color: var(--expandable-accent);
   color: var(--color-fleet-text-white);
+}
+
+[data-theme="dark"] .expandable-assistance-card {
+  --expandable-accent: #2563eb;
+  --expandable-accent-hover: #3b82f6;
+  --expandable-border: var(--color-fleet-secondary-border);
+  --expandable-surface: var(--color-fleet-surface);
 }
 
 .issue-category-list {
@@ -2663,6 +2795,52 @@ button.fleet-field:focus-visible {
   font-size: var(--text-ui-sm);
   font-weight: 600;
   line-height: 1.4;
+  color: var(--color-fleet-text-secondary);
+}
+
+.issue-overlay-vehicle-summary {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.issue-overlay-vehicle-summary__hint {
+  margin: 0;
+  font-size: var(--text-ui-sm);
+  line-height: 1.4;
+  color: var(--color-fleet-text-secondary);
+}
+
+.vehicle-information-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border: 1px solid var(--color-fleet-secondary-border);
+  border-radius: var(--radius-md);
+  background: var(--color-fleet-surface);
+  padding: 12px 14px;
+}
+
+.vehicle-information-summary__copy {
+  min-width: 0;
+  flex: 1;
+}
+
+.vehicle-information-summary__title {
+  margin: 0;
+  font-size: var(--ds-font-workflow-vehicle-reg-size, var(--ds-type-24, 1.5rem));
+  font-weight: var(--ds-font-workflow-vehicle-reg-weight, 700);
+  line-height: 1.15;
+  color: var(--color-fleet-text);
+}
+
+.vehicle-information-summary__subtitle {
+  margin: 2px 0 0;
+  font-size: var(--ds-font-workflow-vehicle-detail-size, var(--ds-type-16, 1rem));
+  font-weight: var(--ds-font-workflow-vehicle-detail-weight, 500);
+  line-height: 1.35;
   color: var(--color-fleet-text-secondary);
 }
 
@@ -2924,9 +3102,14 @@ button.fleet-field:focus-visible {
   display: flex;
   flex-direction: column;
   gap: 6px;
+  border: 1px dashed var(--color-fleet-secondary-border);
   border-radius: 4px;
-  background: var(--ds-color-tint-current);
+  background: transparent;
   padding: 10px 12px;
+}
+
+.workflow-notice--warning .workflow-notice__requirements {
+  border-color: color-mix(in srgb, var(--color-fleet-warning) 55%, var(--color-fleet-secondary-border));
 }
 
 .workflow-notice__requirements-title {
@@ -2940,11 +3123,20 @@ button.fleet-field:focus-visible {
 
 .workflow-notice__requirements-list {
   margin: 0;
-  padding-left: 1.1rem;
+  padding-left: 1.25rem;
+  list-style-type: disc;
   font-size: var(--text-ui-sm);
   font-weight: 600;
   line-height: 1.5;
   color: var(--color-fleet-text);
+}
+
+.workflow-notice__requirements-list li {
+  padding-left: 0.15rem;
+}
+
+.workflow-notice__requirements-list li::marker {
+  color: var(--color-fleet-text-secondary);
 }
 
 .workflow-notice__action {
@@ -3186,8 +3378,7 @@ button.fleet-field:focus-visible {
 }
 
 .settings-segment.fleet-mode-tab {
-  min-height: var(--touch-target);
-  padding: 0.625rem 0.75rem;
+  padding-inline: 0.75rem;
 }
 
 .settings-overlay__footer {
@@ -3264,7 +3455,7 @@ button.fleet-field:focus-visible {
   align-items: center;
   justify-content: center;
   gap: 1px;
-  font-size: 1.875rem;
+  font-size: var(--ds-type-20, 1.25rem);
   font-weight: 700;
   line-height: 1;
   font-variant-numeric: tabular-nums;
@@ -3272,12 +3463,12 @@ button.fleet-field:focus-visible {
 }
 
 .elapsed-timer--compact {
-  font-size: 1.25rem;
+  font-size: var(--ds-type-18, 1.125rem);
 }
 
 .elapsed-timer--empty {
   margin: 0;
-  font-size: 1.25rem;
+  font-size: var(--ds-type-18, 1.125rem);
   font-weight: 700;
   line-height: 1;
   color: var(--color-fleet-text);
@@ -3567,53 +3758,85 @@ button.fleet-field:focus-visible {
   background: var(--color-fleet-error);
 }
 
-/* Fleet — workflow in progress (fuel + cleaning) — outdoor high-contrast */
+/* Fleet — workflow in progress (fuel + cleaning) — soft surface, no harsh outline */
 .workflow-in-progress {
   display: flex;
   flex-direction: column;
   gap: 10px;
-  border-radius: 4px;
-  border: 2px solid var(--color-fleet-secondary-border);
-  background: var(--color-fleet-surface);
-  padding: 12px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+  border-radius: var(--radius-btn, 10px);
+  border: 0;
+  background: var(--color-fleet-surface-muted);
+  padding: 16px;
+  box-shadow: none;
 }
 
-.workflow-in-progress--default,
-.workflow-in-progress--remote {
-  border-color: var(--color-hertz-black);
-  background: var(--color-fleet-surface);
+.workflow-in-progress--default {
+  border: 0;
+  background: var(--color-fleet-surface-muted);
 }
 
-.workflow-in-progress__info {
+.workflow-in-progress__summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  min-height: var(--ds-touch-standard, 3.75rem);
+  padding: 2px 4px;
+}
+
+.workflow-in-progress__summary-pump {
   margin: 0;
-  padding: 8px 10px;
-  border: 1px solid #bfdbfe;
-  border-radius: 4px;
-  background: #eff6ff;
+  min-width: 0;
+  flex: 1;
+  font-size: var(--ds-type-20, 1.25rem);
+  font-weight: 700;
+  line-height: 1.2;
+  color: var(--color-fleet-text);
 }
 
-.workflow-in-progress__info-text {
-  margin: 0;
-  font-size: var(--text-ui-sm);
-  font-weight: 600;
-  line-height: 1.45;
-  color: #1d4ed8;
-  text-align: center;
+.workflow-in-progress__summary .elapsed-timer {
+  flex-shrink: 0;
+  font-size: var(--ds-type-20, 1.25rem);
 }
 
-.workflow-in-progress__top {
+.remote-fueling-active {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 12px;
 }
 
-.workflow-in-progress__heading {
+.remote-fueling-active__status {
   display: flex;
-  align-items: flex-start;
+  flex-direction: column;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  padding: 0 0 12px;
+  border-bottom: 1px solid var(--color-fleet-secondary-border);
+  box-shadow: none;
 }
 
-.workflow-in-progress__title {
+.remote-fueling-active__status-main {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 48px;
+  padding: 4px 0;
+}
+
+.remote-fueling-active__status-icon {
+  display: flex;
+  height: 44px;
+  width: 44px;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: var(--color-fleet-secondary-light);
+  color: var(--color-fleet-text);
+}
+
+.remote-fueling-active__status-pump {
   margin: 0;
   min-width: 0;
   flex: 1;
@@ -3623,213 +3846,241 @@ button.fleet-field:focus-visible {
   color: var(--color-fleet-text);
 }
 
-.workflow-in-progress--default .workflow-in-progress__title,
-.workflow-in-progress--remote .workflow-in-progress__title {
+.remote-fueling-active__status .elapsed-timer {
+  flex-shrink: 0;
+  font-size: var(--ds-type-20, 1.25rem);
+  font-weight: 700;
   color: var(--color-fleet-text);
 }
 
-.workflow-in-progress__subtitle {
-  margin: 0;
-  width: 100%;
-  font-size: var(--text-ui-sm);
-  line-height: 1.45;
-  font-weight: 600;
-  color: var(--color-hertz-gray-900);
+.remote-fueling-active__status-divider {
+  height: 1px;
+  margin: 12px 0 10px;
+  background: var(--color-fleet-secondary-border);
 }
 
-.workflow-in-progress__metrics {
+.remote-fueling-active__status-lock {
   display: flex;
-  align-items: stretch;
-}
-
-.workflow-in-progress__metric {
-  display: flex;
-  flex: 1;
-  flex-direction: column;
   align-items: center;
   gap: 8px;
-  text-align: center;
-}
-
-.workflow-in-progress__metric-label {
-  margin: 0;
-  font-size: var(--text-ui-sm);
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  color: var(--color-hertz-gray-900);
-}
-
-.workflow-in-progress__metric-value {
-  margin: 0;
-  font-size: 2rem;
-  font-weight: 700;
-  line-height: 1;
-  color: var(--color-hertz-black);
-}
-
-.workflow-in-progress__pickup {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 6px;
-  margin: 0;
-  padding: 10px 0 0;
-  border-top: 1px solid var(--color-fleet-secondary-border);
-}
-
-.workflow-in-progress__pickup--active {
-  border-top-color: var(--color-hertz-yellow);
-}
-
-.workflow-in-progress__pickup-label {
-  margin: 0;
-  font-size: var(--text-ui-sm);
-  font-weight: 700;
-  line-height: 1.3;
-  color: var(--color-fleet-text);
-  text-align: center;
-}
-
-.workflow-in-progress__pickup-time {
-  margin: 0;
-  font-size: 1.5rem;
-  font-weight: 800;
-  line-height: 1;
-  font-variant-numeric: tabular-nums;
-  color: var(--color-hertz-black);
-}
-
-.workflow-in-progress__pickup-bar {
-  width: min(100%, 280px);
-  height: 6px;
-  overflow: hidden;
-  border-radius: 4px;
-  background: var(--color-hertz-gray-200);
-}
-
-.workflow-in-progress__pickup-bar-fill {
-  display: block;
-  height: 100%;
-  min-width: 0;
-  border-radius: 4px;
-  background: var(--color-hertz-yellow);
-  transition: width 1s linear;
-}
-
-.workflow-in-progress__pickup-bar-fill--waiting {
-  width: 100%;
-  background: var(--color-fleet-secondary-border);
-  animation: fleet-unlock-bar 1.35s ease-in-out infinite;
-}
-
-.workflow-in-progress__pickup-hint {
-  margin: 0;
-  max-width: 22rem;
-  font-size: var(--text-ui-sm);
-  line-height: 1.4;
-  font-weight: 500;
-  color: var(--color-fleet-text-secondary);
-  text-align: center;
-}
-
-.workflow-in-progress__note {
   margin: 0;
   font-size: var(--text-ui-sm);
   font-weight: 600;
-  line-height: 1.45;
-  color: var(--color-hertz-gray-900);
-  text-align: center;
-}
-
-.remote-fueling-active {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
-.remote-fueling-active__card {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 4px;
-  padding: 14px 16px 12px;
-  border-radius: 4px;
-  border: 2px solid var(--color-hertz-black);
-  background: var(--color-fleet-surface);
-  text-align: center;
-}
-
-.remote-fueling-active__pump-label {
-  margin: 0;
-  font-size: var(--text-ui-sm);
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--color-hertz-gray-900);
-}
-
-.remote-fueling-active__pump-value {
-  margin: 0;
-  font-size: 2.75rem;
-  font-weight: 700;
-  line-height: 1;
-  color: var(--color-hertz-black);
-}
-
-.remote-fueling-active__action {
-  width: 100%;
-  margin-top: 10px;
-  padding-top: 10px;
-  border-top: 1px solid var(--color-fleet-secondary-border);
-}
-
-.remote-fueling-active__action-title {
-  margin: 0;
-  font-size: var(--text-ui-md);
-  font-weight: 700;
-  line-height: 1.3;
-  color: var(--color-fleet-text);
-}
-
-.remote-fueling-active__action-hint {
-  margin: 4px 0 0;
-  font-size: var(--text-ui-sm);
   line-height: 1.35;
-  font-weight: 600;
-  color: var(--color-fleet-text);
+  color: var(--color-fleet-primary-600);
+}
+
+.remote-fueling-active__status-lock-icon {
+  flex-shrink: 0;
+  height: 16px;
+  width: 16px;
 }
 
 .remote-fueling-active__fallback {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-}
-
-.remote-fueling-active__fallback-lead {
-  margin: 0;
-  font-size: var(--text-ui-sm);
-  font-weight: 500;
-  line-height: 1.45;
-  color: var(--color-text-muted);
-  text-align: center;
 }
 
 .remote-fueling-active__fallback-action {
   min-height: var(--touch-target);
+  gap: 10px;
+  border: 1px solid var(--color-fleet-secondary-border);
+  border-radius: 4px;
+  background: var(--color-fleet-surface);
+  padding: 10px 12px;
+}
+
+.remote-fueling-active__fallback-action .fuel-assistance-row__icon-wrap {
+  height: 32px;
+  width: 32px;
+}
+
+.remote-fueling-active__fallback-action .fuel-assistance-row__icon {
+  height: 16px;
+  width: 16px;
+}
+
+.remote-fueling-active__fallback-action:hover {
+  background: var(--color-fleet-surface-muted);
+}
+
+.remote-fueling-active__fallback-action:focus-visible {
+  outline: 2px solid var(--color-fleet-primary-600);
+  outline-offset: 2px;
+}
+
+.remote-fueling-active__fallback-copy {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.remote-fueling-active__fallback-title {
   font-size: var(--text-ui-sm);
   font-weight: 600;
+  line-height: 1.35;
+  color: var(--color-fleet-text);
+}
+
+.remote-fueling-active__fallback-chevron {
+  flex-shrink: 0;
+  height: 16px;
+  width: 16px;
+  color: var(--color-fleet-text-secondary);
+}
+
+.fuel-nozzle-confirm-graphic {
+  margin: 1rem 0 0.25rem;
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+
+.fuel-nozzle-confirm-graphic__step {
+  margin: 0 0 0.75rem;
+  font-size: var(--ds-type-14, 0.875rem);
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  text-align: center;
+  color: var(--ds-color-info, #3b82f6);
+}
+
+.fuel-nozzle-confirm-graphic__stage {
+  overflow: hidden;
+  border-radius: 12px;
+  background: #ffffff;
+  padding: 8px 0 4px;
+}
+
+.fuel-nozzle-confirm-graphic__scene {
+  position: relative;
+  width: 100%;
+  max-width: 18rem;
+  margin-inline: auto;
+  aspect-ratio: 619.499 / 520;
+}
+
+.fuel-nozzle-confirm-graphic__hose {
+  position: absolute;
+  inset: 55.58% 41.89% 17.88% 29.54%;
+  display: block;
+  width: 100%;
+  height: 100%;
+  color: #111827;
+  pointer-events: none;
+}
+
+.fuel-nozzle-confirm-graphic__nozzle {
+  position: absolute;
+  top: 40.12%;
+  bottom: 40.12%;
+  left: 32.93%;
+  right: 36.63%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1;
+  transform: translate(0, 0) rotate(0deg);
+  animation: fuel-nozzle-return-seat 2.2s ease-in-out infinite;
+}
+
+@keyframes fuel-nozzle-return-seat {
+  0% {
+    transform: translate(-14%, 7%) rotate(-11deg);
+  }
+
+  45% {
+    transform: translate(0, 0) rotate(0deg);
+  }
+
+  70%,
+  100% {
+    transform: translate(0, 0) rotate(0deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fuel-nozzle-confirm-graphic__nozzle {
+    animation: none;
+  }
+}
+
+.fuel-nozzle-confirm-graphic__nozzle-image {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  transform: scaleX(-1);
+}
+
+.fuel-nozzle-confirm-graphic__pump-body {
+  position: absolute;
+  inset: 0 0 0 54.8%;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border-radius: 24px;
+  background: #111827;
+  box-shadow: 0 12px 12px rgba(0, 0, 0, 0.2);
+}
+
+.fuel-nozzle-confirm-graphic__pump-display {
+  display: flex;
+  flex-shrink: 0;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 26.92%;
+  border-radius: 24px 24px 0 0;
+  background: #ffffff;
+}
+
+.fuel-nozzle-confirm-graphic__pump-display-bar {
+  display: block;
+  height: 15px;
+  border-radius: 4px;
+  background: #111827;
+}
+
+.fuel-nozzle-confirm-graphic__pump-display-bar--wide {
+  width: 73px;
+  max-width: 58%;
+}
+
+.fuel-nozzle-confirm-graphic__pump-display-bar--narrow {
+  width: 40px;
+  max-width: 32%;
+}
+
+.fuel-nozzle-confirm-graphic__pump-base {
+  flex: 1;
+  min-height: 0;
+  background: #111827;
+}
+
+.fuel-nozzle-confirm-graphic__caption {
+  margin: 0.75rem 0 0;
+  font-size: var(--text-ui-sm);
+  font-weight: 700;
+  line-height: 1.4;
+  text-align: center;
+  color: var(--color-fleet-text);
 }
 
 .fleet-accordion-header {
   position: relative;
   display: flex;
   width: 100%;
-  min-height: var(--touch-target);
   align-items: center;
   justify-content: space-between;
-  gap: var(--space-3);
-  padding: 0.875rem var(--workflow-inset);
+  gap: var(--ds-spacing-2, 8px);
+  max-height: var(--ds-touch-accordion, 3.5rem);
+  padding: 0 var(--workflow-inset);
   text-align: left;
   border: none;
   background: transparent;
@@ -3843,17 +4094,6 @@ button.fleet-field:focus-visible {
 
 .fleet-accordion-header--awaiting {
   background: var(--color-hertz-yellow-surface);
-}
-
-.fleet-accordion-header--awaiting::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  left: 0;
-  width: 4px;
-  background: var(--color-brand-primary);
-  pointer-events: none;
 }
 
 .fleet-accordion-header--awaiting .fleet-accordion-header__title {
@@ -3873,14 +4113,13 @@ button.fleet-field:focus-visible {
 
 .fleet-mode-tab {
   display: flex;
-  min-height: var(--touch-target);
   flex: 1;
   align-items: center;
   justify-content: center;
   gap: 8px;
   border-radius: var(--radius-btn);
   border: var(--outdoor-btn-border) solid var(--color-fleet-secondary-border);
-  padding: 12px 24px;
+  padding-inline: 1.5rem;
   background: var(--color-fleet-surface);
   color: var(--color-fleet-text-secondary);
   cursor: pointer;
@@ -3890,6 +4129,26 @@ button.fleet-field:focus-visible {
   border-color: var(--color-hertz-black);
   background: var(--color-hertz-yellow-surface);
   color: var(--color-hertz-black);
+}
+
+.fuel-unlock-mode .fleet-mode-tab--remote.fleet-mode-tab--active {
+  border-color: var(--color-fleet-success);
+  background: var(--color-fleet-positive-surface);
+  color: var(--color-fleet-text-green);
+}
+
+.fuel-unlock-mode .fleet-mode-tab--on-site.fleet-mode-tab--active {
+  border-color: var(--color-fleet-primary-600);
+  background: var(--color-fleet-info-surface);
+  color: var(--color-fleet-primary-600);
+}
+
+.fuel-unlock-mode .fleet-mode-tab--remote.fleet-mode-tab--active:focus-visible {
+  outline-color: var(--color-fleet-success);
+}
+
+.fuel-unlock-mode .fleet-mode-tab--on-site.fleet-mode-tab--active:focus-visible {
+  outline-color: var(--color-fleet-primary-600);
 }
 
 .fleet-mode-tab:focus-visible {
@@ -4252,33 +4511,37 @@ button.fleet-field:focus-visible {
 .vehicle-search-card__header {
   display: flex;
   width: 100%;
-  align-items: center;
-  gap: 0.625rem;
+  align-items: stretch;
+  gap: 0;
   border-bottom: 0;
-  padding: 0.625rem var(--home-list-inset);
+  padding: 0;
   text-align: left;
 }
 
-.vehicle-search-card__header--static {
-  border-bottom: 0;
-  padding-bottom: var(--ds-spacing-4, 16px);
-}
-
-.vehicle-search-card__radio {
+.vehicle-search-card__select {
   display: flex;
-  width: var(--ds-touch-min, 3rem);
-  min-width: var(--ds-touch-min, 3rem);
-  min-height: var(--ds-touch-min, 3rem);
-  flex-shrink: 0;
+  min-width: 0;
+  flex: 1 1 auto;
   align-items: center;
-  justify-content: center;
+  gap: 0.625rem;
+  min-height: var(--ds-touch-standard, 3.75rem);
   border: 0;
   background: transparent;
-  padding: 0;
+  padding: 0.625rem var(--home-list-inset);
+  padding-right: 0.5rem;
+  text-align: left;
+  cursor: pointer;
+}
+
+.vehicle-search-card__select:focus-visible {
+  outline: 2px solid var(--color-fleet-info);
+  outline-offset: -2px;
+  z-index: 1;
 }
 
 .vehicle-search-card__radio-mark {
   display: block;
+  flex-shrink: 0;
   height: 1.25rem;
   width: 1.25rem;
   border: 2px solid var(--color-fleet-text-secondary);
@@ -4337,17 +4600,24 @@ button.fleet-field:focus-visible {
   color: #991b1b;
 }
 
+.vehicle-search-card__header--static {
+  border-bottom: 0;
+  padding: 0.625rem var(--home-list-inset);
+  padding-bottom: var(--ds-spacing-4, 16px);
+}
+
 .vehicle-search-card__expand {
   display: flex;
-  width: var(--ds-touch-min, 3rem);
-  min-width: var(--ds-touch-min, 3rem);
-  min-height: var(--ds-touch-min, 3rem);
+  width: var(--ds-touch-standard, 3.75rem);
+  min-width: var(--ds-touch-standard, 3.75rem);
+  min-height: var(--ds-touch-standard, 3.75rem);
   flex-shrink: 0;
   align-items: center;
   justify-content: center;
+  align-self: stretch;
   border: 0;
   background: transparent;
-  padding: 0;
+  padding: 0 0.75rem 0 0.25rem;
   color: var(--color-fleet-text);
 }
 
@@ -4513,7 +4783,6 @@ button.fleet-field:focus-visible {
 
 .vehicle-search-footer__continue {
   min-width: 8.5rem;
-  min-height: 3.5rem;
   padding-inline: 1.25rem;
 }
 
@@ -4656,7 +4925,7 @@ button.fleet-field:focus-visible {
 .vehicle-search-filters-overlay .vehicle-search-filter-field,
 .vehicle-search-filters-overlay .vehicle-search-filter-field__control.fleet-field,
 .vehicle-search-filters-overlay .vehicle-search-filter-field .fleet-field {
-  --filter-field-height: 3.25rem;
+  --filter-field-height: var(--ds-touch-standard, 3.75rem);
 }
 
 .vehicle-search-filters-overlay__scroll {
@@ -4881,12 +5150,24 @@ button.fleet-field:focus-visible {
 }
 
 .fleet-accordion-body {
-  padding: var(--space-3) var(--workflow-inset) var(--workflow-inset);
+  padding: var(--ds-spacing-2, 8px) var(--workflow-inset) var(--ds-spacing-3, 12px);
 }
 
 .fleet-mode-tab-group {
   display: flex;
   gap: var(--touch-gap);
+}
+
+.fleet-mode-tab__icon {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+}
+
+.fleet-mode-tab__label {
+  font-size: var(--text-ui-md);
+  font-weight: 600;
+  line-height: 1.2;
 }
 
 .vehicle-card {
@@ -4939,7 +5220,8 @@ button.fleet-field:focus-visible {
   color: var(--color-fleet-text-secondary);
 }
 
-.vehicle-card__expand-icon {
+.vehicle-card__expand-icon,
+.vehicle-card__info-icon {
   height: 1.25rem;
   width: 1.25rem;
   flex-shrink: 0;
@@ -5225,12 +5507,24 @@ button.fleet-field:focus-visible {
   color: var(--color-fleet-text-secondary);
 }
 
+.vehicle-card__odometer-heading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
 .vehicle-card__odometer-label {
   margin: 0;
   font-size: var(--text-ui-sm);
   font-weight: 600;
   line-height: 1.2;
   color: var(--color-fleet-text);
+}
+
+.vehicle-card__odometer-required-chip {
+  display: inline-flex;
+  align-items: center;
 }
 
 .vehicle-card__odometer-hint {
@@ -5372,12 +5666,11 @@ button.fleet-field:focus-visible {
 }
 
 .vehicle-card__report {
-  display: inline-flex;
+  display: flex;
   width: 100%;
-  min-height: var(--touch-target);
   align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
+  justify-content: space-between;
+  gap: 0.75rem;
   margin: 0;
   padding: 0 1rem;
   border: 0;
@@ -5388,7 +5681,16 @@ button.fleet-field:focus-visible {
   line-height: 1.2;
   color: var(--color-fleet-text-secondary);
   cursor: pointer;
+  text-align: left;
   transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.vehicle-card__report-leading {
+  display: inline-flex;
+  min-width: 0;
+  flex: 1;
+  align-items: center;
+  gap: 0.5rem;
 }
 
 .vehicle-card__report-icon {
@@ -5400,6 +5702,13 @@ button.fleet-field:focus-visible {
 
 .vehicle-card__report-label {
   color: inherit;
+}
+
+.vehicle-card__report-chevron {
+  height: 1.75rem;
+  width: 1.75rem;
+  flex-shrink: 0;
+  color: var(--color-fleet-text);
 }
 
 .vehicle-card__report:hover {
@@ -5415,25 +5724,23 @@ button.fleet-field:focus-visible {
 .home-workflow-card {
   display: flex;
   width: 100%;
-  min-height: var(--ds-touch-row-min, 5rem);
+  min-height: var(--ds-touch-row-min, 4rem);
   max-height: none;
   align-items: center;
-  gap: var(--ds-spacing-4, 16px);
-  padding: var(--ds-spacing-4, 16px);
+  gap: var(--ds-spacing-3, 12px);
+  padding: var(--ds-spacing-3, 12px);
   border: var(--fleet-container-border) solid var(--color-fleet-secondary-border);
   border-radius: var(--ds-radius-card, var(--radius-btn));
   background: var(--color-fleet-surface);
   text-align: left;
   transition:
     border-color 0.15s ease,
-    background-color 0.15s ease,
-    box-shadow 0.15s ease;
+    background-color 0.15s ease;
 }
 
 .home-workflow-card:hover {
   border-color: var(--color-hertz-black);
   background: var(--color-hertz-yellow-surface);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 }
 
 .home-workflow-card:active {
@@ -5452,20 +5759,20 @@ button.fleet-field:focus-visible {
 
 .home-workflow-card--vsa .home-workflow-card__icon,
 .home-history-list__workflow-chip--vsa {
-  background: var(--workflow-vsa-bg);
-  color: var(--workflow-vsa-fg);
+  background: #fef9c3;
+  color: #854d0e;
 }
 
 .home-workflow-card--transport .home-workflow-card__icon,
 .home-history-list__workflow-chip--transport {
-  background: var(--workflow-transport-bg);
-  color: var(--workflow-transport-fg);
+  background: #dbeafe;
+  color: #1d4ed8;
 }
 
 .home-workflow-card--fuel .home-workflow-card__icon,
 .home-history-list__workflow-chip--fuel {
-  background: var(--workflow-fuel-bg);
-  color: var(--workflow-fuel-fg);
+  background: #ffe4e6;
+  color: #be123c;
 }
 
 .home-workflow-card--chase-van .home-workflow-card__icon,
@@ -5556,10 +5863,25 @@ button.fleet-field:focus-visible {
   color: var(--color-fleet-text);
 }
 
+.home-workflow-card__desc-block {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-top: 4px;
+}
+
 .home-workflow-card__desc {
-  margin: 4px 0 0;
+  margin: 0;
   font-size: 14px;
   font-weight: 600;
+  line-height: 1.3;
+  color: var(--color-hertz-gray-600);
+}
+
+.home-workflow-card__desc-secondary {
+  margin: 0;
+  font-size: var(--ds-type-14, 0.875rem);
+  font-weight: 500;
   line-height: 1.3;
   color: var(--color-hertz-gray-600);
 }
@@ -5586,12 +5908,15 @@ button.fleet-field:focus-visible {
   display: flex;
   width: 100%;
   min-width: 0;
+  flex: 0 0 auto;
   flex-direction: column;
-  gap: 1rem;
+  gap: 1.25rem;
+  padding-bottom: 0.5rem;
 }
 
 .home-workflow-group {
   display: flex;
+  flex: 0 0 auto;
   flex-direction: column;
   gap: 0.375rem;
 }
@@ -5605,28 +5930,203 @@ button.fleet-field:focus-visible {
 
 .home-workflow-group__title {
   margin: 0;
-  font-size: var(--ds-font-label-size, 0.875rem);
-  font-weight: 800;
+  padding-inline: 2px;
+  font-size: var(--ds-type-14, 0.875rem);
+  font-weight: 600;
   letter-spacing: 0.04em;
-  line-height: var(--ds-font-label-line, 1.25rem);
+  line-height: 1.25;
   text-transform: uppercase;
-  color: var(--color-text-muted);
+  color: #4b5563;
 }
 
 .home-workflow-group__description {
   margin: 0;
-  font-size: 0.8125rem;
+  font-size: var(--ds-type-14, 0.875rem);
   line-height: 1.35;
   color: var(--color-fleet-text-secondary);
 }
 
 .home-workflow-group__items {
   display: flex;
+  flex: 0 0 auto;
   flex-direction: column;
+  height: auto;
+  align-self: flex-start;
   overflow: hidden;
   border: var(--fleet-container-border) solid var(--color-fleet-secondary-border);
   border-radius: var(--ds-radius-card, 12px);
   background: var(--color-fleet-surface);
+}
+
+.home-workflow-group__items--cards {
+  gap: 0;
+  overflow: hidden;
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+  background: #ffffff;
+}
+
+.home-workflow-group__items--cards .home-workflow-card--list + .home-workflow-card--list {
+  border-top: 1px solid #e5e7eb;
+}
+
+.home-workflow-card--list {
+  flex: 0 0 auto;
+  gap: 10px;
+  min-height: var(--touch-target, 48px);
+  padding: 10px 14px;
+  border: 0;
+  border-radius: 0;
+  background: #ffffff;
+  box-shadow: none;
+  transition: background-color 0.15s ease;
+}
+
+.home-workflow-group__items--cards .home-workflow-card--list:first-child {
+  border-radius: 14px 14px 0 0;
+}
+
+.home-workflow-group__items--cards .home-workflow-card--list:last-child {
+  border-radius: 0 0 14px 14px;
+}
+
+.home-workflow-group__items--cards .home-workflow-card--list:only-child {
+  border-radius: 14px;
+}
+
+.home-workflow-card--list .home-workflow-card__icon {
+  height: 2.25rem;
+  width: 2.25rem;
+  border-radius: 10px;
+}
+
+.home-workflow-card--list .home-workflow-card__icon-svg {
+  height: 1.125rem;
+  width: 1.125rem;
+}
+
+.home-workflow-card--list .home-workflow-card__title {
+  font-size: 1rem;
+  font-weight: 600;
+  line-height: 1.25;
+  color: #111827;
+}
+
+.home-workflow-card--list .home-workflow-card__badge {
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: var(--ds-type-14, 0.875rem);
+  font-weight: 600;
+  letter-spacing: normal;
+  line-height: 1.2;
+}
+
+.home-workflow-card--list .home-workflow-card__desc {
+  margin-top: 0;
+  font-size: var(--ds-type-16, 1rem);
+  font-weight: 500;
+  line-height: 1.3;
+  color: #4b5563;
+}
+
+.home-workflow-card--list .home-workflow-card__desc-block {
+  margin-top: 2px;
+}
+
+.home-workflow-card--list .home-workflow-card__desc-secondary {
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: #6b7280;
+}
+
+.home-workflow-card--list .home-workflow-card__chevron {
+  display: flex;
+  height: 2rem;
+  width: 2rem;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border-radius: 0;
+  background: transparent;
+  color: #9ca3af;
+}
+
+.home-workflow-card--list .home-workflow-card__chevron-svg {
+  height: 1.125rem;
+  width: 1.125rem;
+}
+
+.home-workflow-card--list:hover {
+  background: #f9fafb;
+  box-shadow: none;
+}
+
+.home-workflow-card--list:active {
+  transform: none;
+  background: #f3f4f6;
+  opacity: 1;
+}
+
+.home-workflow-card--list:hover .home-workflow-card__chevron {
+  background: transparent;
+  color: #6b7280;
+}
+
+.home-workflow-card--list:focus-visible {
+  outline: 3px solid var(--color-fleet-info);
+  outline-offset: 2px;
+}
+
+.home-coming-soon-row {
+  display: flex;
+  min-height: 4.5rem;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 16px;
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+  background: #ffffff;
+}
+
+.home-coming-soon-row__leading {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  align-items: center;
+  gap: 16px;
+}
+
+.home-coming-soon-row__icon {
+  display: flex;
+  height: 3.25rem;
+  width: 3.25rem;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  background: #f3f4f6;
+  color: #6b7280;
+}
+
+.home-coming-soon-row__icon-svg {
+  height: 1.5rem;
+  width: 1.5rem;
+}
+
+.home-coming-soon-row__label {
+  font-size: 1.125rem;
+  font-weight: 600;
+  line-height: 1.25;
+  color: #4b5563;
+}
+
+.home-coming-soon-row__chevron {
+  width: 1.375rem;
+  height: 1.375rem;
+  flex-shrink: 0;
+  color: #9ca3af;
 }
 
 .home-workflow-group__items .home-workflow-card {
@@ -5655,7 +6155,7 @@ button.fleet-field:focus-visible {
 }
 
 @container app (min-width: 900px) {
-  .home-workflow-group__items {
+  .home-workflow-group__items:not(.home-workflow-group__items--cards) {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 0.5rem;
@@ -5665,16 +6165,16 @@ button.fleet-field:focus-visible {
     background: transparent;
   }
 
-  .home-workflow-group__items .home-workflow-card {
+  .home-workflow-group__items:not(.home-workflow-group__items--cards) .home-workflow-card {
     border: var(--fleet-container-border) solid var(--color-fleet-secondary-border);
     border-radius: 4px;
   }
 
-  .home-workflow-group__items .home-workflow-card + .home-workflow-card {
+  .home-workflow-group__items:not(.home-workflow-group__items--cards) .home-workflow-card + .home-workflow-card {
     border-top: 0;
   }
 
-  .home-workflow-group__items .home-workflow-card:hover {
+  .home-workflow-group__items:not(.home-workflow-group__items--cards) .home-workflow-card:hover {
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
   }
 }
@@ -5713,29 +6213,119 @@ button.fleet-field:focus-visible {
 }
 
 .home-workflow-main--tab-work {
-  background: var(--color-fleet-surface);
+  --home-inset: 1rem;
+  --home-workflow-inset: var(--home-inset);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: #f3f4f6;
+}
+
+.home-workflow-main--tab-work.app-workflow-main {
+  padding-inline: 0;
+}
+
+.home-workflow-main--tab-work .app-workflow-scroll-body {
+  display: flex;
+  min-height: 0;
+  flex: 1 1 0;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.home-workflow-main--tab-work .home-workflow-list {
+  min-height: 0;
+  flex: 1 1 0;
+  gap: 0;
+  padding-bottom: 0;
+  overflow: hidden;
+}
+
+.home-workflow-main--tab-work .home-workflow-list > .high-demand-card {
+  flex-shrink: 0;
+  width: 100%;
+  margin-inline: 0;
+  border-radius: 0;
+}
+
+.home-workflow-main--tab-work .high-demand-card__view-all {
+  min-height: 36px;
+  min-width: auto;
+}
+
+.home-workflow-main--tab-work .home-workflow-group {
+  display: flex;
+  min-height: 0;
+  flex: 1 1 0;
+  flex-direction: column;
+  overflow: hidden;
+  padding: 0.75rem var(--home-workflow-inset) var(--home-workflow-inset);
+}
+
+.home-workflow-main--tab-work .home-workflow-group__items--cards {
+  min-height: 0;
+  flex: 1 1 0;
+  align-self: stretch;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+}
+
+.home-workflow-main--tab-work .home-workflow-group__items--cards .home-workflow-card--list:first-child {
+  border-radius: 14px 14px 0 0;
+}
+
+.home-workflow-main--tab-work .home-workflow-group__items--cards .home-workflow-card--list:last-child {
+  border-radius: 0 0 14px 14px;
+}
+
+.home-workflow-main--tab-work .home-workflow-group__items--cards .home-workflow-card--list:only-child {
+  border-radius: 14px;
+}
+
+.home-workflow-main--tab-work .high-demand-card--banner {
+  --hd-padding: 8px 14px;
+  --hd-header-min-height: 32px;
+  padding-bottom: 8px;
+}
+
+.home-workflow-main--tab-work .home-workflow-card--list {
+  flex: 1 1 0;
+  min-height: 0;
+  padding-block: 6px;
+}
+
+#main-content.app-scroll.home-workflow-main--tab-work {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding-top: 0;
+  scrollbar-gutter: auto;
 }
 
 .home-bottom-nav {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   flex-shrink: 0;
-  min-height: var(--ds-touch-nav-height, 4.5rem);
-  border-top: var(--fleet-container-border) solid var(--color-fleet-secondary-border);
-  background: var(--color-fleet-surface);
-  padding-bottom: max(var(--ds-spacing-2, 8px), env(safe-area-inset-bottom));
+  min-height: 4.75rem;
+  border-top: 1px solid #e5e7eb;
+  background: #ffffff;
+  padding-top: 4px;
+  padding-bottom: max(10px, env(safe-area-inset-bottom));
 }
 
 .home-bottom-nav__item {
   position: relative;
   display: flex;
-  min-height: var(--ds-touch-nav-height, 4.5rem);
+  min-height: 4.5rem;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: var(--ds-spacing-1, 4px);
-  padding: var(--ds-spacing-2, 8px) var(--ds-spacing-2, 8px);
-  color: var(--color-fleet-text-secondary);
+  gap: 6px;
+  padding: 10px 8px;
+  color: #374151;
   transition: color 0.15s ease;
 }
 
@@ -5753,7 +6343,7 @@ button.fleet-field:focus-visible {
 }
 
 .home-bottom-nav__item--active {
-  color: var(--color-fleet-text);
+  color: #111827;
   font-weight: 700;
 }
 
@@ -5766,15 +6356,15 @@ button.fleet-field:focus-visible {
 }
 
 .home-bottom-nav__icon {
-  height: 1.5rem;
-  width: 1.5rem;
+  height: 1.625rem;
+  width: 1.625rem;
   flex-shrink: 0;
 }
 
 .home-bottom-nav__label {
-  font-size: var(--ds-font-label-size, 0.875rem);
+  font-size: 0.8125rem;
   font-weight: 600;
-  line-height: var(--ds-font-label-line, 1.25rem);
+  line-height: 1.2;
   letter-spacing: 0.01em;
 }
 
@@ -7158,8 +7748,8 @@ button.fleet-field:focus-visible {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: var(--ds-spacing-2, 8px);
-  padding: var(--ds-spacing-3, 12px) var(--ds-spacing-3, 12px) var(--ds-spacing-3, 12px) var(--ds-spacing-2, 8px);
+  gap: 8px;
+  padding: 10px 12px 10px 10px;
   min-height: var(--ds-touch-menu, 3rem);
 }
 
@@ -7197,28 +7787,28 @@ button.fleet-field:focus-visible {
 
 .hertz-header--brand .hertz-header__brand-name {
   margin: 0;
-  font-size: var(--ds-font-card-title-size, 1.25rem);
+  font-size: 1.375rem;
   font-weight: 800;
   font-style: italic;
-  letter-spacing: 0.02em;
-  line-height: var(--ds-font-card-title-line, 1.75rem);
+  letter-spacing: 0.01em;
+  line-height: 1.1;
   color: var(--color-fleet-text-white);
 }
 
 .hertz-header--brand .hertz-header__brand-site {
-  margin: var(--ds-spacing-1, 4px) 0 0;
-  font-size: var(--ds-font-label-size, 0.875rem);
-  font-weight: 600;
-  line-height: var(--ds-font-label-line, 1.25rem);
-  color: rgba(255, 255, 255, 0.85);
+  margin: 2px 0 0;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  line-height: 1.25;
+  color: rgba(255, 255, 255, 0.72);
 }
 
 .hertz-header--brand .hertz-header__brand-operator {
-  margin: var(--ds-spacing-1, 4px) 0 0;
-  font-size: var(--ds-font-label-size, 0.875rem);
-  font-weight: 600;
-  line-height: var(--ds-font-label-line, 1.25rem);
-  color: rgba(255, 255, 255, 0.85);
+  margin: 2px 0 0;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  line-height: 1.25;
+  color: rgba(255, 255, 255, 0.72);
 }
 
 .hertz-header__actions {
@@ -7236,15 +7826,15 @@ button.fleet-field:focus-visible {
   display: inline-flex;
   align-items: center;
   gap: 0.375rem;
-  min-height: var(--touch-target, 48px);
+  min-height: 40px;
   margin: 0;
-  padding: 0.375rem 0.625rem 0.375rem 0.5rem;
-  border: 1px solid rgba(255, 255, 255, 0.28);
-  border-radius: 4px;
-  background: rgba(255, 255, 255, 0.12);
-  font-size: var(--ds-font-label-size, 0.875rem);
-  font-weight: 700;
-  line-height: 1.25;
+  padding: 8px 10px;
+  border: 1px solid rgba(255, 255, 255, 0.32);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.08);
+  font-size: 0.875rem;
+  font-weight: 600;
+  line-height: 1.2;
   color: var(--color-fleet-text-white);
   cursor: pointer;
 }
@@ -7325,8 +7915,6 @@ button.fleet-field:focus-visible {
   align-items: center;
   justify-content: space-between;
   gap: 0.75rem;
-  min-height: var(--touch-target, 48px);
-  padding: 0.75rem 0.875rem;
   border: 1px solid var(--color-fleet-secondary-border);
   border-radius: var(--radius-md, 8px);
   background: var(--color-fleet-surface);
@@ -7380,6 +7968,20 @@ button.fleet-field:focus-visible {
   padding: 6px 16px 8px;
 }
 
+.session-timer--workflow {
+  position: relative;
+  z-index: 2;
+  flex-shrink: 0;
+  justify-content: space-between;
+  gap: var(--ds-spacing-2, 8px);
+  padding: var(--ds-spacing-2, 8px) var(--home-inset, 12px);
+  box-shadow: 0 2px 6px -2px rgba(16, 16, 16, 0.1);
+}
+
+.session-timer--workflow .session-timer__value {
+  padding: 0;
+}
+
 .session-timer__label {
   font-size: var(--text-ui-sm);
   font-weight: 600;
@@ -7390,8 +7992,8 @@ button.fleet-field:focus-visible {
   display: flex;
   align-items: center;
   gap: 4px;
-  padding: 0 10px;
-  font-size: 1.5rem;
+  padding: 0 8px;
+  font-size: var(--ds-type-20, 1.25rem);
   font-weight: 700;
   font-variant-numeric: tabular-nums;
   line-height: 1;
@@ -8037,11 +8639,17 @@ html.tutorial-active--top-card .app-scroll {
     --home-list-inset: 0.625rem;
   }
 
-  .app-scroll.home-workflow-main.home-workflow-main--tab-work {
-    scrollbar-gutter: auto;
+  .home-workflow-main--tab-work {
+    --home-inset: 1rem;
+    --home-workflow-inset: var(--home-inset);
   }
 
-  .app-workflow-main.app-scroll:not(.home-workflow-main--tab-history):not(.home-workflow-main--tab-performance):not(.home-workflow-main--tab-team):not(.vehicle-search-main--results),
+  .home-workflow-main--tab-work.app-workflow-main,
+  #main-content.app-scroll.home-workflow-main--tab-work {
+    padding-inline: 0;
+  }
+
+  .app-workflow-main.app-scroll:not(.home-workflow-main--tab-history):not(.home-workflow-main--tab-performance):not(.home-workflow-main--tab-team):not(.home-workflow-main--tab-work):not(.vehicle-search-main--results),
   .app-workflow-footer {
     padding-inline: var(--home-inset);
   }
@@ -8053,15 +8661,10 @@ html.tutorial-active--top-card .app-scroll {
 
   .fleet-accordion-header {
     gap: var(--space-2);
-    padding-block: var(--space-3);
-  }
-
-  .fleet-accordion-header__title {
-    font-size: var(--text-ui-md);
   }
 
   .fleet-accordion-body {
-    padding-bottom: var(--space-3);
+    padding-bottom: var(--ds-spacing-2, 8px);
   }
 
   .fleet-mode-tab-group {
@@ -8078,6 +8681,10 @@ html.tutorial-active--top-card .app-scroll {
     font-size: var(--text-ui-sm);
   }
 
+  .fleet-mode-tab__label {
+    font-size: var(--text-ui-sm);
+  }
+
   .fleet-mode-tab svg {
     height: 20px;
     width: 20px;
@@ -8088,10 +8695,6 @@ html.tutorial-active--top-card .app-scroll {
     gap: 8px;
   }
 
-  .workflow-in-progress__top {
-    gap: 10px;
-  }
-
   .fleet-status-chip:not(.fleet-status-chip--inline) {
     padding: 5px 8px;
     font-size: 12px;
@@ -8100,10 +8703,6 @@ html.tutorial-active--top-card .app-scroll {
   .fleet-status-chip--inline {
     padding: 3px 8px;
     font-size: 12px;
-  }
-
-  .workflow-in-progress__metric-value {
-    font-size: 1.625rem;
   }
 
   .vehicle-card__header {
@@ -8131,7 +8730,36 @@ html.tutorial-active--top-card .app-scroll {
   }
 
   .home-workflow-list {
-    gap: 0.875rem;
+    gap: 1rem;
+  }
+
+  .home-workflow-main--tab-work .home-workflow-list {
+    gap: 0;
+  }
+
+  .home-workflow-main--tab-work .home-workflow-card--list {
+    min-height: 0;
+    padding-block: 6px;
+  }
+
+  .home-workflow-card--list {
+    min-height: var(--touch-target, 48px);
+    padding: 10px 12px;
+  }
+
+  .home-workflow-card--list .home-workflow-card__icon {
+    height: 2.25rem;
+    width: 2.25rem;
+  }
+
+  .home-coming-soon-row {
+    min-height: 4.5rem;
+    padding: 14px;
+  }
+
+  .home-coming-soon-row__icon {
+    height: 3rem;
+    width: 3rem;
   }
 
   .fleet-progress__label {
@@ -8186,58 +8814,6 @@ html.tutorial-active--top-card .app-scroll {
 
 .dev-flow-nav__sticky .dev-toggle-group {
   margin-bottom: 0.125rem;
-}
-
-.dev-design-switcher {
-  display: flex;
-  flex-direction: column;
-  gap: 0.375rem;
-}
-
-.dev-design-switcher__label {
-  margin: 0;
-  font-size: 0.6875rem;
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--color-text-muted);
-}
-
-.dev-design-switcher__buttons {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 0.375rem;
-}
-
-.dev-design-switcher__button {
-  min-height: var(--touch-target);
-  border: 1px solid var(--color-fleet-secondary-border);
-  border-radius: 4px;
-  background: var(--color-fleet-surface);
-  color: var(--color-fleet-text);
-  font-size: 0.75rem;
-  font-weight: 800;
-  letter-spacing: 0.04em;
-}
-
-.dev-design-switcher__button--active {
-  border-color: var(--color-fleet-info);
-  background: color-mix(in srgb, var(--color-fleet-info) 12%, white);
-  color: var(--color-fleet-text-blue);
-}
-
-.dev-design-switcher--compact .dev-design-switcher__buttons {
-  gap: 0.25rem;
-}
-
-.dev-design-switcher--compact .dev-design-switcher__button {
-  min-height: 2.5rem;
-  font-size: 0.6875rem;
-}
-
-.dev-design-switcher-mobile {
-  flex-shrink: 0;
-  padding: 0.5rem 0.75rem 0;
 }
 
 .dev-flow-nav__body {

@@ -22,12 +22,28 @@ export const TRANSPORT_TUTORIAL_STORAGE_KEY = 'remote-off.tutorial.transport.v1'
 export const VSA_TUTORIAL_STORAGE_KEY = 'remote-off.tutorial.vsa.v1'
 export const TRACKING_TUTORIAL_STORAGE_KEY = 'remote-off.tutorial.tracking.v1'
 
-export const HOME_TUTORIAL_STEPS_V2: TutorialStep[] = [
+export const HOME_TUTORIAL_STEPS: TutorialStep[] = [
   {
     id: 'welcome',
     title: 'Welcome to Daytona',
     body: 'This guided walkthrough shows the home screen. Use Next to move through each step — nothing you see here changes your work.',
     placement: 'center',
+  },
+  {
+    id: 'location',
+    title: 'Your location',
+    target: '[data-tutorial="header-location"]',
+    body: 'Tap your location name to switch sites when you work at a different Hertz location.',
+    placement: 'bottom',
+  },
+  {
+    id: 'location-search',
+    title: 'Find your site',
+    target: '[data-tutorial="location-search"]',
+    openLocationPicker: true,
+    body: 'Search by city or airport code, then tap a location to set it for today.',
+    placement: 'bottom',
+    mobileCard: 'sheet',
   },
   {
     id: 'header-menu',
@@ -57,7 +73,8 @@ export const HOME_TUTORIAL_STEPS_V2: TutorialStep[] = [
     title: 'Choose a workflow',
     target: '[data-tutorial="workflows"]',
     body: 'Turnaround workflows open dedicated screens. More actions can be added as your location needs them.',
-    placement: 'top',
+    placement: 'bottom',
+    mobileCard: 'sheet',
   },
   {
     id: 'done',
@@ -66,8 +83,6 @@ export const HOME_TUTORIAL_STEPS_V2: TutorialStep[] = [
     placement: 'center',
   },
 ]
-
-export const HOME_TUTORIAL_STEPS = HOME_TUTORIAL_STEPS_V2
 
 export const TRANSPORT_TUTORIAL_STEPS: TutorialStep[] = [
   {
@@ -154,10 +169,10 @@ export const VSA_TUTORIAL_STEPS: TutorialStep[] = [
   },
   {
     id: 'cleaning',
-    title: 'Cleaning (optional)',
+    title: 'Cleaning',
     target: '[data-tutorial="cleaning"]',
     expandSection: 'cleaning',
-    body: 'Scan or enter the workstation, start cleaning, and mark the section complete when finished.',
+    body: 'Scan or enter the cleaning stall number, start cleaning, and mark the section complete when finished.',
     placement: 'bottom',
     mobileCard: 'top',
   },
@@ -175,7 +190,7 @@ export const VSA_TUTORIAL_STEPS: TutorialStep[] = [
     title: 'Stall',
     target: '[data-tutorial="stall"]',
     expandSection: 'stall',
-    body: 'Stall stays locked until fueling or cleaning is complete. Once unlocked, assign a stall number and report occupancy issues with a photo if needed.',
+    body: 'Optional — assign a stall number and report occupancy issues with a photo if needed.',
     placement: 'top',
     mobileCard: 'top',
   },

@@ -1,8 +1,10 @@
 import { useEffect, useLayoutEffect, useMemo, useState } from 'react'
 import { useTutorial } from '../hooks/useTutorial'
 import { useI18n } from '../i18n/I18nProvider'
+import {
+  HOME_TUTORIAL_STORAGE_KEY,
+} from '../utils/tutorialSteps'
 import { getHomeTutorialSteps } from '../utils/tutorialCopy'
-import { HOME_TUTORIAL_STORAGE_KEY } from '../utils/tutorialSteps'
 import type { SsoUser } from '../utils/auth'
 import { HomeBottomNav, type HomeTabId } from './home/HomeBottomNav'
 import { HomeHistoryPanel } from './home/HomeHistoryPanel'
@@ -90,7 +92,7 @@ export function BrowserHomePage({
 
       <main
         id="main-content"
-        className={`app-scroll app-workflow-main home-workflow-main home-workflow-main--with-nav home-workflow-main--tab-${activeTab} min-h-0 flex-1${activeTab === 'work' ? ' pt-2' : ''}`}
+        className={`app-scroll app-workflow-main home-workflow-main home-workflow-main--with-nav home-workflow-main--tab-${activeTab} min-h-0 flex-1`}
       >
         <div className="app-workflow-scroll-body">
           <h1 className="fleet-sr-only">{t('home.srTitle')}</h1>

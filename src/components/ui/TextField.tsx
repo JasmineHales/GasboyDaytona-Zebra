@@ -141,6 +141,7 @@ export function TextField({
             className="fleet-field__value"
             id={inputId}
             aria-labelledby={label ? `${inputId}-label` : undefined}
+            aria-label={!label ? ariaLabel : undefined}
           >
             {value}
           </span>

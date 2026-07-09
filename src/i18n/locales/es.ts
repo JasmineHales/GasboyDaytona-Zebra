@@ -34,10 +34,15 @@ export const es: Messages = {
     brandTaglineWeb: 'Remote Off · Web',
     menu: {
       replayTutorial: 'Repetir tutorial',
+      tutorialModeOn: 'Modo tutorial: Activado',
+      tutorialModeOff: 'Modo tutorial: Desactivado',
       reportIssue: 'Reportar problema',
       languageSettings: 'Configuración',
       signOut: 'Cerrar sesión',
     },
+  },
+  tutorial: {
+    modeBanner: 'Modo tutorial — solo recorrido. Nada se guarda ni se envía.',
   },
   language: {
     title: 'Configuración',
@@ -80,6 +85,17 @@ export const es: Messages = {
       body: 'Volverás a la pantalla de inicio. El temporizador de sesión se reiniciará al regresar.',
       continue: 'Seguir trabajando',
       leave: 'Salir',
+    },
+    completeFuel: {
+      title: '¿Completar repostaje primero?',
+      body: 'Se registró un repostaje en esta bomba Gasboy. Toca Completar para finalizar y enviarlo a Daytona antes de salir.',
+      continue: 'Seguir trabajando',
+      complete: 'Completar repostaje',
+    },
+    fuelInProgress: {
+      title: 'Repostaje en progreso',
+      body: 'Termina este repostaje Gasboy antes de salir para que la transacción quede registrada en Daytona.',
+      continue: 'Seguir trabajando',
     },
   },
   auth: {
@@ -136,6 +152,11 @@ export const es: Messages = {
       allLocationsLabel: 'Todas las ubicaciones',
       noResultsTitle: 'No se encontraron ubicaciones',
       noResultsHint: 'No hay coincidencias para "{query}". Prueba otra búsqueda.',
+    },
+    availableToday: 'Disponible hoy',
+    comingSoon: {
+      label: 'Próximamente ({count})',
+      aria: '{count} flujos de trabajo próximamente',
     },
     groups: {
       turnaround: {
@@ -203,9 +224,12 @@ export const es: Messages = {
       },
     },
     workflows: {
-      vsa: { title: 'VSA', description: 'Servicio y limpieza del vehículo' },
-      transport: { title: 'Transporte', description: 'Mover vehículo al destino' },
-      fuel: { title: 'Combustible', description: 'Repostar vehículo' },
+      vsa: { title: 'VSA', description: 'Limpiar vehículo\nCombustible y puesto opcionales' },
+      transport: {
+        title: 'Transportador',
+        description: 'Mover o ubicar en puesto\nCombustible opcional',
+      },
+      fuel: { title: 'Solo combustible', description: 'Transacción solo de combustible' },
       'chase-van': { title: 'Chase Van', description: 'Recuperar van de persecución del cliente' },
       dispatcher: { title: 'Despachador', description: 'Coordinar despacho de flota' },
       inspection: { title: 'Inspección', description: 'Revisión del vehículo previa al alquiler' },
@@ -390,6 +414,7 @@ export const es: Messages = {
     },
     inProgress: {
       pump: 'Bomba',
+      pumpTitle: 'Bomba {pump}',
       elapsed: 'Transcurrido',
       pickUpNozzle: 'Levanta la manguera',
       fuelingAtPump: 'Repostando en bomba',
@@ -401,27 +426,45 @@ export const es: Messages = {
       pickupWaitingHint: 'Los datos de la bomba pueden tardar un momento en sincronizarse.',
     },
     transport: {
-      title: 'Transporte',
+      title: 'Transportador',
       subtitle: 'Mover vehículo al destino',
+      timer: 'Temporizador de transporte',
     },
     vsa: {
       title: 'VSA',
       subtitle: 'Asesor de servicio del vehículo',
+      timer: 'Temporizador VSA',
     },
     fuelOnly: {
       title: 'Combustible',
       subtitle: 'Repostar vehículo',
+      timer: 'Temporizador de combustible',
+    },
+    sectionRequired: 'Requerido',
+    sectionOptional: 'Opcional',
+    required: 'Requerido',
+    optional: 'Opcional',
+    statusInProgress: '{section} en progreso',
+    statusBannerSubtitle: 'Completa los pasos requeridos para finalizar',
+    mileageRequiredNotice: 'El kilometraje es obligatorio antes de poder completar.',
+    sectionSubtitles: {
+      movement: 'Mover vehículo al destino',
+      fuel: 'Agregar detalles de combustible si aplica',
+      stall: 'Agregar ubicación de puesto si aplica',
+      cleaning: 'Registrar limpieza en puesto de limpieza',
     },
     complete: {
       finishActiveSection:
         'Termina la sección activa del flujo de trabajo antes de completar.',
       finishMovement: 'Termina Movimiento para continuar.',
       finishMovementFuelOptional: 'Termina Movimiento para continuar. Combustible es opcional.',
+      finishFuel: 'Termina Combustible para continuar.',
+      finishFuelWithStall: 'Termina Combustible para continuar. Puesto es opcional.',
       finishCleaningOrFuel: 'Termina Limpieza o Combustible para continuar.',
       finishCleaningOrFuelWithStall:
         'Termina Limpieza o Combustible para continuar. Otros servicios son opcionales.',
       finishSection: 'Termina una sección del flujo de trabajo para continuar.',
-      enterOdometer: 'Ingresa la lectura del odómetro para continuar.',
+      enterOdometer: 'Ingresa el kilometraje para habilitar la finalización.',
       acknowledgeSection: 'Confirma {section} cuando estés listo.',
       sectionComplete: '{section} completado',
     },
@@ -433,8 +476,8 @@ export const es: Messages = {
     stallSelected: 'Puesto seleccionado',
     stallVerify: 'Puesto seleccionado - Verificar puesto',
     verifyPump: 'Ingresar número de bomba',
-    enterCleanLocation: 'Ingresar estación',
-    workstationReady: 'Estación lista',
+    enterCleanLocation: 'Ingresar puesto de limpieza',
+    workstationReady: 'Puesto de limpieza listo',
     unlockingPump: 'Encendiendo bomba',
     pumpReady: 'Bomba lista',
     startFueling: 'Iniciar repostaje',
@@ -536,15 +579,16 @@ export const es: Messages = {
   },
   cleaning: {
     manualEntry: 'Número de estación',
-    enterWorkstationNo: 'Ingr. n.º de estación',
-    selectAnotherWorkstation: 'Selecciona otra estación',
+    enterWorkstationNo: 'Ingresar número de estación',
+    selectAnotherWorkstation: 'Selecciona otro puesto de limpieza',
     scanWorkstation: 'Escanear estación',
-    enterWorkstationNumber: 'Ingresar número de estación',
-    confirmWorkstation: 'Confirmar estación',
-    backToScan: 'Volver al escaneo QR',
-    atWorkstation: 'Estás en la estación {workstation}',
-    workstationConfirmed: 'Estación confirmada. Comienza la limpieza cuando estés listo.',
-    tableWorkstation: 'Estación',
+    scanWorkstationHint: 'Más rápido y recomendado',
+    enterWorkstationNumber: 'Ingresar manualmente',
+    confirmWorkstation: 'Confirmar puesto de limpieza',
+    backToScan: '← Volver al escaneo QR',
+    atWorkstation: 'Estás en el puesto de limpieza {workstation}',
+    workstationConfirmed: 'Puesto de limpieza confirmado. Comienza la limpieza cuando estés listo.',
+    tableWorkstation: 'Puesto de limpieza',
     startCleaning: 'Iniciar limpieza',
     finishCleaning: 'Finalizar limpieza',
     statusComplete: 'Completado',
@@ -614,11 +658,13 @@ export const es: Messages = {
     verifyPump: 'Confirmar bomba',
     unlockPump: 'Encender bomba',
     scanPump: 'Escanear bomba',
-    backToScan: 'Volver al escaneo',
+    backToScan: '← Volver al escaneo QR',
     cancelUnlock: 'Cancelar desbloqueo',
     gallonsPending: 'Los galones se agregarán automáticamente.',
-    needMoreFuel: '¿Necesitas más combustible?',
+    needMoreFuel: '¿Más combustible?',
     needMoreFuelDesc: 'Reporta un problema para solicitar repostaje adicional.',
+    pumpIssuesTitle: '¿Problemas de bomba?',
+    pumpIssuesDesc: 'Reporta si el repostaje se detuvo antes de tiempo o el combustible no sale.',
     reportAndContinue: 'Reportar y continuar',
     connectionLost: 'Conexión perdida · Bomba {pump}',
     onSiteUnlock: 'Desbloquear en bomba',
@@ -661,20 +707,20 @@ export const es: Messages = {
         description: 'Escanea o ingresa el número de bomba',
         scanLabel: 'Escanear bomba',
         scanHint: 'Apunta al QR de tu bomba',
-        manualEntryLabel: 'Ingresar número de bomba',
+        manualEntryLabel: 'Entrada manual',
       },
       remote: {
-        label: 'Desbloquear con dispositivo',
+        label: 'Dispositivo',
         description: 'Escanea o ingresa el número de bomba para encenderla desde este dispositivo',
         scanLabel: 'Escanear bomba',
         scanHint: 'Apunta al QR de tu bomba',
-        manualEntryLabel: 'Ingresar número de bomba',
+        manualEntryLabel: 'Entrada manual',
       },
       onSite: {
         description: 'Enciende la bomba en el terminal y confirma aquí',
         scanLabel: 'Escanear bomba',
         scanHint: 'Confirma que estás en la bomba correcta',
-        manualEntryLabel: 'Ingresar número de bomba',
+        manualEntryLabel: 'Entrada manual',
       },
     },
     unlockMode: {
@@ -682,12 +728,12 @@ export const es: Messages = {
       infoAriaLabel: 'Información sobre métodos de desbloqueo',
       overlayTitle: 'Métodos de desbloqueo',
       remote: {
-        label: 'Desbloquear con dispositivo',
+        label: 'Dispositivo',
         text: 'La bomba se desbloquea en esta app cuando escaneas o ingresas el número.',
         switchLabel: 'Cambiar a desbloquear en bomba',
       },
       onSite: {
-        label: 'Desbloquear en bomba',
+        label: 'Bomba',
         text: 'Inicia el temporizador de trabajo en la app y desbloquea la bomba en el terminal.',
         switchLabel: 'Cambiar a desbloquear con dispositivo',
       },
@@ -702,8 +748,15 @@ export const es: Messages = {
     remoteFueling: {
       timeLeft: 'Tiempo restante',
       fuelWithinSeconds: 'Reposta en {seconds} s o la bomba se bloquea.',
-      automaticCompleteHint: 'Si no se completa automáticamente.',
-      completeButton: 'Completar manualmente',
+      completeButton: '¿Manguera devuelta pero no completó?',
+      completeConfirm: {
+        title: '¿Devolviste la manguera?',
+        body: 'Confirma que la manguera está en la bomba antes de completar esta sesión.',
+        graphicStep: 'Empuja la manguera al soporte',
+        graphicLabel: 'Asienta la manguera completamente en el soporte de la bomba.',
+        confirm: 'Sí, manguera devuelta',
+        cancel: 'Aún no',
+      },
     },
     quickSelect: {
       label: 'Selección rápida',
@@ -942,7 +995,7 @@ export const es: Messages = {
     transport: {
       welcome: {
         title: 'Flujo de transporte',
-        body: 'Este recorrido guiado muestra movimiento, fotos de puesto y repostaje. Toca Siguiente — tu sesión no se modifica.',
+        body: 'Este recorrido muestra movimiento, fotos de puesto y repostaje. Toca Siguiente — nada se ejecuta ni se guarda.',
       },
       vehicle: {
         title: 'Revisa tu vehículo',
@@ -976,7 +1029,7 @@ export const es: Messages = {
     vsa: {
       welcome: {
         title: 'Flujo VSA',
-        body: 'Este recorrido guiado muestra limpieza, combustible y puesto. Toca Siguiente — tu sesión no se modifica.',
+        body: 'Este recorrido muestra limpieza, combustible y puesto. Toca Siguiente — nada se ejecuta ni se guarda.',
       },
       vehicle: {
         title: 'Revisa tu vehículo',
@@ -987,8 +1040,8 @@ export const es: Messages = {
         body: 'El kilometraje verificado se captura automáticamente. Ingresa la lectura actual si se solicita antes de completar el flujo.',
       },
       cleaning: {
-        title: 'Limpieza (opcional)',
-        body: 'Escanea o ingresa la estación, inicia la limpieza y marca la sección como completa al terminar.',
+        title: 'Limpieza',
+        body: 'Escanea o ingresa el número de puesto de limpieza, inicia la limpieza y marca la sección como completa al terminar.',
       },
       fuel: {
         title: 'Combustible (opcional)',
@@ -996,7 +1049,7 @@ export const es: Messages = {
       },
       stall: {
         title: 'Puesto',
-        body: 'El puesto permanece bloqueado hasta que se complete el repostaje o la limpieza. Una vez desbloqueado, asigna un número de puesto y reporta problemas de ocupación con una foto si es necesario.',
+        body: 'Opcional — asigna un número de puesto y reporta problemas de ocupación con una foto si es necesario.',
       },
       complete: {
         title: 'Finalizar la sesión',

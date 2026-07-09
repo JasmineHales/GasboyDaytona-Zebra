@@ -11,11 +11,13 @@ import { trackProps } from '../../utils/tracking'
 
 type HeaderProps = {
   title: string
-  subtitle: string
+  subtitle?: string
   showBack?: boolean
   showSessionTimer?: boolean
   confirmOnExit?: boolean
+  exitNavigateMode?: 'leave' | 'complete-fuel' | 'fuel-in-progress'
   onBack?: () => void
+  onExitComplete?: () => void
   onReportIssue?: () => void
   onSignOut?: () => void
   onReplayTutorial?: () => void
@@ -39,7 +41,9 @@ export function Header({
   showBack,
   showSessionTimer = true,
   confirmOnExit = true,
+  exitNavigateMode = 'leave',
   onBack,
+  onExitComplete,
   onReportIssue,
   onSignOut,
   onReplayTutorial,
@@ -62,7 +66,9 @@ export function Header({
   const [internalLocationOpen, setInternalLocationOpen] = useState(false)
   const isLocationControlled = locationOpen !== undefined
   const locationPickerOpen = isLocationControlled ? locationOpen : internalLocationOpen
-  const [exitMode, setExitMode] = useState<'logout' | 'navigate'>('navigate')
+  const [exitMode, setExitMode] = useState<
+    'logout' | 'navigate' | 'complete-fuel' | 'fuel-in-progress'
+  >('navigate')
   const [pendingExit, setPendingExit] = useState<(() => void) | null>(null)
   const showBackButton = showBack ?? Boolean(onBack)
   const showLocationPicker = showLocationButton && Boolean(site && onSiteChange)
@@ -97,6 +103,18 @@ export function Header({
   const requestExit = useCallback(
     (action?: () => void, mode: 'logout' | 'navigate' = 'navigate') => {
       if (!action) return
+      if (mode === 'navigate' && exitNavigateMode === 'complete-fuel') {
+        setExitMode('complete-fuel')
+        setPendingExit(() => action)
+        setShowExitConfirm(true)
+        return
+      }
+      if (mode === 'navigate' && exitNavigateMode === 'fuel-in-progress') {
+        setExitMode('fuel-in-progress')
+        setPendingExit(() => action)
+        setShowExitConfirm(true)
+        return
+      }
       if (mode === 'navigate' && !confirmOnExit) {
         action()
         return
@@ -105,7 +123,7 @@ export function Header({
       setPendingExit(() => action)
       setShowExitConfirm(true)
     },
-    [confirmOnExit],
+    [confirmOnExit, exitNavigateMode],
   )
 
   const handleContinue = useCallback(() => {
@@ -119,6 +137,12 @@ export function Header({
     pendingExit?.()
     setPendingExit(null)
   }, [pendingExit])
+
+  const handleCompleteFuelExit = useCallback(() => {
+    setShowExitConfirm(false)
+    setPendingExit(null)
+    onExitComplete?.()
+  }, [onExitComplete])
 
   const toggleLocationPicker = () => {
     if (lockLocationPicker) return
@@ -164,7 +188,14 @@ export function Header({
             ) : (
               <>
                 <h1 className="hertz-header__title">{title}</h1>
-                <p className="hertz-header__subtitle">{subtitle}</p>
+                {subtitle || showSessionTimer ? (
+                  <div className="hertz-header__subtitle-row">
+                    {subtitle ? (
+                      <p className="hertz-header__subtitle">{subtitle}</p>
+                    ) : null}
+                    {showSessionTimer ? <SessionTimer compact /> : null}
+                  </div>
+                ) : null}
               </>
             )}
           </div>
@@ -202,8 +233,6 @@ export function Header({
         </div>
       </div>
 
-      {showSessionTimer && <SessionTimer />}
-
       {showLocationPicker ? (
         <OperatorSiteOverlay
           open={locationPickerOpen}
@@ -223,6 +252,7 @@ export function Header({
         mode={exitMode}
         onContinue={handleContinue}
         onLeave={handleLeave}
+        onCompleteFuel={handleCompleteFuelExit}
       />
 
       <LanguageSettingsOverlay
