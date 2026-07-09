@@ -145,7 +145,7 @@ body {
   overflow: hidden;
   overscroll-behavior: contain;
   padding: 0;
-  background: #141414;
+  background: var(--color-hertz-page);
 }
 
 .dev-device-frame {
@@ -9439,7 +9439,7 @@ html.tutorial-active--top-card .app-scroll {
 }
 
 [data-theme="dark"] .app-preview-column--framed {
-  background: #0a0a0a;
+  background: var(--color-hertz-page);
 }
 
 /* ── Dark mode: workflow icon chips, cards, legacy alerts ── */
