@@ -50,7 +50,6 @@ import { useFlow } from './hooks/useFlow'
 import { getRuntimeMode } from './utils/runtime'
 import {
   DevDevicePreviewFrame,
-  DevExperienceMobileSwitcher,
   devAppShellClassName,
   useDevEm45Preview,
 } from './components/dev/DevDevicePreviewFrame'
@@ -540,15 +539,7 @@ export default function App() {
         onVehicleSearchDevStateSelect={setVehicleSearchDevState}
       />
       ) : null}
-      <DevDevicePreviewFrame
-        devExperience={loginVariant}
-        mobileSwitcher={
-          <DevExperienceMobileSwitcher
-            value={loginVariant}
-            onChange={handleExperienceChange}
-          />
-        }
-      >
+      <DevDevicePreviewFrame devExperience={loginVariant}>
         <div
           className={devAppShellClassName(useEm45Preview, 'app-surface')}
           data-current-view={showLogin ? 'login' : showInitialSetup ? 'setup' : view}

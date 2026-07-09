@@ -2,7 +2,6 @@ import type { ReactNode } from 'react'
 import { EM45_VIEWPORT } from '../../utils/devDeviceFrame'
 import { isDevPreviewEnabled } from '../../utils/devPreview'
 import { getRuntimeMode } from '../../utils/runtime'
-import { trackProps } from '../../utils/tracking'
 
 export function useDevEm45Preview(devExperience: 'device' | 'browser'): boolean {
   return (
@@ -18,50 +17,13 @@ export function devAppShellClassName(useEm45Preview: boolean, extra = ''): strin
   return `${base} sm:max-w-xl sm:rounded-xl sm:shadow-lg md:max-w-2xl md:rounded-2xl lg:max-w-3xl xl:max-w-4xl`
 }
 
-type DevExperienceMobileSwitcherProps = {
-  value: 'device' | 'browser'
-  onChange: (value: 'device' | 'browser') => void
-}
-
-export function DevExperienceMobileSwitcher({
-  value,
-  onChange,
-}: DevExperienceMobileSwitcherProps) {
-  if (!isDevPreviewEnabled() || getRuntimeMode() === 'hertz-device') return null
-
-  return (
-    <div className="dev-experience-mobile md:hidden" aria-label="Preview experience">
-      <button
-        type="button"
-        className={`dev-experience-mobile__button${value === 'device' ? ' dev-experience-mobile__button--active' : ''}`}
-        aria-pressed={value === 'device'}
-        onClick={() => onChange('device')}
-        {...trackProps('dev.experience', { variant: 'device' })}
-      >
-        Zebra
-      </button>
-      <button
-        type="button"
-        className={`dev-experience-mobile__button${value === 'browser' ? ' dev-experience-mobile__button--active' : ''}`}
-        aria-pressed={value === 'browser'}
-        onClick={() => onChange('browser')}
-        {...trackProps('dev.experience', { variant: 'browser' })}
-      >
-        Browser
-      </button>
-    </div>
-  )
-}
-
 type DevDevicePreviewFrameProps = {
   devExperience: 'device' | 'browser'
-  mobileSwitcher?: ReactNode
   children: ReactNode
 }
 
 export function DevDevicePreviewFrame({
   devExperience,
-  mobileSwitcher,
   children,
 }: DevDevicePreviewFrameProps) {
   const useEm45Preview = useDevEm45Preview(devExperience)
@@ -72,7 +34,6 @@ export function DevDevicePreviewFrame({
         useEm45Preview ? ' app-preview-column--framed' : ''
       }`}
     >
-      {mobileSwitcher}
       <div
         className={`dev-device-frame ${useEm45Preview ? 'dev-device-frame--em45' : 'dev-device-frame--responsive'}`}
       >
