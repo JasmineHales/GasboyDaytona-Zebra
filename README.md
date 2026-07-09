@@ -5,7 +5,7 @@ Hertz **Daytona** field-app prototype for transport, VSA, and remote fueling wor
 | | |
 |---|---|
 | **Local folder** | `remote-off` |
-| **GitHub repo** | [Gasboy-Daytona-MVP](https://github.com/JasmineHales/Gasboy-Daytona-MVP) |
+| **GitHub repo** | [GasboyDaytona-Zebra](https://github.com/JasmineHales/GasboyDaytona-Zebra) |
 | **Active branch** | `v3` |
 | **Version** | 3.0.0 |
 
