@@ -48,7 +48,12 @@ import { useTranslate } from './i18n/I18nProvider'
 import { useClickTracking } from './hooks/useClickTracking'
 import { useFlow } from './hooks/useFlow'
 import { getRuntimeMode } from './utils/runtime'
-import { EM45_VIEWPORT } from './utils/devDeviceFrame'
+import {
+  DevDevicePreviewFrame,
+  DevExperienceMobileSwitcher,
+  devAppShellClassName,
+  useDevEm45Preview,
+} from './components/dev/DevDevicePreviewFrame'
 import {
   clearPersistedWorkflow,
   loadPersistedWorkflow,
@@ -231,10 +236,8 @@ export default function App() {
       setLoginPreview(variant)
       return
     }
-    if (view === 'home') {
-      setLoginPreview(null)
-      applyDevExperience(variant)
-    }
+    setLoginPreview(null)
+    applyDevExperience(variant)
   }
 
   const handleDeviceSignIn = () => {
@@ -504,17 +507,13 @@ export default function App() {
 
   const browserUser = ssoUser ?? readSsoUser()
 
-  const isEm45Frame =
-    import.meta.env.DEV && loginVariant === 'device' && !isHertzDevice
-  const appShellClassName = isEm45Frame
-    ? 'app-shell app-surface relative flex min-h-0 flex-1 flex-col overflow-hidden'
-    : 'app-shell app-surface relative flex min-h-0 flex-1 flex-col overflow-hidden sm:max-w-xl sm:rounded-xl sm:shadow-lg md:max-w-2xl md:rounded-2xl lg:max-w-3xl xl:max-w-4xl'
+  const useEm45Preview = useDevEm45Preview(loginVariant)
 
   return (
     <div
       className="app-viewport flex h-dvh min-h-0"
       data-runtime={runtimeMode}
-      data-device-frame={isEm45Frame ? 'em45' : 'responsive'}
+      data-device-frame={useEm45Preview ? 'em45' : 'responsive'}
     >
       <a href="#main-content" className="fleet-skip-link">
         {t('common.skipToMainContent')}
@@ -536,32 +535,17 @@ export default function App() {
         vehicleSearchDevState={vehicleSearchDevState}
         onVehicleSearchDevStateSelect={setVehicleSearchDevState}
       />
-      <div
-        className={`app-preview-column flex min-h-0 min-w-0 flex-1 flex-col bg-[var(--color-hertz-page)]${
-          isEm45Frame ? ' app-preview-column--framed p-2' : ' p-0 sm:p-3 md:p-4 lg:p-6'
-        }`}
+      <DevDevicePreviewFrame
+        devExperience={loginVariant}
+        mobileSwitcher={
+          <DevExperienceMobileSwitcher
+            value={loginVariant}
+            onChange={handleExperienceChange}
+          />
+        }
       >
         <div
-          className={`dev-device-frame${
-            isEm45Frame ? ' dev-device-frame--em45' : ' dev-device-frame--responsive'
-          }`}
-        >
-          {isEm45Frame && (
-            <div className="dev-device-frame__chrome" aria-hidden>
-              <span className="dev-device-frame__label">Zebra EM45</span>
-              <span className="dev-device-frame__size">
-                {EM45_VIEWPORT.width} × {EM45_VIEWPORT.height}
-              </span>
-            </div>
-          )}
-          <div
-            className={`dev-device-frame__viewport${
-              isEm45Frame ? ' dev-device-frame__viewport--em45' : ''
-            }`}
-            data-em45-preview={isEm45Frame ? '' : undefined}
-          >
-        <div
-          className={appShellClassName}
+          className={devAppShellClassName(useEm45Preview, 'app-surface')}
           data-current-view={showLogin ? 'login' : showInitialSetup ? 'setup' : view}
           data-current-screen={context.screen}
         >
@@ -710,9 +694,7 @@ export default function App() {
           </div>
           <div id="app-overlay-root" className="app-overlay-root" />
         </div>
-          </div>
-        </div>
-      </div>
+      </DevDevicePreviewFrame>
     </div>
   )
 }
