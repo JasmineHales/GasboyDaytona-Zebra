@@ -21,6 +21,15 @@ zip -r "$ZIP" . \
   -x '.env.local' \
   -x '*.zip' \
   -x '*-upload/*' \
-  -x '*-upload/**'
+  -x '*-upload/**' \
+  -x '.cursor/*' \
+  -x '.cursor/**' \
+  -x '.flow-captures/*' \
+  -x '.flow-captures/**' \
+  -x 'eng.traineddata' \
+  -x 'scripts/miro-*' \
+  -x 'scripts/capture-*' \
+  -x 'scripts/mermaid-to-miro-dsl.mjs' \
+  -x 'scripts/_*'
 
 echo "Created: $ZIP ($(du -h "$ZIP" | cut -f1))"

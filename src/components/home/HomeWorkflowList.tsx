@@ -1,4 +1,5 @@
 import {
+  Briefcase,
   CarFront,
   ClipboardCheck,
   ClipboardList,
@@ -11,13 +12,12 @@ import {
 import { useMemo } from 'react'
 import { useI18n } from '../../i18n/I18nProvider'
 import type { HomeWorkflowId, HomeWorkflowVariant } from '../../utils/homeWorkflows'
-import {
-  buildHomeWorkflowGroups,
-  buildHomeWorkflowItems,
-} from '../../utils/homeWorkflowCopy'
+import { buildHomeWorkflowItems } from '../../utils/homeWorkflowCopy'
+import { HomeHighDemandVehicleGroups } from './HomeHighDemandVehicleGroups'
 import { WorkflowCard } from './WorkflowCard'
 
 type HomeWorkflowListProps = {
+  site: string
   onSelectVsa: () => void
   onSelectTransport: () => void
   onSelectFuel: () => void
@@ -31,6 +31,7 @@ const WORKFLOW_ICONS: Record<HomeWorkflowVariant, LucideIcon> = {
   dispatcher: Radio,
   inspection: ClipboardCheck,
   keys: KeyRound,
+  'non-driving-activity': Briefcase,
   default: ClipboardList,
 }
 
@@ -49,15 +50,12 @@ const WORKFLOW_HANDLERS: Partial<
 }
 
 export function HomeWorkflowList({
+  site,
   onSelectVsa,
   onSelectTransport,
   onSelectFuel,
 }: HomeWorkflowListProps) {
   const { messages } = useI18n()
-  const groups = useMemo(
-    () => buildHomeWorkflowGroups(messages.home.groups),
-    [messages],
-  )
   const items = useMemo(
     () => buildHomeWorkflowItems(messages.home.workflows),
     [messages],
@@ -70,49 +68,31 @@ export function HomeWorkflowList({
   }
 
   return (
-    <div className="home-workflow-list" data-tutorial="workflows">
-      {groups.map((group) => {
-        const groupItems = items.filter((item) => item.group === group.id)
-        if (groupItems.length === 0) return null
+    <div className="home-workflow-list">
+      <HomeHighDemandVehicleGroups site={site} />
 
-        return (
-          <section
-            key={group.id}
-            className="home-workflow-group"
-            aria-labelledby={`home-workflow-group-${group.id}`}
-          >
-            <div className="home-workflow-group__header">
-              <h2 id={`home-workflow-group-${group.id}`} className="home-workflow-group__title">
-                {group.label}
-              </h2>
-              {group.description && (
-                <p className="home-workflow-group__description">{group.description}</p>
-              )}
-            </div>
-            <div className="home-workflow-group__items">
-              {groupItems.map((item) => {
-                const handlerKey = WORKFLOW_HANDLERS[item.id]
-                const onClick = handlerKey ? handlers[handlerKey] : undefined
-                const disabled = item.comingSoon || !onClick
-                const Icon = WORKFLOW_ICONS[item.variant]
+      <section className="home-workflow-group">
+        <div className="home-workflow-group__items home-workflow-group__items--cards" data-tutorial="workflows">
+          {items.map((item) => {
+            const handlerKey = WORKFLOW_HANDLERS[item.id]
+            const onClick = handlerKey ? handlers[handlerKey] : undefined
+            const Icon = WORKFLOW_ICONS[item.variant]
+            const disabled = Boolean(item.comingSoon)
 
-                return (
-                  <WorkflowCard
-                    key={item.id}
-                    variant={item.variant}
-                    title={item.title}
-                    description={item.description}
-                    icon={<Icon className="home-workflow-card__icon-svg" aria-hidden />}
-                    onClick={onClick ?? (() => {})}
-                    disabled={disabled}
-                    compact
-                  />
-                )
-              })}
-            </div>
-          </section>
-        )
-      })}
+            return (
+              <WorkflowCard
+                key={item.id}
+                variant={item.variant}
+                title={item.title}
+                icon={<Icon className="home-workflow-card__icon-svg" strokeWidth={2} aria-hidden />}
+                onClick={onClick ?? (() => {})}
+                list
+                disabled={disabled}
+              />
+            )
+          })}
+        </div>
+      </section>
     </div>
   )
 }

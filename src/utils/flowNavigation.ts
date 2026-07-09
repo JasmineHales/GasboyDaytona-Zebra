@@ -5,6 +5,7 @@ import {
   resolveOdometerWidgetState,
   type OdometerWidgetStateId,
 } from './devPanel'
+import { MILEAGE_SCENARIO_IDS, MILEAGE_SCENARIOS } from './mileageScenarios'
 
 export type AppView = 'home' | 'vsa' | 'transport' | 'fuel' | 'tracking'
 
@@ -13,7 +14,7 @@ export type WorkflowView = 'transport' | 'vsa' | 'fuel'
 export type PageNavItem = {
   key: string
   label: string
-  view: AppView | 'login'
+  view: AppView | 'login' | 'setup'
 }
 
 export type WidgetStateItem = {
@@ -35,25 +36,25 @@ export type WidgetStateGroup = {
 }
 
 const FUEL_REMOTE: { id: ScreenId; label: string; detail?: string }[] = [
-  { id: 'fueling-default', label: 'Start · Verify pump', detail: 'Scan or enter pump number' },
-  { id: 'fueling-unlocking', label: 'Unlocking pump', detail: 'Waiting for pump response' },
+  { id: 'fueling-default', label: 'Start · Enter pump number', detail: 'Scan or enter pump number' },
+  { id: 'fueling-unlocking', label: 'Turning on pump', detail: 'Stepper · in progress' },
   { id: 'fueling-scanner', label: 'Scanner open', detail: 'Camera / QR scan overlay' },
   { id: 'fueling-manual-entry', label: 'Manual pump entry', detail: 'Typed pump number' },
-  { id: 'fueling-in-progress', label: 'Fueling in progress', detail: 'Nozzle active · remote' },
-  { id: 'fueling-in-progress-unconfirmed', label: 'Fueling unconfirmed', detail: 'Awaiting pump telemetry' },
+  { id: 'fueling-in-progress', label: 'Fueling in progress 1', detail: '60s unlock timer · remote' },
+  { id: 'fueling-in-progress-unconfirmed', label: 'Fueling in progress 2', detail: 'Fuel active · timer done' },
   { id: 'fueling-complete', label: 'Fueling complete', detail: 'Gallons recorded' },
   { id: 'fueling-additional', label: 'Additional fueling', detail: 'Second fuel transaction' },
   { id: 'fueling-additional-complete', label: 'Additional complete', detail: 'All transactions done' },
   { id: 'fueling-pump-unavailable', label: 'Pump unavailable', detail: 'Error · pump offline' },
   { id: 'fueling-connection-lost', label: 'Connection lost', detail: 'Error · network' },
-  { id: 'fueling-no-response', label: 'No response', detail: 'Error · timeout' },
+  { id: 'fueling-no-response', label: 'No response', detail: '15s · no pump confirmation' },
   { id: 'fueling-pump-timeout', label: 'Pump timeout', detail: 'Error · unlock expired' },
   { id: 'fueling-issue', label: 'Report issue · category', detail: 'Issue overlay · step 1' },
   { id: 'fueling-issue-details', label: 'Report issue · details', detail: 'Issue overlay · step 2' },
 ]
 
 const FUEL_ON_SITE: { id: ScreenId; label: string; detail?: string }[] = [
-  { id: 'on-site-default', label: 'Start · Verify pump', detail: 'On-site terminal unlock' },
+  { id: 'on-site-default', label: 'Start · Enter pump number', detail: 'Unlock at pump terminal' },
   { id: 'on-site-manual-entry', label: 'Manual pump entry', detail: 'Typed pump number' },
   { id: 'on-site-pump-verified', label: 'At pump', detail: 'Ready to start fueling' },
   { id: 'on-site-fueling-in-progress', label: 'Fueling in progress', detail: 'Manual gallon entry' },
@@ -63,7 +64,7 @@ const FUEL_ON_SITE: { id: ScreenId; label: string; detail?: string }[] = [
 ]
 
 const FUEL_NON_GASBOY: { id: ScreenId; label: string; detail?: string }[] = [
-  { id: 'non-gasboy-default', label: 'Start · Verify pump', detail: 'Non-Gasboy manual flow' },
+  { id: 'non-gasboy-default', label: 'Start · Enter pump number', detail: 'Non-Gasboy manual flow' },
   { id: 'non-gasboy-manual-entry', label: 'Manual pump entry', detail: 'Typed pump number' },
   { id: 'non-gasboy-pump-verified', label: 'At pump', detail: 'Ready to start fueling' },
   { id: 'non-gasboy-fueling-in-progress', label: 'Fueling in progress', detail: 'Manual gallon entry' },
@@ -94,6 +95,7 @@ function widgetItems(
 /** Flat page list for the dev panel — device/browser is controlled in Scenario. */
 export const PAGE_NAV_ITEMS: PageNavItem[] = [
   { key: 'page-login', label: 'Login', view: 'login' },
+  { key: 'page-setup', label: 'Setup', view: 'setup' },
   { key: 'page-home', label: 'Home', view: 'home' },
   { key: 'page-vsa', label: 'VSA', view: 'vsa' },
   { key: 'page-fueling', label: 'Fueling', view: 'fuel' },
@@ -203,13 +205,13 @@ export const WIDGET_STATE_GROUPS: WidgetStateGroup[] = [
     ],
   },
   {
-    label: 'Fuel · Gasboy remote unlock',
-    description: 'Integrated pump · unlock from this app',
+    label: 'Fuel · Gasboy unlock with device',
+    description: 'Integrated pump · turn on from this app',
     items: widgetItems('fuel-remote', FUEL_SCOPES, FUEL_REMOTE),
   },
   {
-    label: 'Fuel · Gasboy on-site unlock',
-    description: 'Integrated pump · unlock at terminal',
+    label: 'Fuel · Gasboy unlock at pump',
+    description: 'Integrated pump · turn on at terminal',
     items: widgetItems('on-site', FUEL_SCOPES, FUEL_ON_SITE),
   },
   {
@@ -226,6 +228,13 @@ export const WIDGET_STATE_GROUPS: WidgetStateGroup[] = [
         label: 'Fresh session',
         detail: 'Cleaning + fuel + stall',
         screen: 'stall-default',
+        scopes: VSA_ONLY,
+      },
+      {
+        key: 'vsa:no-stall',
+        label: 'No stall section',
+        detail: 'Cleaning + fuel only',
+        screen: 'vsa-no-stall-default',
         scopes: VSA_ONLY,
       },
       {
@@ -246,12 +255,12 @@ export const WIDGET_STATE_GROUPS: WidgetStateGroup[] = [
   },
   {
     label: 'VSA · Cleaning',
-    description: 'Pump verify through cleaning complete',
+    description: 'Workstation entry through cleaning complete',
     items: [
       {
         key: 'cleaning:default',
-        label: 'Verify pump',
-        detail: 'Scan or enter pump',
+        label: 'Enter workstation',
+        detail: 'Scan or enter workstation',
         screen: 'cleaning-default',
         scopes: VSA_ONLY,
       },
@@ -333,6 +342,17 @@ export const WIDGET_STATE_GROUPS: WidgetStateGroup[] = [
       },
     ],
   },
+  {
+    label: 'Mileage scenarios',
+    description: 'Odometer reliability states on the vehicle card',
+    items: MILEAGE_SCENARIO_IDS.map((id) => ({
+      key: `mileage:${id}`,
+      label: MILEAGE_SCENARIOS[id].label,
+      detail: 'Transport movement section',
+      screen: id,
+      scopes: ['transport', 'vsa', 'fuel'] as WorkflowView[],
+    })),
+  },
 ]
 
 export const WIDGET_STATE_ITEMS = WIDGET_STATE_GROUPS.flatMap((group) => group.items)
@@ -347,8 +367,10 @@ export function widgetGroupsForView(view: WorkflowView): WidgetStateGroup[] {
 export function resolveActivePageKey(input: {
   view: AppView
   showLogin: boolean
+  showSetup?: boolean
 }): string {
   if (input.showLogin) return 'page-login'
+  if (input.showSetup) return 'page-setup'
 
   if (input.view === 'tracking') return 'page-tracking'
   if (input.view === 'transport') return 'page-transport'

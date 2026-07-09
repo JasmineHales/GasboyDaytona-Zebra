@@ -115,7 +115,7 @@ export function TrackingPage({ forceTutorial = false, onBack }: TrackingPageProp
   }
 
   return (
-    <div className="flex min-h-0 w-full flex-1 flex-col bg-white">
+    <div className="flex min-h-0 w-full flex-1 flex-col app-surface">
       <Header
         title="Click Tracking"
         subtitle={`${events.length} event${events.length === 1 ? '' : 's'} this session`}

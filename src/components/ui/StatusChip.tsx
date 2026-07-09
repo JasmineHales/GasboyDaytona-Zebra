@@ -21,7 +21,7 @@ const statusLabelKey: Record<
 type StatusChipProps = {
   status: SectionStatus
   label?: string
-  variant?: 'default' | 'optional'
+  variant?: 'default' | 'optional' | 'required'
 }
 
 export function StatusChip({ status, label, variant = 'default' }: StatusChipProps) {
@@ -29,11 +29,16 @@ export function StatusChip({ status, label, variant = 'default' }: StatusChipPro
   const modifier =
     variant === 'optional'
       ? 'fleet-status-chip--optional'
-      : statusClass[status]
+      : variant === 'required'
+        ? 'fleet-status-chip--required'
+        : statusClass[status]
 
   return (
     <span className={`fleet-status-chip fleet-status-chip--inline ${modifier}`}>
-      {label ?? t(statusLabelKey[status])}
+      {label ??
+        (variant === 'required'
+          ? t('workflow.required')
+          : t(statusLabelKey[status]))}
     </span>
   )
 }

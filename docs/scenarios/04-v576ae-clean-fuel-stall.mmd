@@ -1,0 +1,18 @@
+flowchart TD
+  H[home-work] --> V[Tap VSA]
+  V --> VS[vehicle-search · V576AE]
+  VS --> VSA[stall-default]
+  VSA --> OF[odometer-manual-filled]
+  OF --> CD[cleaning-default]
+  CD --> IP[cleaning-in-progress]
+  IP --> CC[cleaning-complete]
+  CC --> FD[fueling-default]
+  FD --> FU[fueling-unlocking]
+  FU --> IP2[fueling-in-progress · no pump telemetry]
+  IP2 --> FC[fueling-complete · manual]
+  FC --> ST[stall assignment]
+  ST --> FAC{Facilitator: stall issue}
+  FAC --> SM[stall-missing]
+  SM --> SR[stall-issue-reported]
+  SR --> SC[stall-complete]
+  SC --> FIN[Footer Complete]

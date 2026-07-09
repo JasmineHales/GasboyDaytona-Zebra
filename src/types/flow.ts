@@ -1,5 +1,6 @@
 import type { VehicleMileageState } from '../utils/mileageResolution'
 import type { MileageScenarioId } from '../utils/mileageScenarios'
+import type { GallonsCaptureRecord } from './gallonsCapture'
 
 export type SectionStatus = 'complete' | 'not-started' | 'in-progress' | 'missing'
 
@@ -108,6 +109,8 @@ export type FuelTransaction = {
   pump: string
   gallons: string
   status: 'complete' | 'issue'
+  /** Duration for this fuel session (HH:MM:SS). */
+  time?: string
 }
 
 export type FlowContext = {
@@ -146,6 +149,18 @@ export type FlowContext = {
   fuelGallonsPending?: boolean
   /** Remote unlock: pump telemetry confirmed fueling activity */
   fuelPumpStatusReceived?: boolean
+  /** Remote unlock: pump telemetry confirmed nozzle returned */
+  fuelNozzleReturned?: boolean
+  /** Latest gallons capture audit record (scan or manual). */
+  fuelGallonsCapture?: GallonsCaptureRecord
   /** When false, VSA workflow shows a VSA section instead of stall assignment. */
   vsaStallEnabled?: boolean
+  /** Demo pump push timing for remote gasboy fueling (e.g. DNJ 0955 / VSA Tesla). */
+  fuelSimAutoCompleteMs?: number
+  fuelSimPumpStatusDelayMs?: number
+  fuelSimGallons?: string
+  fuelSimPumpStopDelayMs?: number
+  fuelSimPumpStopGallons?: string
+  fuelSimUnlockOutcome?: 'success' | 'no-response' | 'pump-timeout'
+  fuelSimManualCompleteOnly?: boolean
 }

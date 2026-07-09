@@ -2,7 +2,6 @@ import basicSsl from '@vitejs/plugin-basic-ssl'
 import { defineConfig, loadEnv, type Plugin, type PluginOption } from 'vite'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
-
 function parseCookie(header?: string): Record<string, string> {
   if (!header) return {}
   return Object.fromEntries(
@@ -72,7 +71,6 @@ export default defineConfig(({ mode }) => {
   const lanMode = process.env.DEV_LAN === 'true'
   const skipGate = process.env.DEV_LAN_SKIP_GATE === 'true'
   const accessToken = process.env.DEV_ACCESS_TOKEN || env.DEV_ACCESS_TOKEN
-  const lanIp = process.env.DEV_LAN_IP
 
   if (lanMode && !skipGate && !accessToken) {
     throw new Error(
@@ -95,11 +93,7 @@ export default defineConfig(({ mode }) => {
       port: 5174,
       strictPort: true,
       allowedHosts: lanMode ? true : undefined,
-      hmr: lanMode && lanIp
-        ? { host: lanIp, port: 5174, clientPort: 5174 }
-        : lanMode
-          ? { clientPort: 5174 }
-          : undefined,
+      hmr: lanMode ? { clientPort: 5174 } : undefined,
     },
   }
 })

@@ -29,13 +29,13 @@ export function getVsaTutorial(
       if (step.id === 'welcome') {
         return {
           ...step,
-          body: 'This tour covers cleaning and fuel steps for vehicle service advisor jobs.',
+          body: 'This tour covers cleaning, fuel, and stall steps for vehicle service advisor jobs.',
         }
       }
       if (step.id === 'complete') {
         return {
           ...step,
-          body: 'Tap Complete when cleaning and fuel sections are done.',
+          body: 'Tap Complete when fuel is done.',
         }
       }
       return step

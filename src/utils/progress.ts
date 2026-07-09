@@ -14,7 +14,6 @@ export function getMovementProgress(
     return {
       step: selected ? 2 : 1,
       label: selected ? p.locationSelected : p.selectLocation,
-      description: selected ? undefined : p.selectLocationDesc,
       badgeVariant: selected ? 'complete' : 'active',
       labelVariant: selected ? 'complete' : 'default',
       showProgress: !selected,
@@ -48,7 +47,6 @@ export function getMovementProgress(
   return {
     step: 1,
     label: p.selectStall,
-    description: p.selectStallDesc,
     badgeVariant: 'active',
     labelVariant: 'default',
     showProgress: true,
@@ -61,7 +59,6 @@ function fuelProgressForStep(step: FuelStep, p: ProgressMessages): ProgressIndic
   const verifyPump = {
     step: 1,
     label: p.verifyPump,
-    description: p.verifyPumpDesc,
     badgeVariant: 'active' as const,
     labelVariant: 'default' as const,
     showProgress: true,
@@ -82,7 +79,6 @@ function fuelProgressForStep(step: FuelStep, p: ProgressMessages): ProgressIndic
   const fuelingInProgress = {
     step: 3,
     label: p.fuelingInProgress,
-    description: p.fuelingInProgressDesc,
     badgeVariant: 'active' as const,
     labelVariant: 'default' as const,
     showProgress: true,
@@ -91,15 +87,15 @@ function fuelProgressForStep(step: FuelStep, p: ProgressMessages): ProgressIndic
 
   const map: Partial<Record<FuelStep, ProgressIndicatorProps>> = {
     'verify-pump': verifyPump,
-    'manual-entry': { ...verifyPump, description: undefined },
-    'manual-entry-error': { ...verifyPump, description: undefined },
-    'manual-entry-filled': { ...verifyPump, description: undefined },
-    'pump-unavailable': { ...verifyPump, description: undefined },
+    'manual-entry': verifyPump,
+    'manual-entry-error': verifyPump,
+    'manual-entry-filled': verifyPump,
+    'pump-unavailable': verifyPump,
     'unlocking-pump': unlockingPump,
     'pump-unlocked': fuelingInProgress,
     'pump-verified': {
       step: 2,
-      label: p.startFueling,
+      label: p.pumpReady,
       badgeVariant: 'active',
       labelVariant: 'default',
       showProgress: true,
@@ -123,7 +119,7 @@ function fuelProgressForStep(step: FuelStep, p: ProgressMessages): ProgressIndic
       labelVariant: 'warning',
       showProgress: false,
     },
-    'additional-fueling': { ...verifyPump, description: undefined },
+    'additional-fueling': verifyPump,
     'additional-fueling-complete': {
       step: 4,
       label: p.fuelingComplete,
@@ -144,10 +140,9 @@ function cleaningProgressForStep(
   step: CleaningStep,
   p: ProgressMessages,
 ): ProgressIndicatorProps {
-  const verifyPump = {
+  const enterCleanLocation = {
     step: 1,
-    label: p.verifyPump,
-    description: p.verifyPumpDesc,
+    label: p.enterCleanLocation,
     badgeVariant: 'active' as const,
     labelVariant: 'default' as const,
     showProgress: true,
@@ -156,13 +151,13 @@ function cleaningProgressForStep(
   }
 
   const map: Partial<Record<CleaningStep, ProgressIndicatorProps>> = {
-    'verify-pump': verifyPump,
-    'manual-entry': { ...verifyPump, description: undefined },
-    'manual-entry-filled': { ...verifyPump, description: undefined },
-    'manual-entry-error': { ...verifyPump, description: undefined },
+    'verify-pump': enterCleanLocation,
+    'manual-entry': enterCleanLocation,
+    'manual-entry-filled': enterCleanLocation,
+    'manual-entry-error': enterCleanLocation,
     'pump-verified': {
       step: 2,
-      label: p.startCleaning,
+      label: p.workstationReady,
       badgeVariant: 'active',
       labelVariant: 'default',
       showProgress: true,
@@ -172,7 +167,6 @@ function cleaningProgressForStep(
     'cleaning-in-progress': {
       step: 3,
       label: p.cleaningInProgress,
-      description: p.cleaningInProgressDesc,
       badgeVariant: 'active',
       labelVariant: 'default',
       showProgress: true,
@@ -189,7 +183,7 @@ function cleaningProgressForStep(
     },
   }
 
-  return map[step] ?? verifyPump
+  return map[step] ?? enterCleanLocation
 }
 
 export function getCleaningProgress(step: CleaningStep, p: ProgressMessages): ProgressIndicatorProps {
@@ -222,7 +216,6 @@ export function getStallProgress(phase: StallPhase, p: ProgressMessages): Progre
   return {
     step: 1,
     label: p.selectStall,
-    description: p.selectStallDesc,
     badgeVariant: 'active',
     labelVariant: 'default',
     showProgress: true,

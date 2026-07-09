@@ -1,3 +1,5 @@
+import { isTutorialModeActive } from './tutorialModeState'
+
 const STORAGE_KEY = 'recent-locations'
 const MAX_RECENT = 8
 
@@ -15,6 +17,8 @@ export function getRecentLocations(): string[] {
 }
 
 export function recordRecentLocation(location: string): void {
+  if (isTutorialModeActive()) return
+
   const trimmed = location.trim()
   if (!trimmed) return
 

@@ -9,13 +9,15 @@ export type TutorialStep = {
   /** On mobile, keep the tooltip card at the top so lower targets stay visible. */
   mobileCard?: 'top' | 'sheet'
   openHeaderMenu?: boolean
+  /** Opens the location picker before spotlighting a target inside it. */
+  openLocationPicker?: boolean
   /** Expands a workflow accordion section before spotlighting it. */
   expandSection?: 'movement' | 'fuel' | 'cleaning' | 'stall'
   /** Renders an inline UI preview when the live target is context-dependent. */
   preview?: 'stall-photo'
 }
 
-export const HOME_TUTORIAL_STORAGE_KEY = 'remote-off.tutorial.home.v1'
+export const HOME_TUTORIAL_STORAGE_KEY = 'remote-off.tutorial.home.v2'
 export const TRANSPORT_TUTORIAL_STORAGE_KEY = 'remote-off.tutorial.transport.v1'
 export const VSA_TUTORIAL_STORAGE_KEY = 'remote-off.tutorial.vsa.v1'
 export const TRACKING_TUTORIAL_STORAGE_KEY = 'remote-off.tutorial.tracking.v1'
@@ -24,8 +26,24 @@ export const HOME_TUTORIAL_STEPS: TutorialStep[] = [
   {
     id: 'welcome',
     title: 'Welcome to Daytona',
-    body: 'This quick tour covers the essentials on the home screen. Each workflow also has its own tour the first time you open it.',
+    body: 'This guided walkthrough shows the home screen. Use Next to move through each step — nothing you see here changes your work.',
     placement: 'center',
+  },
+  {
+    id: 'location',
+    title: 'Your location',
+    target: '[data-tutorial="header-location"]',
+    body: 'Tap your location name to switch sites when you work at a different Hertz location.',
+    placement: 'bottom',
+  },
+  {
+    id: 'location-search',
+    title: 'Find your site',
+    target: '[data-tutorial="location-search"]',
+    openLocationPicker: true,
+    body: 'Search by city or airport code, then tap a location to set it for today.',
+    placement: 'bottom',
+    mobileCard: 'sheet',
   },
   {
     id: 'header-menu',
@@ -55,12 +73,13 @@ export const HOME_TUTORIAL_STEPS: TutorialStep[] = [
     title: 'Choose a workflow',
     target: '[data-tutorial="workflows"]',
     body: 'Turnaround workflows open dedicated screens. More actions can be added as your location needs them.',
-    placement: 'top',
+    placement: 'bottom',
+    mobileCard: 'sheet',
   },
   {
     id: 'done',
     title: 'You\'re all set',
-    body: 'Pick a workflow to begin. Open the menu later if you want to replay this tour.',
+    body: 'Pick a workflow to begin. Each workflow has its own guided tour the first time you open it.',
     placement: 'center',
   },
 ]
@@ -69,7 +88,7 @@ export const TRANSPORT_TUTORIAL_STEPS: TutorialStep[] = [
   {
     id: 'welcome',
     title: 'Transport workflow',
-    body: 'This tour walks through movement, stall photos, and fueling for transport jobs.',
+    body: 'This guided walkthrough shows movement, stall photos, and fueling. Tap Next to follow along — your session is not changed.',
     placement: 'center',
   },
   {
@@ -91,7 +110,7 @@ export const TRANSPORT_TUTORIAL_STEPS: TutorialStep[] = [
     title: 'Log movement first',
     target: '[data-tutorial="movement"]',
     expandSection: 'movement',
-    body: 'Record a transport location or stall number. Complete movement before fueling unlocks.',
+    body: 'Record a transport location or stall number. Fuel is optional and unlocks after movement is complete.',
     placement: 'bottom',
     mobileCard: 'top',
   },
@@ -104,10 +123,10 @@ export const TRANSPORT_TUTORIAL_STEPS: TutorialStep[] = [
   },
   {
     id: 'fuel',
-    title: 'Fuel the vehicle',
+    title: 'Fuel the vehicle (optional)',
     target: '[data-tutorial="fuel"]',
     expandSection: 'fuel',
-    body: 'Unlock the pump, scan or enter the pump number, and finish fueling.',
+    body: 'If needed, scan or enter the pump number, turn on the pump, and finish fueling.',
     placement: 'top',
     mobileCard: 'top',
   },
@@ -115,14 +134,14 @@ export const TRANSPORT_TUTORIAL_STEPS: TutorialStep[] = [
     id: 'complete',
     title: 'Finish the session',
     target: '[data-tutorial="complete"]',
-    body: 'When every section is complete, tap Complete to close out this transport workflow.',
+    body: 'When required sections are complete, tap Complete to close out this transport workflow.',
     placement: 'top',
     mobileCard: 'top',
   },
   {
     id: 'done',
     title: 'Transport tour complete',
-    body: 'Replay this tour from the menu if you need a refresher.',
+    body: 'You are ready to run a transport job. Replay this tour from the menu anytime.',
     placement: 'center',
   },
 ]
@@ -131,7 +150,7 @@ export const VSA_TUTORIAL_STEPS: TutorialStep[] = [
   {
     id: 'welcome',
     title: 'VSA workflow',
-    body: 'This tour covers cleaning, fuel, and stall steps for vehicle service advisor jobs.',
+    body: 'This guided walkthrough shows cleaning, fuel, and stall steps. Tap Next to follow along — your session is not changed.',
     placement: 'center',
   },
   {
@@ -153,16 +172,16 @@ export const VSA_TUTORIAL_STEPS: TutorialStep[] = [
     title: 'Cleaning',
     target: '[data-tutorial="cleaning"]',
     expandSection: 'cleaning',
-    body: 'Verify the pump, start cleaning, and mark the section complete when finished.',
+    body: 'Scan or enter the cleaning stall number, start cleaning, and mark the section complete when finished.',
     placement: 'bottom',
     mobileCard: 'top',
   },
   {
     id: 'fuel',
-    title: 'Fuel',
+    title: 'Fuel (optional)',
     target: '[data-tutorial="fuel"]',
     expandSection: 'fuel',
-    body: 'Scan or enter the pump, unlock remotely or on-site, and record fueling.',
+    body: 'If needed, scan or enter the pump, turn on the pump from this device or at the terminal, and record fueling.',
     placement: 'bottom',
     mobileCard: 'top',
   },
@@ -171,7 +190,7 @@ export const VSA_TUTORIAL_STEPS: TutorialStep[] = [
     title: 'Stall',
     target: '[data-tutorial="stall"]',
     expandSection: 'stall',
-    body: 'Stall stays locked until fueling or cleaning is complete. Once unlocked, assign a stall number and report occupancy issues with a photo if needed.',
+    body: 'Optional — assign a stall number and report occupancy issues with a photo if needed.',
     placement: 'top',
     mobileCard: 'top',
   },
@@ -179,14 +198,14 @@ export const VSA_TUTORIAL_STEPS: TutorialStep[] = [
     id: 'complete',
     title: 'Finish the session',
     target: '[data-tutorial="complete"]',
-    body: 'Tap Complete when cleaning, fuel, and stall sections are done.',
+    body: 'Tap Complete when required sections are done. Cleaning and fuel can stay optional.',
     placement: 'top',
     mobileCard: 'top',
   },
   {
     id: 'done',
     title: 'VSA tour complete',
-    body: 'Replay this tour from the menu if you need a refresher.',
+    body: 'You are ready to run a VSA job. Replay this tour from the menu anytime.',
     placement: 'center',
   },
 ]

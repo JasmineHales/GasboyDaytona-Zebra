@@ -1,15 +1,15 @@
+import { AlertCircle, ChevronRight, Info } from 'lucide-react'
 import { useState, type Ref } from 'react'
-import { AlertCircle, AlertTriangle, ChevronDown } from 'lucide-react'
 import { useI18n } from '../../i18n/I18nProvider'
 import type { VehicleSummary } from '../../utils/vehicleSummary'
 import { trackProps } from '../../utils/tracking'
+import { VehicleCardDetailsOverlay } from './VehicleCardDetailsOverlay'
 import { VehicleOdometerField } from './VehicleOdometerField'
 
 type VehicleOdometerProps = {
   odometerReading: string
   onOdometerChange: (value: string) => void
   verified: boolean
-  hint?: string
   minimumMiles?: number | null
   odometerRef?: Ref<HTMLDivElement>
 }
@@ -18,93 +18,150 @@ type VehicleCardProps = {
   summary: VehicleSummary
   odometer?: VehicleOdometerProps
   onReportVehicle?: () => void
+  layout?: 'combined' | 'split'
 }
 
-function DetailRow({
-  label,
-  value,
-  chipClass,
-}: {
-  label: string
-  value: string
-  chipClass: string
-}) {
-  return (
-    <div className="vehicle-card__detail-row">
-      <span className="vehicle-card__detail-label">{label}</span>
-      <span className={`fleet-chip shrink-0 text-sm font-bold ${chipClass}`}>{value}</span>
-    </div>
-  )
-}
-
-export function VehicleCard({ summary, odometer, onReportVehicle }: VehicleCardProps) {
+export function VehicleCard({
+  summary,
+  odometer,
+  onReportVehicle,
+  layout = 'combined',
+}: VehicleCardProps) {
   const { messages, t } = useI18n()
-  const [expanded, setExpanded] = useState(false)
-  const vehicleClass =
-    messages.vehicle.classes[summary.vehicleClass as keyof typeof messages.vehicle.classes] ??
-    summary.vehicleClass
+  const [detailsOpen, setDetailsOpen] = useState(false)
   const holdMessage = summary.holdWarning
     ? messages.vehicle.holdMessages[
         summary.holdWarning.message as keyof typeof messages.vehicle.holdMessages
       ] ?? summary.holdWarning.message
     : undefined
-  const hasDetails = Boolean(
-    summary.holdWarning || summary.carPriority || summary.carTier,
+  const summaryLine = [summary.make, summary.model, summary.vehicleType]
+    .filter(Boolean)
+    .join(' · ')
+
+  const vehicleHeader = (
+    <button
+      type="button"
+      className="workflow-vehicle-card__header"
+      aria-label={t('vehicle.viewDetailsAria', { plate: summary.licensePlate })}
+      aria-expanded={detailsOpen}
+      onClick={() => setDetailsOpen(true)}
+      {...trackProps('vehicle-card.details.open', { unitId: summary.unitId })}
+    >
+      <div className="workflow-vehicle-card__copy">
+        <p className="workflow-vehicle-card__title">{summary.licensePlate}</p>
+        {summaryLine ? (
+          <p className="workflow-vehicle-card__subtitle">{summaryLine}</p>
+        ) : null}
+      </div>
+      <div className="workflow-vehicle-card__meta">
+        {summary.holdWarning ? (
+          <span className="vehicle-search-card__hold-badge" role="status">
+            {t('vehicleSearch.results.onHoldBadge')}
+          </span>
+        ) : null}
+        <ChevronRight className="workflow-vehicle-card__chevron" aria-hidden strokeWidth={2} />
+      </div>
+    </button>
   )
+
+  const odometerBlock = odometer ? (
+    <div className="workflow-vehicle-stack__odometer" data-tutorial="vehicle-odometer">
+      <div className="workflow-odometer-card__heading">
+        <div className="workflow-odometer-card__title-row">
+          <p className="workflow-odometer-card__title">{t('vehicle.odometer')}</p>
+          {!odometer.verified ? (
+            <span className="workflow-pill workflow-pill--required">{t('workflow.required')}</span>
+          ) : null}
+        </div>
+      </div>
+      <VehicleOdometerField
+        ref={odometer.odometerRef}
+        odometerReading={odometer.odometerReading}
+        onOdometerChange={odometer.onOdometerChange}
+        verified={odometer.verified}
+        minimumMiles={odometer.minimumMiles}
+        embedded
+      />
+    </div>
+  ) : null
+
+  const reportBlock = onReportVehicle ? (
+    <button
+      type="button"
+      onClick={onReportVehicle}
+      className="workflow-vehicle-stack__report field-target"
+      aria-label={t('vehicle.reportVehicleAria', {
+        unitId: summary.unitId,
+        name: summary.name,
+      })}
+      data-tutorial="vehicle-report"
+      {...trackProps('vehicle.report', { unitId: summary.unitId })}
+    >
+      <span className="workflow-report-card__icon" aria-hidden>
+        <AlertCircle className="workflow-report-card__icon-svg" strokeWidth={2} />
+      </span>
+      <span className="workflow-report-card__label">{t('vehicle.reportVehicle')}</span>
+      <ChevronRight className="workflow-report-card__chevron" aria-hidden strokeWidth={2} />
+    </button>
+  ) : null
+
+  if (layout === 'split') {
+    return (
+      <>
+        <div className="workflow-field-card workflow-vehicle-stack" data-tutorial="vehicle">
+          {vehicleHeader}
+          {odometerBlock ? <div className="workflow-vehicle-stack__divider" aria-hidden /> : null}
+          {odometerBlock}
+          {reportBlock ? <div className="workflow-vehicle-stack__divider" aria-hidden /> : null}
+          {reportBlock}
+        </div>
+        <VehicleCardDetailsOverlay
+          open={detailsOpen}
+          summary={summary}
+          holdMessage={holdMessage}
+          onClose={() => setDetailsOpen(false)}
+        />
+      </>
+    )
+  }
 
   return (
     <div className="vehicle-card" data-tutorial="vehicle">
       <button
         type="button"
-        onClick={() => hasDetails && setExpanded((open) => !open)}
-        aria-expanded={hasDetails ? expanded : undefined}
-        disabled={!hasDetails}
-        className={`vehicle-card__header${hasDetails ? ' vehicle-card__header--interactive' : ''}`}
-        {...trackProps('vehicle-card.toggle', { expanded })}
+        className="vehicle-card__header vehicle-card__header--interactive vehicle-card__header--compact"
+        aria-label={t('vehicle.viewDetailsAria', { plate: summary.licensePlate })}
+        aria-expanded={detailsOpen}
+        onClick={() => setDetailsOpen(true)}
+        {...trackProps('vehicle-card.details.open', { unitId: summary.unitId })}
       >
-        <div className="vehicle-card__identity">
-          <div className="vehicle-card__title-row">
-            <span className="vehicle-card__unit">{summary.unitId}</span>
-            <span className="vehicle-card__name">{summary.name}</span>
-          </div>
-          <p className="vehicle-card__class">{vehicleClass}</p>
+        <div className="vehicle-card__header-main">
+          <p className="vehicle-card__summary-title">{summary.licensePlate}</p>
+          {summaryLine ? (
+            <p className="vehicle-card__summary-subtitle">{summaryLine}</p>
+          ) : null}
         </div>
-
         <div className="vehicle-card__header-meta">
-          {!expanded && summary.holdWarning && (
-            <span className="vehicle-card__hold-badge">
-              <AlertTriangle className="h-4 w-4" aria-hidden />
-              {t('vehicle.onHold')}
+          {summary.holdWarning ? (
+            <span className="vehicle-search-card__hold-badge" role="status">
+              {t('vehicleSearch.results.onHoldBadge')}
             </span>
-          )}
-
-          {!expanded && summary.carTier && !summary.holdWarning && (
-            <span className="fleet-chip fleet-chip-info shrink-0 px-2.5 py-1 text-sm font-bold">
-              {summary.carTier}
-            </span>
-          )}
-
-          {hasDetails && (
-            <ChevronDown
-              className={`vehicle-card__chevron${expanded ? ' vehicle-card__chevron--open' : ''}`}
-              aria-hidden
-            />
-          )}
+          ) : null}
+          <Info className="vehicle-card__info-icon" aria-hidden strokeWidth={2} />
         </div>
       </button>
 
-      {odometer && (
+      {odometer ? (
         <VehicleOdometerField
           ref={odometer.odometerRef}
           odometerReading={odometer.odometerReading}
           onOdometerChange={odometer.onOdometerChange}
           verified={odometer.verified}
-          hint={odometer.hint}
           minimumMiles={odometer.minimumMiles}
         />
-      )}
+      ) : null}
 
-      {onReportVehicle && (
+      {onReportVehicle ? (
         <button
           type="button"
           onClick={onReportVehicle}
@@ -116,48 +173,20 @@ export function VehicleCard({ summary, odometer, onReportVehicle }: VehicleCardP
           data-tutorial="vehicle-report"
           {...trackProps('vehicle.report', { unitId: summary.unitId })}
         >
-          <AlertCircle className="vehicle-card__report-icon" aria-hidden />
-          <span className="vehicle-card__report-label">{t('vehicle.reportVehicle')}</span>
+          <span className="vehicle-card__report-leading">
+            <AlertCircle className="vehicle-card__report-icon" aria-hidden />
+            <span className="vehicle-card__report-label">{t('vehicle.reportVehicle')}</span>
+          </span>
+          <ChevronRight className="vehicle-card__report-chevron" aria-hidden strokeWidth={2} />
         </button>
-      )}
+      ) : null}
 
-      {expanded && hasDetails && (
-        <div className="vehicle-card__details">
-          {summary.holdWarning && (
-            <div className="vehicle-card__hold-notice">
-              <AlertTriangle className="h-5 w-5 shrink-0" aria-hidden />
-              <div className="min-w-0 flex-1">
-                <p className="vehicle-card__hold-title">
-                  {t('vehicle.holdWarning', { code: summary.holdWarning.code })}
-                </p>
-                <p className="vehicle-card__hold-message">{holdMessage}</p>
-              </div>
-            </div>
-          )}
-
-          {(summary.carPriority || summary.carTier) && (
-            <div className="vehicle-card__details-panel">
-              {summary.carPriority && (
-                <DetailRow
-                  label={t('vehicle.carPriority')}
-                  value={summary.carPriority}
-                  chipClass="fleet-chip-neutral"
-                />
-              )}
-              {summary.carPriority && summary.carTier && (
-                <div className="vehicle-card__details-divider" />
-              )}
-              {summary.carTier && (
-                <DetailRow
-                  label={t('vehicle.carTier')}
-                  value={summary.carTier}
-                  chipClass="fleet-chip-info"
-                />
-              )}
-            </div>
-          )}
-        </div>
-      )}
+      <VehicleCardDetailsOverlay
+        open={detailsOpen}
+        summary={summary}
+        holdMessage={holdMessage}
+        onClose={() => setDetailsOpen(false)}
+      />
     </div>
   )
 }

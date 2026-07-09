@@ -1,0 +1,14 @@
+flowchart TD
+  H[home-work] --> VS[vehicle-search]
+  VS --> HC[Hold confirm<br/>Customer extension]
+  HC --> TD[transport-default]
+  TD --> OV[odometer-verified]
+  OV --> ML[movement-transport-complete<br/>optional movement]
+  ML --> FD[fueling-default]
+  FD --> FU[fueling-unlocking]
+  FU --> PT[fueling-pump-timeout<br/>~15s unlock expired]
+
+  PT --> RY[Retry unlock]
+  PT --> CP[Change pump]
+  RY --> FU
+  CP --> FD

@@ -6,8 +6,8 @@ Hertz **Daytona** field-app prototype for transport, VSA, and remote fueling wor
 |---|---|
 | **Local folder** | `remote-off` |
 | **GitHub repo** | [Gasboy-Daytona-MVP](https://github.com/JasmineHales/Gasboy-Daytona-MVP) |
-| **Active branch** | `v2` |
-| **Version** | 2.0.0 |
+| **Active branch** | `v3` |
+| **Version** | 3.0.0 |
 
 ## Folder layout
 
@@ -39,7 +39,7 @@ Do **not** add duplicate copies of this project (e.g. `*-upload/` folders or `.z
 **Option A — Git (recommended)**
 
 ```bash
-git push origin refs/heads/v2:refs/heads/v2
+git push origin refs/heads/v3:refs/heads/v3
 ```
 
 **Option B — Web upload (source only, ~3 MB)**

@@ -1,35 +1,41 @@
 import {
   AlertTriangle,
-  ArrowLeft,
   ArrowLeftRight,
-  Check,
+  ChevronRight,
   Clock,
   Flag,
   Fuel,
   Lock,
   Play,
   RefreshCw,
+  ShieldPlus,
+  Timer,
 } from 'lucide-react'
-import type { ReactNode } from 'react'
 import { useEffect, useRef, useState } from 'react'
 import type { FuelStep, FuelTransaction } from '../../types/flow'
-import { ProgressIndicator } from '../ui/ProgressIndicator'
+import { BottomSheetOverlay } from '../ui/BottomSheetOverlay'
 import { PumpConfirmedCard } from '../ui/PumpConfirmedCard'
 import { PumpVerifyDefault } from '../ui/PumpVerifyDefault'
+import { GallonsCaptureField } from './GallonsCaptureField'
+import { isValidGallonsValue, formatGallons } from '../../utils/gallonsInput'
+import type { GallonsCaptureRecord } from '../../types/gallonsCapture'
 import { TextField } from '../ui/TextField'
 import { UnlockingStatus } from '../ui/UnlockingStatus'
+import { UnlockOutcomePanel } from '../ui/UnlockOutcomePanel'
+import { WorkflowNotice } from '../ui/WorkflowNotice'
+import { ElapsedTimer } from '../ui/ElapsedTimer'
 import {
   WorkflowInProgressStatus,
   NOZZLE_PICKUP_WINDOW_SECONDS,
 } from '../ui/WorkflowInProgressStatus'
 import { useI18n } from '../../i18n/I18nProvider'
-import { getFuelProgress } from '../../utils/progress'
-import { getPumpVerifyCopy } from '../../utils/pumpVerifyCopy'
 import { isUnavailablePump } from '../../utils/pump'
 import {
   getCleaningQuickSelectHint,
 } from '../../utils/pumpQuickSelect'
+import { ExpandableAssistanceCard } from './ExpandableAssistanceCard'
 import { FuelUnlockModeInfo } from './FuelUnlockModeInfo'
+import { NozzleReturnIllustration } from './NozzleReturnIllustration'
 import { PumpIssueCard } from './PumpIssueCard'
 import { PumpQuickSelect } from '../ui/PumpQuickSelect'
 import { trackProps } from '../../utils/tracking'
@@ -46,7 +52,6 @@ type FuelStepContentProps = {
   isAdditionalFueling: boolean
   fuelTransactions: FuelTransaction[]
   fuelGallonsPending?: boolean
-  fuelPumpStatusReceived?: boolean
   unavailablePumps?: number[]
   cleaningActivePump?: string | null
   cleaningQuickSelectInProgress?: boolean
@@ -59,12 +64,16 @@ type FuelStepContentProps = {
   onUnlockPump: () => void
   onOnSiteUnlock: () => void
   onStartFueling: () => void
+  onChangePump: () => void
   onCancelUnlock: () => void
   onReportIssue: () => void
   onFinishFueling: () => void
   onCompleteRemoteFueling: () => void
   onSubmitMissingGallons: () => void
   onGallonsChange: (value: string) => void
+  onGallonsCaptureRecord?: (record: GallonsCaptureRecord) => void
+  vehicleUnitId?: string
+  fuelJobId?: string
   onRetry: () => void
 }
 
@@ -78,15 +87,31 @@ function FuelStatusChip({ status }: { status: FuelTransaction['status'] }) {
   const { t } = useI18n()
   if (status === 'complete') {
     return (
-      <span className="inline-flex rounded-full bg-[var(--color-chip-complete-bg)] px-2 py-0.5 text-sm font-semibold text-[var(--color-text-success)]">
+      <span className="inline-flex max-w-full rounded bg-[var(--color-chip-complete-bg)] px-1.5 py-0.5 text-xs font-semibold leading-tight text-[var(--color-text-success)]">
         {t('fuel.statusComplete')}
       </span>
     )
   }
   return (
-    <span className="fleet-chip fleet-chip-warning">
+    <span className="fleet-chip fleet-chip-warning max-w-full text-xs leading-tight">
       {t('fuel.statusIssue')}
     </span>
+  )
+}
+
+function FuelSummaryTableHead({ labels }: { labels: string[] }) {
+  const [pump, status, time, gal] = labels
+  return (
+    <div className="fuel-summary-table__grid fuel-summary-table__head">
+      <p className="fuel-summary-table__cell fuel-summary-table__cell--head">{pump}</p>
+      <p className="fuel-summary-table__cell fuel-summary-table__cell--head">{status}</p>
+      <p className="fuel-summary-table__cell fuel-summary-table__cell--head fuel-summary-table__cell--metric">
+        {time}
+      </p>
+      <p className="fuel-summary-table__cell fuel-summary-table__cell--head fuel-summary-table__cell--metric">
+        {gal}
+      </p>
+    </div>
   )
 }
 
@@ -104,25 +129,22 @@ function ManualFuelingSummaryTable({
   const gallonDisplay = gallons.trim() ? gallons : '--'
 
   return (
-    <div className="overflow-hidden rounded">
-      <div className="grid grid-cols-[60px_108px_1fr_1fr] border-b-2 border-[var(--color-border)]">
-        {[fuelCopy.tablePump, fuelCopy.tableStatus, fuelCopy.tableTime, fuelCopy.tableGal].map(
-          (heading) => (
-          <p
-            key={heading}
-            className="px-4 py-4 text-sm font-semibold text-[var(--color-text-primary)]"
-          >
-            {heading}
-          </p>
-        ))}
-      </div>
-      <div className="grid grid-cols-[60px_108px_1fr_1fr] items-center">
-        <p className="px-4 py-4 text-sm text-[var(--color-text-primary)]">{pump}</p>
-        <div className="px-4 py-4">
+    <div className="fuel-summary-table">
+      <FuelSummaryTableHead
+        labels={[
+          fuelCopy.tablePump,
+          fuelCopy.tableStatus,
+          fuelCopy.tableTime,
+          fuelCopy.tableGal,
+        ]}
+      />
+      <div className="fuel-summary-table__grid">
+        <p className="fuel-summary-table__cell">{pump}</p>
+        <div className="fuel-summary-table__status">
           <FuelStatusChip status="complete" />
         </div>
-        <p className="px-4 py-4 text-sm text-[var(--color-text-primary)]">{time}</p>
-        <p className="px-4 py-4 text-sm text-[var(--color-text-primary)]">{gallonDisplay}</p>
+        <p className="fuel-summary-table__cell fuel-summary-table__cell--metric">{time}</p>
+        <p className="fuel-summary-table__cell fuel-summary-table__cell--metric">{gallonDisplay}</p>
       </div>
     </div>
   )
@@ -132,25 +154,30 @@ function MissingGallonsForm({
   fuelGallons,
   onGallonsChange,
   onSubmit,
+  onGallonsCaptureRecord,
+  vehicleUnitId,
+  fuelJobId,
 }: {
   fuelGallons: string
   onGallonsChange: (value: string) => void
   onSubmit: () => void
+  onGallonsCaptureRecord?: (record: GallonsCaptureRecord) => void
+  vehicleUnitId?: string
+  fuelJobId?: string
 }) {
-  const { messages, t } = useI18n()
-  const fuelCopy = messages.fuel
-  const canSubmit = fuelGallons.trim().length > 0
+  const { t } = useI18n()
+  const canSubmit = isValidGallonsValue(fuelGallons, { maxDecimals: 2 })
 
   return (
     <div className="workflow-stack">
-      <TextField
-        label={fuelCopy.gallonsPumped}
+      <GallonsCaptureField
         value={fuelGallons}
-        placeholder={fuelCopy.enterGallons}
-        inputMode="decimal"
         onChange={onGallonsChange}
-        onClear={() => onGallonsChange('')}
+        onCaptureRecord={onGallonsCaptureRecord}
+        vehicleId={vehicleUnitId}
+        jobId={fuelJobId}
         clearTrackTag="fuel.missing-gallons.clear"
+        trackPrefix="fuel.missing-gallons"
       />
       <button
         type="button"
@@ -165,56 +192,146 @@ function MissingGallonsForm({
   )
 }
 
-function FuelSummaryTable({ rows }: { rows: FuelTransaction[] }) {
-  const { messages } = useI18n()
-  const fuelCopy = messages.fuel
+function sumTransactionGallons(rows: FuelTransaction[]): string | null {
+  let sum = 0
+  let hasAny = false
 
-  return (
-    <div className="overflow-hidden rounded">
-      <div className="grid grid-cols-3 border-b-2 border-[var(--color-border)]">
-        {[fuelCopy.tablePump, fuelCopy.tableStatus, fuelCopy.tableGal].map((heading) => (
-          <p
-            key={heading}
-            className="px-4 py-4 text-sm font-semibold text-[var(--color-text-primary)]"
-          >
-            {heading}
-          </p>
-        ))}
-      </div>
-      {rows.map((row, index) => (
-        <div key={`${row.pump}-${row.gallons}-${index}`} className="grid grid-cols-3 items-center">
-          <p className="px-4 py-4 text-sm text-[var(--color-text-primary)]">{row.pump}</p>
-          <div className="px-4 py-4">
-            <FuelStatusChip status={row.status} />
-          </div>
-          <p className="px-4 py-4 text-sm text-[var(--color-text-primary)]">
-            {formatGallonsDisplay(row.gallons)}
-          </p>
-        </div>
-      ))}
-    </div>
-  )
+  for (const row of rows) {
+    const trimmed = row.gallons.trim()
+    if (!trimmed) continue
+    const gallons = Number.parseFloat(trimmed)
+    if (!Number.isFinite(gallons)) continue
+    sum += gallons
+    hasAny = true
+  }
+
+  if (!hasAny) return null
+  return formatGallons(sum)
 }
 
-function FuelIssueNotification({
-  title,
-  message,
-  footer,
+function parseDurationToSeconds(value: string): number | null {
+  const trimmed = value.trim()
+  if (!trimmed || trimmed === '--') return null
+  const match = /^(\d{1,2}):(\d{2}):(\d{2})$/.exec(trimmed)
+  if (!match) return null
+  const hours = Number.parseInt(match[1]!, 10)
+  const minutes = Number.parseInt(match[2]!, 10)
+  const seconds = Number.parseInt(match[3]!, 10)
+  if (!Number.isFinite(hours) || !Number.isFinite(minutes) || !Number.isFinite(seconds)) {
+    return null
+  }
+  return hours * 3600 + minutes * 60 + seconds
+}
+
+function formatDurationSeconds(totalSeconds: number): string {
+  const elapsed = Math.max(0, Math.floor(totalSeconds))
+  const hours = String(Math.floor(elapsed / 3600)).padStart(2, '0')
+  const minutes = String(Math.floor((elapsed % 3600) / 60)).padStart(2, '0')
+  const seconds = String(elapsed % 60).padStart(2, '0')
+  return `${hours}:${minutes}:${seconds}`
+}
+
+function resolveFuelRowStatus(
+  row: FuelTransaction,
+  index: number,
+  rows: FuelTransaction[],
+): FuelTransaction['status'] {
+  if (rows.length > 1 && index < rows.length - 1) {
+    return 'issue'
+  }
+  return row.status
+}
+
+function resolveFuelRowTime(
+  row: FuelTransaction,
+  index: number,
+  rows: FuelTransaction[],
+  fallbackTime: string,
+): string {
+  const stored = row.time?.trim()
+  if (stored) return stored
+  const isLastRow = index === rows.length - 1
+  if (rows.length === 1 || isLastRow) return fallbackTime
+  return '--'
+}
+
+function sumTransactionTimes(
+  rows: FuelTransaction[],
+  fallbackTime: string,
+): string | null {
+  let sumSeconds = 0
+  let hasAny = false
+
+  for (let index = 0; index < rows.length; index++) {
+    const row = rows[index]!
+    const displayTime = resolveFuelRowTime(row, index, rows, fallbackTime)
+    const seconds = parseDurationToSeconds(displayTime)
+    if (seconds === null) continue
+    sumSeconds += seconds
+    hasAny = true
+  }
+
+  if (!hasAny) return null
+  return formatDurationSeconds(sumSeconds)
+}
+
+function FuelSummaryTable({
+  rows,
+  timeOnTask,
 }: {
-  title: string
-  message: string
-  footer?: ReactNode
+  rows: FuelTransaction[]
+  timeOnTask?: string
 }) {
+  const { messages } = useI18n()
+  const fuelCopy = messages.fuel
+  const resolvedTime = timeOnTask?.trim() || '--'
+  const showTotal = rows.length > 1
+  const totalGallons = showTotal ? sumTransactionGallons(rows) : null
+  const totalTime = showTotal ? sumTransactionTimes(rows, resolvedTime) : null
+
   return (
-    <div className="fleet-issue-notification" role="alert">
-      <div className="flex gap-3">
-        <AlertTriangle className="h-8 w-8 shrink-0 text-[var(--color-brand-error)]" aria-hidden />
-        <div className="min-w-0 flex-1">
-          <p className="fleet-issue-notification__title">{title}</p>
-          <p className="fleet-issue-notification__message">{message}</p>
+    <div className="fuel-summary-table">
+      <FuelSummaryTableHead
+        labels={[
+          fuelCopy.tablePump,
+          fuelCopy.tableStatus,
+          fuelCopy.tableTime,
+          fuelCopy.tableGal,
+        ]}
+      />
+      {rows.map((row, index) => {
+        const rowTime = resolveFuelRowTime(row, index, rows, resolvedTime)
+
+        return (
+          <div
+            key={`${row.pump}-${row.gallons}-${index}`}
+            className="fuel-summary-table__grid"
+          >
+            <p className="fuel-summary-table__cell">{row.pump}</p>
+            <div className="fuel-summary-table__status">
+              <FuelStatusChip status={resolveFuelRowStatus(row, index, rows)} />
+            </div>
+            <p className="fuel-summary-table__cell fuel-summary-table__cell--metric">{rowTime}</p>
+            <p className="fuel-summary-table__cell fuel-summary-table__cell--metric">
+              {formatGallonsDisplay(row.gallons)}
+            </p>
+          </div>
+        )
+      })}
+      {showTotal && totalGallons ? (
+        <div className="fuel-summary-table__total fuel-summary-table__grid">
+          <p className="fuel-summary-table__cell fuel-summary-table__cell--strong">
+            {fuelCopy.tableTotal}
+          </p>
+          <p className="fuel-summary-table__cell" aria-hidden />
+          <p className="fuel-summary-table__cell fuel-summary-table__cell--metric fuel-summary-table__cell--strong">
+            {totalTime ?? resolvedTime}
+          </p>
+          <p className="fuel-summary-table__cell fuel-summary-table__cell--metric fuel-summary-table__cell--strong">
+            {totalGallons}
+          </p>
         </div>
-      </div>
-      {footer}
+      ) : null}
     </div>
   )
 }
@@ -226,6 +343,7 @@ function ReportIssueLink({
   actionLabel,
   trackTag = 'fuel.report-issue',
   variant = 'default',
+  layout = 'stack',
 }: {
   onReportIssue: () => void
   title: string
@@ -233,10 +351,26 @@ function ReportIssueLink({
   actionLabel?: string
   trackTag?: string
   variant?: 'default' | 'inline'
+  layout?: 'stack' | 'collapsible'
 }) {
   const { t } = useI18n()
   const resolvedActionLabel = actionLabel ?? t('common.reportIt')
   const isInline = variant === 'inline'
+  const isCollapsible = layout === 'collapsible'
+
+  if (isCollapsible && isInline) {
+    return (
+      <ExpandableAssistanceCard
+        title={title}
+        description={description}
+        actionLabel={resolvedActionLabel}
+        onAction={onReportIssue}
+        actionTrackTag={trackTag}
+        toggleTrackTag={`${trackTag}.toggle`}
+        className="expandable-assistance-card--fuel-complete"
+      />
+    )
+  }
 
   const actionButton = (
     <button
@@ -267,12 +401,22 @@ function ReportIssueLink({
 }
 
 function PriorFuelSummary({ rows }: { rows: FuelTransaction[] }) {
+  const { messages } = useI18n()
+  const previous = rows.at(-1)
+  if (!previous) return null
+
+  const gallons = previous.gallons.trim()
+  const gallonsLabel = gallons ? `${gallons} gal` : '--'
+
   return (
     <p className="prior-fuel-summary">
-      <span className="prior-fuel-summary__label">Previous:</span>{' '}
-      {rows
-        .map((row) => `Pump ${row.pump} · ${row.gallons} gal`)
-        .join(' · ')}
+      <Clock className="prior-fuel-summary__icon" aria-hidden strokeWidth={2} />
+      <span>
+        <span className="prior-fuel-summary__label">
+          {messages.fuel.previousFuelSummary}:
+        </span>{' '}
+        Pump {previous.pump} · {gallonsLabel}
+      </span>
     </p>
   )
 }
@@ -292,36 +436,10 @@ const unlockActionClass =
 const verifyActionClass =
   'fleet-btn fleet-btn-lg fleet-btn-contained-info fleet-btn-elevated w-full'
 
-const fuelIssueActionClass =
-  'fleet-btn fleet-btn-lg fleet-btn-outlined fleet-issue-notification__action w-full'
-
-function ManualPumpConfirmedCard({
-  pumpNumber,
-  onStartFueling,
-}: {
-  pumpNumber: string
-  onStartFueling: () => void
-}) {
-  const { t } = useI18n()
-  const title = t('fuel.atPump', { pump: pumpNumber })
-  const subtitle = t('fuel.beginFueling')
-
-  return (
-    <PumpConfirmedCard
-      title={title}
-      subtitle={subtitle}
-      actionLabel={t('fuel.startFueling')}
-      onAction={onStartFueling}
-      actionIcon={<Play className="h-5 w-5 fill-current" />}
-      trackAction="fuel.start-fueling"
-    />
-  )
-}
-
-function useRemoteFuelingPickupPhase(
+function useLockSecondsRemaining(
   sessionStartedAt: number | null,
-  pumpStatusReceived: boolean,
-) {
+  windowSeconds: number,
+): number {
   const fallbackStartRef = useRef(Date.now())
   const [elapsed, setElapsed] = useState(0)
   const startedAt = sessionStartedAt ?? fallbackStartRef.current
@@ -336,89 +454,202 @@ function useRemoteFuelingPickupPhase(
     return () => window.clearInterval(id)
   }, [startedAt])
 
-  const remaining = Math.max(0, NOZZLE_PICKUP_WINDOW_SECONDS - elapsed)
-  const isPickupPhase = !pumpStatusReceived && remaining > 0
-
-  return { isPickupPhase, remaining }
+  return Math.max(0, windowSeconds - elapsed)
 }
 
-function RemoteFuelingLockNotice({ remaining }: { remaining: number }) {
+function FuelHeadsUpLockCountdown({
+  startedAt,
+  windowSeconds,
+}: {
+  startedAt: number | null
+  windowSeconds: number
+}) {
+  const { t } = useI18n()
+  const remaining = useLockSecondsRemaining(startedAt, windowSeconds)
+
+  if (remaining <= 0) return null
+
   return (
-    <div
-      className="remote-fueling-active__timer"
-      role="status"
-      aria-live="polite"
-    >
-      <Clock className="remote-fueling-active__timer-icon" aria-hidden />
-      <p className="remote-fueling-active__timer-text">
-        Fuel within {remaining} sec or pump locks.
+    <>
+      <div className="remote-fueling-active__status-divider" aria-hidden />
+      <p className="remote-fueling-active__status-lock" role="note" aria-live="polite">
+        <ShieldPlus
+          className="remote-fueling-active__status-lock-icon"
+          aria-hidden
+          strokeWidth={2}
+        />
+        {t('fuel.remoteFueling.fuelWithinSeconds', {
+          seconds: String(remaining),
+        })}
       </p>
-    </div>
+    </>
+  )
+}
+
+function ManualPumpConfirmedCard({
+  pumpNumber,
+  onStartFueling,
+  onChangePump,
+}: {
+  pumpNumber: string
+  onStartFueling: () => void
+  onChangePump: () => void
+}) {
+  const { messages, t } = useI18n()
+  const fuelCopy = messages.fuel
+  const title = t('fuel.atPump', { pump: pumpNumber })
+  const subtitle = t('fuel.beginFueling')
+
+  return (
+    <>
+      <PumpConfirmedCard
+        title={title}
+        subtitle={subtitle}
+        actionLabel={t('fuel.startFueling')}
+        onAction={onStartFueling}
+        actionIcon={<Play className="h-5 w-5 fill-current" />}
+        trackAction="fuel.start-fueling"
+      />
+      <button
+        type="button"
+        onClick={onChangePump}
+        className="fleet-btn fleet-btn-lg fleet-btn-borderless w-full"
+        {...trackProps('fuel.wrong-pump')}
+      >
+        <ArrowLeftRight className="h-5 w-5" />
+        {fuelCopy.chooseAnotherPump}
+      </button>
+    </>
+  )
+}
+
+function RemoteFuelingCompleteFallback({
+  completeLabel,
+  onComplete,
+}: {
+  completeLabel: string
+  onComplete: () => void
+}) {
+  const { messages } = useI18n()
+  const confirmCopy = messages.fuel.remoteFueling.completeConfirm
+  const [showConfirm, setShowConfirm] = useState(false)
+
+  const handleConfirm = () => {
+    setShowConfirm(false)
+    onComplete()
+  }
+
+  return (
+    <>
+      <div className="remote-fueling-active__fallback">
+        <button
+          type="button"
+          onClick={() => setShowConfirm(true)}
+          className="fuel-assistance-row remote-fueling-active__fallback-action"
+          {...trackProps('fuel.complete-remote-fueling')}
+        >
+          <span className="fuel-assistance-row__icon-wrap" aria-hidden>
+            <Timer className="fuel-assistance-row__icon" strokeWidth={2} />
+          </span>
+          <span className="remote-fueling-active__fallback-copy">
+            <span className="remote-fueling-active__fallback-title">{completeLabel}</span>
+          </span>
+          <ChevronRight
+            className="remote-fueling-active__fallback-chevron"
+            aria-hidden
+            strokeWidth={2}
+          />
+        </button>
+      </div>
+
+      <BottomSheetOverlay
+        open={showConfirm}
+        onDismiss={() => setShowConfirm(false)}
+        dismissTrackTag="fuel.nozzle-confirm.dismiss"
+        labelId="fuel-nozzle-confirm-title"
+      >
+        <div className="bottom-sheet-body pt-2">
+          <h2
+            id="fuel-nozzle-confirm-title"
+            className="text-left text-lg font-bold text-[var(--color-fleet-text)]"
+          >
+            {confirmCopy.title}
+          </h2>
+          <p className="mt-2 text-left text-[length:var(--text-ui-sm)] leading-relaxed text-[var(--color-fleet-text-secondary)]">
+            {confirmCopy.body}
+          </p>
+          <NozzleReturnIllustration
+            label={confirmCopy.graphicLabel}
+            stepLabel={confirmCopy.graphicStep}
+          />
+          <div className="bottom-sheet-footer workflow-stack pt-5">
+            <button
+              type="button"
+              onClick={handleConfirm}
+              className="fleet-btn fleet-btn-lg fleet-btn-contained-info fleet-btn-elevated w-full"
+              {...trackProps('fuel.nozzle-confirm.continue')}
+            >
+              {confirmCopy.confirm}
+            </button>
+            <button
+              type="button"
+              onClick={() => setShowConfirm(false)}
+              className="fleet-btn fleet-btn-lg fleet-btn-outlined w-full"
+              {...trackProps('fuel.nozzle-confirm.cancel')}
+            >
+              {confirmCopy.cancel}
+            </button>
+          </div>
+        </div>
+      </BottomSheetOverlay>
+    </>
   )
 }
 
 function RemoteFuelingActive({
   pumpNumber,
   fuelStartedAt,
-  fuelPumpStatusReceived = false,
   onComplete,
   onReportIssue,
 }: {
   pumpNumber: string
   fuelStartedAt: number | null
-  fuelPumpStatusReceived?: boolean
   onComplete: () => void
   onReportIssue: () => void
 }) {
+  const { messages, t } = useI18n()
+  const copy = messages.fuel.remoteFueling
   const pump = pumpNumber.trim() || '--'
-  const { isPickupPhase, remaining } = useRemoteFuelingPickupPhase(
+  const pumpLabel = t('workflow.inProgress.pumpTitle', { pump })
+  const lockRemaining = useLockSecondsRemaining(
     fuelStartedAt,
-    fuelPumpStatusReceived,
+    NOZZLE_PICKUP_WINDOW_SECONDS,
   )
 
   return (
     <div className="remote-fueling-active">
-      <section className="remote-fueling-active__card" aria-label={`Pump ${pump}`}>
-        <p className="remote-fueling-active__pump-label">Pump</p>
-        <p className="remote-fueling-active__pump-value">{pump}</p>
-        {isPickupPhase ? (
-          <>
-            <div className="remote-fueling-active__action">
-              <p className="remote-fueling-active__action-title">Start fueling now</p>
-              <p className="remote-fueling-active__action-hint">
-                Pick up the nozzle to begin fueling.
-              </p>
-            </div>
-            <RemoteFuelingLockNotice remaining={remaining} />
-          </>
-        ) : (
-          <div className="remote-fueling-active__action remote-fueling-active__action--steady">
-            <p className="remote-fueling-active__action-title">Fueling</p>
-            <p className="remote-fueling-active__action-hint">
-              If you&apos;ve finished fueling, tap Complete Fueling.
-            </p>
-          </div>
-        )}
-      </section>
+      <div className="remote-fueling-active__status" role="status" aria-label={pumpLabel}>
+        <div className="remote-fueling-active__status-main">
+          <span className="remote-fueling-active__status-icon" aria-hidden>
+            <Fuel className="h-6 w-6" strokeWidth={2} />
+          </span>
+          <p className="remote-fueling-active__status-pump">{pumpLabel}</p>
+          <ElapsedTimer startedAt={fuelStartedAt} compact />
+        </div>
+        {lockRemaining > 0 ? (
+          <FuelHeadsUpLockCountdown
+            startedAt={fuelStartedAt}
+            windowSeconds={NOZZLE_PICKUP_WINDOW_SECONDS}
+          />
+        ) : null}
+      </div>
 
-      {isPickupPhase ? (
-        <p className="remote-fueling-active__helper">
-          <span className="remote-fueling-active__helper-lead">Finished Fueling?</span>{' '}
-          Tap complete fueling
-        </p>
-      ) : null}
+      <RemoteFuelingCompleteFallback
+        completeLabel={copy.completeButton}
+        onComplete={onComplete}
+      />
 
-      <button
-        type="button"
-        onClick={onComplete}
-        className="fleet-btn fleet-btn-lg fleet-btn-contained-success fleet-btn-elevated w-full"
-        {...trackProps('fuel.complete-remote-fueling')}
-      >
-        <Check className="h-6 w-6" aria-hidden />
-        Complete Fueling
-      </button>
-
-      <PumpIssueCard layout="horizontal" onReportIssue={onReportIssue} />
+      <PumpIssueCard onReportIssue={onReportIssue} />
     </div>
   )
 }
@@ -429,13 +660,22 @@ function ManualFuelingInProgress({
   fuelStartedAt,
   onGallonsChange,
   onFinishFueling,
+  onGallonsCaptureRecord,
+  vehicleUnitId,
+  fuelJobId,
 }: {
   pumpNumber: string
   fuelGallons: string
   fuelStartedAt: number | null
   onGallonsChange: (value: string) => void
   onFinishFueling: () => void
+  onGallonsCaptureRecord?: (record: GallonsCaptureRecord) => void
+  vehicleUnitId?: string
+  fuelJobId?: string
 }) {
+  const { messages } = useI18n()
+  const fuelCopy = messages.fuel
+
   return (
     <>
       <WorkflowInProgressStatus
@@ -443,12 +683,14 @@ function ManualFuelingInProgress({
         startedAt={fuelStartedAt}
       />
       <div className="workflow-stack">
-        <TextField
-          label="Gallons Pumped"
+        <GallonsCaptureField
           value={fuelGallons}
-          placeholder="Enter gallons dispensed"
-          inputMode="decimal"
           onChange={onGallonsChange}
+          onCaptureRecord={onGallonsCaptureRecord}
+          vehicleId={vehicleUnitId}
+          jobId={fuelJobId}
+          clearTrackTag="fuel.gallons.clear"
+          trackPrefix="fuel.gallons"
         />
         <button
           type="button"
@@ -457,10 +699,80 @@ function ManualFuelingInProgress({
           {...trackProps('fuel.finish-fueling')}
         >
           <Flag className="h-5 w-5" />
-          Finish Fueling
+          {fuelCopy.finishFueling}
         </button>
       </div>
     </>
+  )
+}
+
+function UncertainUnlockOutcome({
+  title,
+  steps,
+  headerTone,
+  outcomePump,
+  onCompleteFueling,
+  onRetry,
+  onChangePump,
+  completeTrackTag,
+  retryTrackTag,
+  changePumpTrackTag,
+}: {
+  title: string
+  steps: { label: string; state: 'complete' | 'warning' | 'error' }[]
+  headerTone: 'warning' | 'error'
+  outcomePump: string
+  onCompleteFueling: () => void
+  onRetry: () => void
+  onChangePump: () => void
+  completeTrackTag: string
+  retryTrackTag: string
+  changePumpTrackTag: string
+}) {
+  const { messages, t } = useI18n()
+  const fuelCopy = messages.fuel
+
+  return (
+    <UnlockOutcomePanel
+      title={title}
+      headerTone={headerTone}
+      steps={steps}
+      primaryAction={{
+        label: fuelCopy.retryUnlockPump,
+        onClick: onRetry,
+        trackTag: retryTrackTag,
+        icon: <RefreshCw className="h-6 w-6" />,
+      }}
+      secondaryAction={{
+        label: fuelCopy.changePump,
+        onClick: onChangePump,
+        trackTag: changePumpTrackTag,
+        icon: <ArrowLeftRight className="h-6 w-6" />,
+      }}
+      footer={
+        <div className="fleet-unlock-outcome-fallback">
+          <WorkflowNotice
+            variant="warning"
+            title={t('fuel.unlockOutcomes.completeIfUnlockedTitle', {
+              pump: outcomePump,
+            })}
+            description={t('fuel.unlockOutcomes.completeIfUnlockedDescription')}
+            icon={<AlertTriangle className="h-4 w-4" />}
+            footer={
+              <button
+                type="button"
+                onClick={onCompleteFueling}
+                className="fleet-btn fleet-btn-lg fleet-btn-outlined w-full fleet-unlock-outcome-fallback__action"
+                {...trackProps(completeTrackTag)}
+              >
+                <Flag className="h-5 w-5" />
+                {fuelCopy.completeFueling}
+              </button>
+            }
+          />
+        </div>
+      }
+    />
   )
 }
 
@@ -485,28 +797,24 @@ export function FuelStepContent({
   onUnlockPump,
   onOnSiteUnlock,
   onStartFueling,
+  onChangePump,
   onCancelUnlock,
   onReportIssue,
   onFinishFueling,
   onCompleteRemoteFueling,
   onSubmitMissingGallons,
   onGallonsChange,
+  onGallonsCaptureRecord,
+  vehicleUnitId,
+  fuelJobId,
   onRetry,
   fuelGallonsPending = false,
-  fuelPumpStatusReceived = false,
   cleaningActivePump = null,
   cleaningQuickSelectInProgress = false,
 }: FuelStepContentProps) {
   const { messages, t } = useI18n()
   const fuelCopy = messages.fuel
-  const pumpVerifyCopy = getPumpVerifyCopy(messages.fuel.pumpVerify)
-  const isRemoteUnlockFlow = locationType === 'gasboy' && unlockMode === 'remote'
-  const isGasboyRemoteUnlockStep =
-    isRemoteUnlockFlow &&
-    (step === 'verify-pump' ||
-      step === 'manual-entry' ||
-      step === 'manual-entry-filled' ||
-      step === 'manual-entry-error')
+  const outcomePump = pumpNumber.trim() || '5'
   const manualVariant = getManualFuelingVariant(unlockMode, locationType)
   const isManualFuelingFlow = manualVariant !== null
   const isRemoteInProgress =
@@ -523,25 +831,6 @@ export function FuelStepContent({
   const isManualEntryStep = manualEntrySteps.includes(
     step as (typeof manualEntrySteps)[number],
   )
-  const progress = {
-    ...getFuelProgress(step, messages.progress),
-    ...(isGasboyRemoteUnlockStep && {
-      label: pumpVerifyCopy.remote.label,
-      description: pumpVerifyCopy.remote.description,
-    }),
-    ...(locationType === 'gasboy' &&
-      unlockMode === 'on-site' &&
-      (step === 'verify-pump' || isManualEntryStep) && {
-        description: pumpVerifyCopy['on-site'].description,
-      }),
-    ...((isRemoteInProgress || isManualFuelingInProgress) && {
-      totalSteps: 4,
-    }),
-    ...(isRemoteInProgress && {
-      label: t('fuel.sessionActive'),
-      description: undefined,
-    }),
-  }
   const isUnavailable = isUnavailablePump(pumpNumber, unavailablePumps)
   const isUnavailableSelection =
     isUnavailable &&
@@ -585,7 +874,7 @@ export function FuelStepContent({
   const cleaningQuickSelectPump = (() => {
     const pump = cleaningActivePump?.trim()
     if (!pump) return null
-    if (unlockMode !== 'remote' || locationType !== 'gasboy') return null
+    if (locationType !== 'gasboy') return null
     if (isUnavailablePump(pump, unavailablePumps)) return null
     if (step === 'verify-pump') return pump
     if (isManualEntryStep && !pumpNumber.trim()) return pump
@@ -601,8 +890,6 @@ export function FuelStepContent({
       {showIssueHistory && fuelTransactions.length > 0 && (
         <PriorFuelSummary rows={fuelTransactions} />
       )}
-
-      <ProgressIndicator {...progress} />
 
       {showNonGasboyVerifyDefault && (
         <PumpVerifyDefault
@@ -630,11 +917,23 @@ export function FuelStepContent({
         <ManualPumpConfirmedCard
           pumpNumber={pumpNumber}
           onStartFueling={onStartFueling}
+          onChangePump={onChangePump}
         />
       )}
 
       {(showGasboyManualEntry || showNonGasboyManualEntry) && (
         <>
+          {showGasboyManualEntry && (
+            <FuelUnlockModeInfo
+              mode={unlockMode}
+              onModeChange={(next) => {
+                if (next === 'on-site') onOnSiteUnlock()
+                else if (next === 'remote') onCancelUnlock()
+              }}
+              trackPrefix="fuel.unlock-mode"
+            />
+          )}
+
           {cleaningQuickSelectPump && (
             <PumpQuickSelect
               pump={cleaningQuickSelectPump}
@@ -646,10 +945,9 @@ export function FuelStepContent({
           )}
 
           <TextField
-            label={fuelCopy.manualEntry}
-            hint={fuelCopy.manualEntryHint}
             value={pumpNumber}
             placeholder={fuelCopy.enterPumpNo}
+            aria-label={fuelCopy.enterPumpNo}
             inputMode="numeric"
             invalid={isUnavailableSelection}
             error={
@@ -669,7 +967,6 @@ export function FuelStepContent({
               type="button"
               onClick={onUnlockPump}
               disabled={!canUnlock}
-              aria-disabled={!canUnlock}
               className={
                 showGasboyManualEntry && unlockMode === 'remote'
                   ? unlockActionClass
@@ -687,54 +984,40 @@ export function FuelStepContent({
           <button
             type="button"
             onClick={onBackToScan}
-            className="fleet-btn fleet-btn-lg fleet-btn-outlined fleet-btn-start w-full"
+            className="fleet-btn fleet-btn-lg fleet-btn-borderless workflow-scan-link workflow-scan-link--start w-full"
             {...trackProps('fuel.back-to-scan')}
           >
-            <ArrowLeft className="h-5 w-5" />
             {fuelCopy.backToScan}
           </button>
-
-          {showGasboyManualEntry && (
-            <FuelUnlockModeInfo
-              mode={unlockMode}
-              onSwitch={switchUnlockMode}
-              trackPrefix="fuel.unlock-mode"
-            />
-          )}
         </>
       )}
 
       {step === 'unlocking-pump' && (
-        <div className="workflow-stack">
-          <UnlockingStatus pumpNumber={pumpNumber} />
-          <button
-            type="button"
-            onClick={onCancelUnlock}
-            className="fleet-btn fleet-btn-lg fleet-btn-outlined w-full"
-            {...trackProps('fuel.cancel-unlock')}
-          >
-            {fuelCopy.cancelUnlock}
-          </button>
-        </div>
+        <UnlockingStatus
+          pumpNumber={pumpNumber}
+          onCancelUnlock={onCancelUnlock}
+        />
       )}
 
       {isRemoteInProgress && (
         <RemoteFuelingActive
           pumpNumber={pumpNumber}
           fuelStartedAt={fuelStartedAt}
-          fuelPumpStatusReceived={fuelPumpStatusReceived}
           onComplete={onCompleteRemoteFueling}
           onReportIssue={onReportIssue}
         />
       )}
 
-      {isManualFuelingInProgress && (
+      {isManualFuelingInProgress && manualVariant && (
         <ManualFuelingInProgress
           pumpNumber={pumpNumber}
           fuelGallons={fuelGallons}
           fuelStartedAt={fuelStartedAt}
           onGallonsChange={onGallonsChange}
           onFinishFueling={onFinishFueling}
+          onGallonsCaptureRecord={onGallonsCaptureRecord}
+          vehicleUnitId={vehicleUnitId}
+          fuelJobId={fuelJobId}
         />
       )}
 
@@ -749,6 +1032,9 @@ export function FuelStepContent({
             fuelGallons={fuelGallons}
             onGallonsChange={onGallonsChange}
             onSubmit={onSubmitMissingGallons}
+            onGallonsCaptureRecord={onGallonsCaptureRecord}
+            vehicleUnitId={vehicleUnitId}
+            fuelJobId={fuelJobId}
           />
         </>
       )}
@@ -756,13 +1042,11 @@ export function FuelStepContent({
       {(step === 'fueling-complete' || step === 'additional-fueling-complete') && (
         <>
           {showGallonsPendingNotice && (
-            <div className="workflow-stack rounded bg-[var(--color-fleet-info-surface)] px-4 py-3">
-              <p className="text-left text-sm font-semibold text-[var(--color-text-primary)]">
-                {fuelCopy.gallonsPending}
-              </p>
-              <p className="text-left text-sm font-medium text-[var(--color-text-primary)]">
-                {fuelCopy.gallonsPendingDesc}
-              </p>
+            <div
+              className="fuel-gallons-pending-notice rounded bg-[var(--color-fleet-info-surface)] px-4 py-3"
+              role="status"
+            >
+              <p className="fuel-gallons-pending-notice__text">{fuelCopy.gallonsPending}</p>
             </div>
           )}
           <div className="fuel-complete-summary">
@@ -773,10 +1057,14 @@ export function FuelStepContent({
                 gallons={fuelGallonsDispensed}
               />
             ) : (
-              <FuelSummaryTable rows={completeRows} />
+              <FuelSummaryTable
+                rows={completeRows}
+                timeOnTask={fuelFinalTime || '00:01:14'}
+              />
             )}
             <ReportIssueLink
               variant="inline"
+              layout="collapsible"
               onReportIssue={onReportIssue}
               title={fuelCopy.needMoreFuel}
               description={fuelCopy.needMoreFuelDesc}
@@ -788,92 +1076,120 @@ export function FuelStepContent({
       )}
 
       {step === 'connection-lost' && (
-        <FuelIssueNotification
-          title={fuelCopy.connectionLost}
-          message={t('fuel.connectionLostMsg', { pump: pumpNumber || '5' })}
-          footer={
-            <button
-              type="button"
-              onClick={onOnSiteUnlock}
-              className={fuelIssueActionClass}
-              {...trackProps('fuel.connection-lost.on-site-unlock')}
-            >
-              <Fuel className="h-6 w-6" />
-              {fuelCopy.onSiteUnlock}
-            </button>
-          }
+        <UncertainUnlockOutcome
+          title={t('fuel.connectionLost', { pump: outcomePump })}
+          headerTone="error"
+          outcomePump={outcomePump}
+          onCompleteFueling={onFinishFueling}
+          onRetry={onRetry}
+          onChangePump={onChangePump}
+          completeTrackTag="fuel.connection-lost.complete-fueling"
+          retryTrackTag="fuel.connection-lost.retry"
+          changePumpTrackTag="fuel.connection-lost.change-pump"
+          steps={[
+            {
+              label: fuelCopy.unlockProgress.stepConnected,
+              state: 'complete',
+            },
+            {
+              label: fuelCopy.unlockProgress.stepRequestSent,
+              state: 'complete',
+            },
+            {
+              label: t('fuel.unlockOutcomes.connectionLostStep', { pump: outcomePump }),
+              state: 'error',
+            },
+          ]}
         />
       )}
 
       {step === 'no-response' && (
-        <FuelIssueNotification
-          title={fuelCopy.noResponse}
-          message={t('fuel.noResponseMsg', { pump: pumpNumber || '5' })}
-          footer={
-            <div className="workflow-stack">
-              <button
-                type="button"
-                onClick={onRetry}
-                className={fuelIssueActionClass}
-                {...trackProps('fuel.no-response.retry')}
-              >
-                <RefreshCw className="h-6 w-6" />
-                {fuelCopy.retryUnlockPump}
-              </button>
-              <FuelUnlockModeInfo
-                mode="remote"
-                onSwitch={onOnSiteUnlock}
-                trackPrefix="fuel.no-response.unlock-mode"
-              />
-            </div>
-          }
+        <UncertainUnlockOutcome
+          title={t('fuel.noResponse', { pump: outcomePump })}
+          headerTone="warning"
+          outcomePump={outcomePump}
+          onCompleteFueling={onFinishFueling}
+          onRetry={onRetry}
+          onChangePump={onChangePump}
+          completeTrackTag="fuel.no-response.complete-fueling"
+          retryTrackTag="fuel.no-response.retry"
+          changePumpTrackTag="fuel.no-response.change-pump"
+          steps={[
+            {
+              label: fuelCopy.unlockProgress.stepConnected,
+              state: 'complete',
+            },
+            {
+              label: fuelCopy.unlockProgress.stepRequestSent,
+              state: 'complete',
+            },
+            {
+              label: t('fuel.unlockOutcomes.noResponseStep', { pump: outcomePump }),
+              state: 'warning',
+            },
+          ]}
         />
       )}
 
       {step === 'pump-timeout' && (
-        <FuelIssueNotification
-          title={fuelCopy.unlockExpired}
-          message={t('fuel.unlockExpiredMsg', { pump: pumpNumber || '5' })}
-          footer={
-            <div className="workflow-stack">
-              <button
-                type="button"
-                onClick={onRetry}
-                className={fuelIssueActionClass}
-                {...trackProps('fuel.pump-timeout.retry')}
-              >
-                <RefreshCw className="h-6 w-6" />
-                {fuelCopy.retryUnlockPump}
-              </button>
-              <button
-                type="button"
-                onClick={onRetry}
-                className={fuelIssueActionClass}
-                {...trackProps('fuel.pump-timeout.change-pump')}
-              >
-                <ArrowLeftRight className="h-6 w-6" />
-                {fuelCopy.changePump}
-              </button>
-            </div>
-          }
+        <UnlockOutcomePanel
+          title={t('fuel.unlockExpired', { pump: outcomePump })}
+          headerTone="error"
+          steps={[
+            {
+              label: t('fuel.unlockOutcomes.pumpUnlocked', { pump: outcomePump }),
+              state: 'complete',
+            },
+            {
+              label: fuelCopy.unlockOutcomes.unlockAvailable,
+              state: 'complete',
+            },
+            {
+              label: fuelCopy.unlockOutcomes.unlockWindowExpired,
+              state: 'error',
+            },
+          ]}
+          primaryAction={{
+            label: fuelCopy.retryUnlockPump,
+            onClick: onRetry,
+            trackTag: 'fuel.pump-timeout.retry',
+            icon: <RefreshCw className="h-6 w-6" />,
+          }}
+          secondaryAction={{
+            label: fuelCopy.changePump,
+            onClick: onRetry,
+            trackTag: 'fuel.pump-timeout.change-pump',
+            icon: <ArrowLeftRight className="h-6 w-6" />,
+          }}
         />
       )}
 
       {step === 'pump-unavailable' && (
-        <FuelIssueNotification
-          title={fuelCopy.pumpUnavailableTitle}
-          message={fuelCopy.pumpUnavailableMsg}
-          footer={
-            <button
-              type="button"
-              onClick={onRetry}
-              className={fuelIssueActionClass}
-              {...trackProps('fuel.pump-unavailable.choose-another')}
-            >
-              <Fuel className="h-6 w-6" />
-              {fuelCopy.chooseAnotherPump}
-            </button>
-          }
+        <UnlockOutcomePanel
+          title={t('fuel.pumpUnavailableTitle', { pump: outcomePump })}
+          headerTone="error"
+          steps={[
+            {
+              label: t('fuel.unlockOutcomes.pumpSelected', { pump: outcomePump }),
+              state: 'warning',
+            },
+            {
+              label: t('fuel.unlockOutcomes.pumpUnavailableStep', { pump: outcomePump }),
+              state: 'error',
+            },
+          ]}
+          primaryAction={{
+            label: fuelCopy.chooseAnotherPump,
+            onClick: onRetry,
+            trackTag: 'fuel.pump-unavailable.choose-another',
+            icon: <Fuel className="h-6 w-6" />,
+          }}
+          secondaryAction={{
+            label: fuelCopy.terminalUnlock,
+            onClick: onOnSiteUnlock,
+            trackTag: 'fuel.pump-unavailable.terminal-unlock',
+            icon: <Fuel className="h-6 w-6" />,
+          }}
         />
       )}
     </div>

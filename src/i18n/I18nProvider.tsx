@@ -10,10 +10,11 @@ import {
 import {
   persistAppLanguage,
   readAppLanguage,
+  resolveTranslatedLanguageId,
   type AppLanguageId,
 } from '../utils/languageSettings'
 import { getNestedValue, interpolate } from './interpolate'
-import { locales } from './locales'
+import { messagesForLanguage } from './locales'
 import type { Messages, TranslateFn, TranslateParams } from './types'
 
 type I18nContextValue = {
@@ -38,7 +39,7 @@ function createTranslator(messages: Messages): TranslateFn {
 export function I18nProvider({ children }: { children: ReactNode }) {
   const [language, setLanguageState] = useState<AppLanguageId>(() => readAppLanguage())
 
-  const messages = locales[language] ?? locales.en
+  const messages = messagesForLanguage(resolveTranslatedLanguageId(language))
 
   const setLanguage = useCallback((next: AppLanguageId) => {
     setLanguageState(next)

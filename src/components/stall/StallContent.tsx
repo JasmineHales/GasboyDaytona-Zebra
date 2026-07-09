@@ -1,10 +1,7 @@
 import { useEffect, useState } from 'react'
 import type { StallPhase } from '../../types/flow'
-import { ProgressIndicator } from '../ui/ProgressIndicator'
 import { TextField, textFieldKeySubmit } from '../ui/TextField'
 import { useI18n } from '../../i18n/I18nProvider'
-import { getStallProgress } from '../../utils/progress'
-import { trackProps } from '../../utils/tracking'
 import { StallIssueReportedNotice } from './StallIssueReportedNotice'
 import { StallOccupiedNotice } from './StallOccupiedNotice'
 
@@ -74,12 +71,9 @@ export function StallContent({
   const issueReported = phase === 'stall-issue-reported'
   const { messages } = useI18n()
   const movementCopy = messages.movement
-  const progress = getStallProgress(phase, messages.progress)
 
   return (
     <div className="workflow-stack">
-      <ProgressIndicator {...progress} />
-
       <div className="workflow-stack">
         {isDefault ? (
           <>
@@ -89,23 +83,15 @@ export function StallContent({
               aria-label={movementCopy.stallNumberAria}
               inputMode="numeric"
               onChange={setStallDraft}
+              onBlur={submitStallDraft}
               onKeyDown={(event) => textFieldKeySubmit(event, onStallSelect)}
             />
-            <button
-              type="button"
-              onClick={submitStallDraft}
-              disabled={!stallDraft.trim()}
-              className="fleet-btn fleet-btn-lg fleet-btn-contained-info fleet-btn-elevated w-full"
-              {...trackProps('stall.number.confirm')}
-            >
-              {movementCopy.confirmStall}
-            </button>
           </>
         ) : (
           <TextField
-            label={movementCopy.stallNo}
             value={stallNumber}
             readOnly
+            aria-label={movementCopy.stallNumberAria}
             onClear={() => {
               handleStallClear()
             }}

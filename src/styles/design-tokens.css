@@ -1,0 +1,312 @@
+/*
+ * Hertz Maintenance Enterprise — field-work design tokens
+ * Semantic tokens (--ds-*) with legacy fleet/hertz mappings for backward compatibility.
+ */
+
+:root {
+  color-scheme: light;
+
+  /* ── Color: surfaces & text (light) ── */
+  --ds-color-bg-app: #ffffff;
+  --ds-color-bg-surface: #ffffff;
+  --ds-color-bg-elevated: #ffffff;
+  --ds-color-text-primary: #101010;
+  --ds-color-text-secondary: #4b5563;
+  --ds-color-border: #d9dee7;
+  --ds-color-divider: #e5e7eb;
+  --ds-color-accent: #ffd100;
+  --ds-color-accent-pressed: #e5bc00;
+  --ds-color-accent-surface: #fffbeb;
+  --ds-color-accent-text: #101010;
+  --ds-color-header-bg: #101010;
+
+  /* Brand hero bar (login) — always dark bg + light text in every theme */
+  --ds-color-brand-hero-bg: var(--ds-color-header-bg);
+  --ds-color-brand-hero-text: #ffffff;
+  --ds-color-brand-hero-text-muted: rgba(255, 255, 255, 0.82);
+
+  /* ── Semantic colors ── */
+  --ds-color-success: #22c55e;
+  --ds-color-success-surface: #ecfdf5;
+  --ds-color-remote-scan: #15803d;
+  --ds-color-remote-scan-pressed: #14532d;
+  --ds-color-warning: #f59e0b;
+  --ds-color-warning-surface: #fffbeb;
+  --ds-color-error: #dc2626;
+  --ds-color-error-surface: #fef2f2;
+  --ds-color-info: #3b82f6;
+  --ds-color-info-surface: #eff6ff;
+  --ds-color-disabled: #9ca3af;
+  --ds-color-disabled-bg: #e5e7eb;
+  --ds-color-disabled-border: #d1d5db;
+
+  /* ── Spacing (8dp grid) ── */
+  --ds-spacing-1: 4px;
+  --ds-spacing-2: 8px;
+  --ds-spacing-3: 12px;
+  --ds-spacing-4: 16px;
+  --ds-spacing-6: 24px;
+  --ds-spacing-8: 32px;
+  --ds-spacing-12: 48px;
+  --ds-spacing-16: 64px;
+
+  /* ── Typography (24 / 20 / 18 / 16 / 14sp only) ── */
+  --ds-type-24: 1.5rem;
+  --ds-type-20: 1.25rem;
+  --ds-type-18: 1.125rem;
+  --ds-type-16: 1rem;
+  --ds-type-14: 0.875rem;
+
+  --ds-font-family: Inter, "Segoe UI", "IBM Plex Sans", system-ui, sans-serif;
+  --ds-font-page-title-size: var(--ds-type-20);
+  --ds-font-page-title-line: 1.5rem;
+  --ds-font-page-title-weight: 700;
+  --ds-font-section-title-size: var(--ds-type-18);
+  --ds-font-section-title-line: 1.375rem;
+  --ds-font-section-title-weight: 600;
+  --ds-font-card-title-size: var(--ds-type-20);
+  --ds-font-card-title-line: 1.5rem;
+  --ds-font-card-title-weight: 600;
+  --ds-font-body-lg-size: var(--ds-type-18);
+  --ds-font-body-lg-line: 1.375rem;
+  --ds-font-body-lg-weight: 400;
+  --ds-font-body-size: var(--ds-type-16);
+  --ds-font-body-line: 1.25rem;
+  --ds-font-body-weight: 400;
+  --ds-font-label-size: var(--ds-type-14);
+  --ds-font-label-line: 1.125rem;
+  --ds-font-label-weight: 500;
+  --ds-font-caption-size: var(--ds-type-14);
+  --ds-font-caption-line: 1.125rem;
+  --ds-font-caption-weight: 400;
+
+  /* Workflow field screens — EM45 enterprise scale */
+  --ds-font-workflow-page-title-size: var(--ds-type-20);
+  --ds-font-workflow-page-title-weight: 700;
+  --ds-font-workflow-subtitle-size: var(--ds-type-16);
+  --ds-font-workflow-subtitle-weight: 500;
+  --ds-font-workflow-section-title-size: var(--ds-type-18);
+  --ds-font-workflow-section-title-weight: 600;
+  --ds-font-workflow-vehicle-reg-size: var(--ds-type-24);
+  --ds-font-workflow-vehicle-reg-weight: 700;
+  --ds-font-workflow-vehicle-detail-size: var(--ds-type-16);
+  --ds-font-workflow-vehicle-detail-weight: 500;
+  --ds-font-workflow-label-size: var(--ds-type-16);
+  --ds-font-workflow-label-weight: 500;
+  --ds-font-workflow-field-size: var(--ds-type-18);
+  --ds-font-workflow-field-weight: 600;
+  --ds-font-workflow-field-placeholder-weight: 500;
+  --ds-font-workflow-input-value-size: var(--ds-font-workflow-field-size);
+  --ds-font-workflow-input-value-weight: var(--ds-font-workflow-field-weight);
+  --ds-font-workflow-button-text-size: var(--ds-type-18);
+  --ds-font-workflow-button-text-weight: 600;
+  --ds-font-workflow-chip-size: var(--ds-type-14);
+  --ds-font-workflow-chip-weight: 500;
+  --ds-font-workflow-helper-size: var(--ds-type-14);
+  --ds-font-workflow-helper-weight: 400;
+  --ds-font-workflow-timer-size: var(--ds-type-20);
+  --ds-font-workflow-timer-weight: 700;
+
+  /* ── Touch & layout (Zebra EM45) ── */
+  --ds-touch-min: 48px;
+  --ds-touch-accordion: 56px;
+  --ds-touch-segmented: 56px;
+  --ds-touch-standard: 60px;
+  --ds-touch-primary: 64px;
+  --ds-touch-preferred: var(--ds-touch-standard);
+  --ds-touch-critical: var(--ds-touch-primary);
+  --ds-touch-gap: 8px;
+  --ds-touch-nav-height: 64px;
+  --ds-touch-input-min: 56px;
+  --ds-touch-row-min: 64px;
+  --ds-touch-row-max: 72px;
+  --ds-touch-scan-cta: 80px;
+  --ds-touch-menu: 48px;
+
+  /* ── Radius ── */
+  --ds-radius-card: 12px;
+  --ds-radius-button: 10px;
+  --ds-radius-button-lg: 12px;
+  --ds-radius-input: 10px;
+  --ds-radius-pill: 999px;
+
+  /* ── Focus ── */
+  --ds-focus-ring-width: 3px;
+  --ds-focus-ring-offset: 2px;
+  --ds-focus-ring-color: var(--ds-color-info);
+
+  /* ── Highlight & subtle surfaces (theme-aware mixes) ── */
+  --ds-color-highlight-bg: color-mix(in srgb, var(--ds-color-accent) 12%, var(--ds-color-bg-surface));
+  --ds-color-highlight-bg-strong: color-mix(in srgb, var(--ds-color-accent) 14%, var(--ds-color-bg-app));
+  --ds-color-surface-subtle: color-mix(in srgb, var(--ds-color-text-primary) 5%, var(--ds-color-bg-app));
+  --ds-color-row-hover: color-mix(in srgb, var(--ds-color-text-primary) 6%, var(--ds-color-bg-surface));
+  --ds-color-tint-current: color-mix(in srgb, currentColor 6%, var(--ds-color-bg-surface));
+
+  /* ── Legacy Hertz tokens → design system ── */
+  --color-hertz-yellow: var(--ds-color-accent);
+  --color-hertz-yellow-pressed: var(--ds-color-accent-pressed);
+  --color-hertz-yellow-surface: var(--ds-color-accent-surface);
+  --color-hertz-black: var(--ds-color-text-primary);
+  --color-hertz-gray-900: var(--ds-color-text-primary);
+  --color-hertz-gray-600: var(--ds-color-text-secondary);
+  --color-hertz-gray-400: var(--ds-color-disabled);
+  --color-hertz-gray-200: var(--ds-color-divider);
+  --color-hertz-gray-100: var(--ds-color-bg-app);
+  --color-hertz-page: var(--ds-color-bg-app);
+
+  /* ── Legacy Fleet tokens → design system ── */
+  --color-fleet-brand: var(--ds-color-accent);
+  --color-fleet-info: var(--ds-color-text-primary);
+  --color-fleet-info-100: var(--ds-color-bg-app);
+  --color-fleet-secondary: var(--ds-color-text-primary);
+  --color-fleet-secondary-light: var(--ds-color-bg-app);
+  --color-fleet-secondary-border: var(--ds-color-border);
+  --color-fleet-success: var(--ds-color-success);
+  --color-fleet-positive-100: var(--ds-color-success-surface);
+  --color-fleet-positive-500: var(--ds-color-success);
+  --color-fleet-error: var(--ds-color-error);
+  --color-fleet-error-500: var(--ds-color-error);
+  --color-fleet-warning: var(--ds-color-warning);
+  --color-fleet-warning-100: var(--ds-color-warning-surface);
+  --color-fleet-primary-500: var(--ds-color-info);
+  --color-fleet-primary-600: #2563eb;
+  --color-fleet-primary-200: #bfdbfe;
+
+  --color-fleet-text: var(--ds-color-text-primary);
+  --color-fleet-text-secondary: var(--ds-color-text-secondary);
+  --color-fleet-text-blue: var(--ds-color-text-primary);
+  --color-fleet-text-blue-secondary: var(--ds-color-text-secondary);
+  --color-fleet-text-green: #15803d;
+  --color-fleet-text-red: var(--ds-color-error);
+  --color-fleet-text-red-secondary: #b91c1c;
+  --color-fleet-text-orange: #c2410c;
+  --color-fleet-text-white: #ffffff;
+
+  --color-fleet-surface: var(--ds-color-bg-surface);
+  --color-fleet-surface-muted: var(--ds-color-bg-app);
+  --color-fleet-alert-error-bg: var(--ds-color-error-surface);
+  --color-fleet-alert-error-border: #fca5a5;
+  --color-fleet-info-surface: var(--ds-color-info-surface);
+  --color-fleet-info-ring: color-mix(in srgb, var(--ds-color-accent) 35%, white);
+  --color-fleet-warning-surface: var(--ds-color-warning-surface);
+  --color-fleet-positive-surface: var(--ds-color-success-surface);
+  --color-fleet-remote-scan: var(--ds-color-remote-scan);
+  --color-fleet-remote-scan-pressed: var(--ds-color-remote-scan-pressed);
+
+  --color-fleet-disabled-bg: var(--ds-color-disabled-bg);
+  --color-fleet-disabled-text: var(--ds-color-text-secondary);
+  --color-fleet-disabled-border: var(--ds-color-disabled-border);
+
+  --color-brand-primary: var(--ds-color-text-primary);
+  --color-brand-primary-dark: var(--ds-color-text-primary);
+  --color-brand-info-border: var(--ds-color-border);
+  --color-brand-secondary: var(--ds-color-text-secondary);
+  --color-brand-success: var(--ds-color-success);
+  --color-brand-warning: var(--ds-color-warning);
+  --color-brand-error: var(--ds-color-error);
+  --color-brand-error-bg: var(--ds-color-error-surface);
+  --color-brand-error-border: #fca5a5;
+  --color-text-primary: var(--ds-color-text-primary);
+  --color-text-secondary: var(--ds-color-text-secondary);
+  --color-text-muted: var(--ds-color-text-secondary);
+  --color-text-success: #15803d;
+  --color-surface: var(--ds-color-bg-surface);
+  --color-surface-muted: var(--ds-color-bg-app);
+  --color-border: var(--ds-color-border);
+  --color-border-light: var(--ds-color-divider);
+  --color-fleet-surface-subtle: var(--ds-color-surface-subtle);
+  --color-chip-complete-bg: var(--ds-color-success-surface);
+  --color-chip-neutral-bg: var(--ds-color-bg-app);
+  --color-chip-info-bg: var(--ds-color-info-surface);
+  --color-chip-warning-bg: var(--ds-color-warning-surface);
+  --color-status-bar: var(--ds-color-header-bg);
+}
+
+[data-theme="dark"] {
+  color-scheme: dark;
+
+  --ds-color-bg-app: #0b0f14;
+  --ds-color-bg-surface: #111820;
+  --ds-color-bg-elevated: #17212b;
+  --ds-color-text-primary: #f8fafc;
+  --ds-color-text-secondary: #94a3b8;
+  --ds-color-border: #334155;
+  --ds-color-divider: #1e293b;
+  --ds-color-accent-surface: #2b2508;
+  --ds-color-header-bg: #0b0f14;
+
+  --ds-color-brand-hero-bg: var(--ds-color-header-bg);
+  --ds-color-brand-hero-text: #f8fafc;
+  --ds-color-brand-hero-text-muted: rgba(248, 250, 252, 0.82);
+
+  --ds-color-success-surface: #052e16;
+  --ds-color-warning-surface: #2a2010;
+  --ds-color-error-surface: #3f1215;
+  --ds-color-info-surface: #172554;
+  --ds-color-disabled-bg: #1f2937;
+  --ds-color-disabled-border: #475569;
+
+  --ds-focus-ring-color: #ffd100;
+
+  --ds-color-highlight-bg: color-mix(in srgb, var(--ds-color-accent) 18%, var(--ds-color-bg-surface));
+  --ds-color-highlight-bg-strong: color-mix(in srgb, var(--ds-color-accent) 12%, var(--ds-color-bg-elevated));
+  --ds-color-surface-subtle: color-mix(in srgb, var(--ds-color-text-primary) 8%, var(--ds-color-bg-elevated));
+  --ds-color-row-hover: color-mix(in srgb, var(--ds-color-text-primary) 8%, var(--ds-color-bg-elevated));
+  --ds-color-tint-current: color-mix(in srgb, currentColor 10%, var(--ds-color-bg-elevated));
+
+  --color-fleet-info: #93c5fd;
+  --color-fleet-text-blue: #93c5fd;
+  --color-fleet-text-blue-secondary: #bfdbfe;
+  --color-fleet-primary-600: #60a5fa;
+  --color-fleet-primary-200: #1e3a8a;
+  --color-fleet-secondary-light: var(--ds-color-bg-elevated);
+  --color-fleet-surface-muted: #1a2332;
+  --color-surface-muted: #1a2332;
+  --color-fleet-info-100: #1a2332;
+  --color-fleet-info-ring: #4a4000;
+  --color-fleet-disabled-text: #94a3b8;
+  --color-chip-neutral-bg: #1a2332;
+  --color-chip-info-bg: #172554;
+  --color-chip-warning-bg: #2a2010;
+  --color-chip-complete-bg: #052e16;
+
+  --color-fleet-text-green: #6ee7b7;
+  --color-fleet-text-red: #fca5a5;
+  --color-fleet-text-red-secondary: #f87171;
+  --color-fleet-text-orange: #fdba74;
+  --color-text-success: #6ee7b7;
+}
+
+/* ── Field mode: glove-friendly bump without breaking EM45 scale ── */
+[data-field-mode="true"] {
+  --ds-font-body-size: var(--ds-type-18);
+  --ds-font-body-line: 1.375rem;
+  --ds-font-label-size: var(--ds-type-16);
+  --ds-font-label-line: 1.25rem;
+  --ds-touch-accordion: 56px;
+  --ds-touch-segmented: 56px;
+  --ds-touch-standard: 60px;
+  --ds-touch-primary: 64px;
+  --ds-touch-input-min: 56px;
+  --ds-touch-row-min: 72px;
+  --ds-touch-row-max: 80px;
+  --ds-touch-scan-cta: 88px;
+  --ds-touch-nav-height: 72px;
+  --ds-touch-menu: 48px;
+
+  --text-ui-md: var(--ds-font-body-size);
+  --text-ui-sm: var(--ds-font-label-size);
+  --text-ui-lg: var(--ds-font-body-lg-size);
+  --touch-target: var(--ds-touch-standard);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

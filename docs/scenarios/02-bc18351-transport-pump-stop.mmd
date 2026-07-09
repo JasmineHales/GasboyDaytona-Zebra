@@ -1,0 +1,24 @@
+flowchart TD
+  H[home-work] --> VS[vehicle-search]
+  VS --> TD[transport-default]
+  TD --> OV[odometer-verified]
+  OV --> ML[movement-transport-select-location]
+  ML --> MS[movement-transport-location-selected]
+  MS --> MC[movement-transport-complete]
+  MC --> MA[Movement section Complete]
+
+  MA --> FD[fueling-default]
+  FD --> FU[fueling-unlocking]
+  FU --> IP[fueling-in-progress]
+  IP --> FC1[fueling-complete<br/>pump stop 12s · 3 gal]
+
+  FC1 --> RI[fueling-issue]
+  RI --> RID[fueling-issue-details]
+  RID --> FA[fueling-additional]
+  FA --> FU2[fueling-unlocking]
+  FU2 --> IP2[fueling-in-progress]
+  IP2 --> FC2[fueling-additional-complete]
+
+  FC2 --> FA2[Fuel section Complete]
+  FA2 --> FIN[Footer Complete]
+  FIN --> H2[home-work]

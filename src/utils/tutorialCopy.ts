@@ -5,6 +5,22 @@ export function getHomeTutorialSteps(m: Messages['tutorials']['home']): Tutorial
   return [
     { id: 'welcome', title: m.welcome.title, body: m.welcome.body, placement: 'center' },
     {
+      id: 'location',
+      title: m.location.title,
+      body: m.location.body,
+      target: '[data-tutorial="header-location"]',
+      placement: 'bottom',
+    },
+    {
+      id: 'location-search',
+      title: m.locationSearch.title,
+      body: m.locationSearch.body,
+      target: '[data-tutorial="location-search"]',
+      openLocationPicker: true,
+      placement: 'bottom',
+      mobileCard: 'sheet',
+    },
+    {
       id: 'header-menu',
       title: m.headerMenu.title,
       body: m.headerMenu.body,
@@ -32,7 +48,8 @@ export function getHomeTutorialSteps(m: Messages['tutorials']['home']): Tutorial
       title: m.workflows.title,
       body: m.workflows.body,
       target: '[data-tutorial="workflows"]',
-      placement: 'top',
+      placement: 'bottom',
+      mobileCard: 'sheet',
     },
     { id: 'done', title: m.done.title, body: m.done.body, placement: 'center' },
   ]

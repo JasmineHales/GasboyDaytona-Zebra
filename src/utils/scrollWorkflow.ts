@@ -37,6 +37,13 @@ function scrollElementToCenter(mainEl: HTMLElement, element: HTMLElement) {
   scrollMainTo(mainEl, centeredScrollTop - SCROLL_PADDING_PX / 2)
 }
 
+export function scrollElementIntoWorkflowView(
+  mainEl: HTMLElement,
+  element: HTMLElement,
+) {
+  scrollElementToCenter(mainEl, element)
+}
+
 export function applyWorkflowScroll(
   mainEl: HTMLElement,
   { expandedSection, expandedSectionEl }: ScrollWorkflowOptions,

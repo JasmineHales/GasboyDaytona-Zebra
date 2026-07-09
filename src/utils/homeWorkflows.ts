@@ -6,6 +6,7 @@ export type HomeWorkflowVariant =
   | 'dispatcher'
   | 'inspection'
   | 'keys'
+  | 'non-driving-activity'
   | 'default'
 
 export type HomeWorkflowId =
@@ -16,6 +17,7 @@ export type HomeWorkflowId =
   | 'dispatcher'
   | 'inspection'
   | 'keys'
+  | 'non-driving-activity'
 
 export type HomeWorkflowGroupId = 'turnaround'
 
@@ -40,21 +42,21 @@ export const HOME_WORKFLOW_ITEMS: HomeWorkflowItem[] = [
   {
     id: 'vsa',
     title: 'VSA',
-    description: 'Vehicle service & cleaning',
+    description: 'Clean vehicle\nOptional fuel & stall',
     variant: 'vsa',
     group: 'turnaround',
   },
   {
     id: 'transport',
-    title: 'Transport',
-    description: 'Move vehicle to destination',
+    title: 'Transporter',
+    description: 'Move or stall vehicle\nOptional fuel',
     variant: 'transport',
     group: 'turnaround',
   },
   {
     id: 'fuel',
-    title: 'Fuel',
-    description: 'Remote pump unlock & fueling',
+    title: 'Fuel Only',
+    description: 'Fuel only transaction',
     variant: 'fuel',
     group: 'turnaround',
   },
@@ -87,6 +89,14 @@ export const HOME_WORKFLOW_ITEMS: HomeWorkflowItem[] = [
     title: 'Keys',
     description: 'Key handoff & return',
     variant: 'keys',
+    group: 'turnaround',
+    comingSoon: true,
+  },
+  {
+    id: 'non-driving-activity',
+    title: 'Non-Driving Activity',
+    description: 'Track work without driving a vehicle',
+    variant: 'non-driving-activity',
     group: 'turnaround',
     comingSoon: true,
   },

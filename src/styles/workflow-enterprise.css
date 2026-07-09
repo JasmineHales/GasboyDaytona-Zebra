@@ -1,0 +1,222 @@
+/* Enterprise field-ops — EM45 workflow density & hierarchy */
+
+.app-workflow-main:not(.home-workflow-main) {
+  background: var(--ds-color-bg-app);
+}
+
+.app-workflow-main:not(.home-workflow-main).app-scroll {
+  padding-block: var(--ds-spacing-2, 8px);
+}
+
+.app-workflow-footer__hint--blocked {
+  text-align: left;
+  font-weight: 600;
+  color: var(--color-fleet-text-red);
+}
+
+.fleet-btn-complete {
+  height: var(--ds-touch-primary, 4rem);
+  min-height: var(--ds-touch-primary, 4rem);
+  max-height: var(--ds-touch-primary, 4rem);
+  font-size: var(--ds-font-workflow-button-text-size);
+  font-weight: var(--ds-font-workflow-button-text-weight);
+  box-shadow: none;
+}
+
+.fleet-btn-complete.fleet-btn--aria-disabled {
+  background: #f3f4f6;
+  border-color: #e5e7eb;
+  color: #6b7280;
+}
+
+/* ── Workflow typography ── */
+
+.app-surface:has(> main.app-workflow-main:not(.home-workflow-main)) .hertz-header__title {
+  font-size: var(--ds-font-workflow-page-title-size);
+  font-weight: var(--ds-font-workflow-page-title-weight);
+}
+
+.app-surface:has(> main.app-workflow-main:not(.home-workflow-main)) .hertz-header__subtitle {
+  font-size: var(--ds-font-workflow-subtitle-size);
+  font-weight: var(--ds-font-workflow-subtitle-weight);
+}
+
+.app-surface:has(> main.app-workflow-main:not(.home-workflow-main)) .session-timer__value {
+  font-size: var(--ds-font-workflow-timer-size);
+  font-weight: var(--ds-font-workflow-timer-weight);
+}
+
+.app-workflow-main:not(.home-workflow-main) .fleet-accordion-header__title {
+  font-size: var(--ds-font-workflow-section-title-size);
+  font-weight: var(--ds-font-workflow-section-title-weight);
+}
+
+.app-workflow-main:not(.home-workflow-main) .workflow-vehicle-card__title {
+  font-size: var(--ds-font-workflow-vehicle-reg-size);
+  font-weight: var(--ds-font-workflow-vehicle-reg-weight);
+}
+
+.app-workflow-main:not(.home-workflow-main) .workflow-vehicle-card__subtitle {
+  font-size: var(--ds-font-workflow-vehicle-detail-size);
+  font-weight: var(--ds-font-workflow-vehicle-detail-weight);
+}
+
+.app-workflow-main:not(.home-workflow-main) .workflow-odometer-card__title,
+.app-workflow-main:not(.home-workflow-main) .fleet-field__label,
+.app-workflow-main:not(.home-workflow-main) .fuel-unlock-mode__label,
+.app-workflow-main:not(.home-workflow-main) .vehicle-card__odometer-label,
+.app-workflow-main:not(.home-workflow-main) .vehicle-card__odometer-compact-label {
+  font-size: var(--ds-font-workflow-label-size);
+  font-weight: var(--ds-font-workflow-label-weight);
+}
+
+.app-workflow-main:not(.home-workflow-main) .fleet-field__input,
+.app-workflow-main:not(.home-workflow-main) .fleet-field__value,
+.app-workflow-main:not(.home-workflow-main) .fleet-field__placeholder,
+.app-workflow-main:not(.home-workflow-main) .vehicle-card__odometer-input,
+.app-workflow-main:not(.home-workflow-main) .vehicle-card__odometer-compact-value,
+.app-workflow-main:not(.home-workflow-main) .vehicle-card__odometer-suffix {
+  font-size: var(--ds-font-workflow-field-size);
+}
+
+.app-workflow-main:not(.home-workflow-main) .fleet-field__input,
+.app-workflow-main:not(.home-workflow-main) .fleet-field__value,
+.app-workflow-main:not(.home-workflow-main) .vehicle-card__odometer-input,
+.app-workflow-main:not(.home-workflow-main) .vehicle-card__odometer-compact-value {
+  font-weight: var(--ds-font-workflow-field-weight);
+}
+
+.app-workflow-main:not(.home-workflow-main) .fleet-field__placeholder,
+.app-workflow-main:not(.home-workflow-main) .fleet-field__input::placeholder,
+.app-workflow-main:not(.home-workflow-main) .vehicle-card__odometer-input::placeholder {
+  font-weight: var(--ds-font-workflow-field-placeholder-weight);
+}
+
+.app-surface:has(> main.app-workflow-main:not(.home-workflow-main)) .fleet-btn {
+  font-size: var(--ds-font-workflow-button-text-size);
+  font-weight: var(--ds-font-workflow-button-text-weight);
+}
+
+.app-workflow-main:not(.home-workflow-main) .fleet-status-chip--inline {
+  font-size: var(--ds-font-workflow-chip-size);
+  font-weight: var(--ds-font-workflow-chip-weight);
+}
+
+.app-workflow-main:not(.home-workflow-main) .fleet-accordion-header__hint,
+.app-workflow-main:not(.home-workflow-main) .fleet-field__hint,
+.app-workflow-main:not(.home-workflow-main) .fleet-field__error,
+.app-workflow-main:not(.home-workflow-main) .pump-verify-card__subtitle,
+.app-workflow-main:not(.home-workflow-main) .pump-verify-scan-graphic__hint,
+.app-workflow-main:not(.home-workflow-main) .vehicle-card__odometer-error,
+.app-surface:has(> main.app-workflow-main:not(.home-workflow-main)) .app-workflow-footer__hint:not(.app-workflow-footer__hint--blocked) {
+  font-size: var(--ds-font-workflow-helper-size);
+  font-weight: var(--ds-font-workflow-helper-weight);
+}
+
+.app-workflow-main:not(.home-workflow-main) .pump-verify-scan-graphic__label {
+  font-size: var(--ds-font-workflow-button-text-size);
+  font-weight: var(--ds-font-workflow-button-text-weight);
+}
+
+.app-workflow-main:not(.home-workflow-main) .pump-verify-scan-graphic--with-hint .pump-verify-scan-graphic__label {
+  font-size: var(--ds-type-20, 1.25rem);
+}
+
+.app-workflow-main:not(.home-workflow-main) .fleet-mode-tab,
+.app-workflow-main:not(.home-workflow-main) .fleet-mode-tab span {
+  font-size: var(--ds-font-workflow-label-size);
+  font-weight: var(--ds-font-workflow-label-weight);
+}
+
+/* ── Workflow density & layout ── */
+
+.app-workflow-main:not(.home-workflow-main) .workflow-stack {
+  gap: var(--ds-spacing-2, 8px);
+}
+
+.app-workflow-main:not(.home-workflow-main) .fleet-accordion-group {
+  border-color: var(--ds-color-divider);
+  border-radius: var(--ds-radius-input, 10px);
+}
+
+.app-workflow-main:not(.home-workflow-main) .fleet-accordion-header {
+  gap: var(--ds-spacing-2, 8px);
+  max-height: var(--ds-touch-accordion, 3.5rem);
+  padding-inline: var(--ds-spacing-3, 12px);
+}
+
+.app-workflow-main:not(.home-workflow-main) .fleet-accordion-header--awaiting {
+  background: var(--ds-color-highlight-bg);
+}
+
+.app-workflow-main:not(.home-workflow-main) .fleet-accordion-header--awaiting .fleet-accordion-header__title {
+  font-weight: 700;
+}
+
+.app-workflow-main:not(.home-workflow-main) .fleet-accordion-body {
+  padding: var(--ds-spacing-2, 8px) var(--ds-spacing-3, 12px) var(--ds-spacing-3, 12px);
+}
+
+.app-workflow-main:not(.home-workflow-main) .fleet-field__label {
+  margin-bottom: var(--ds-spacing-2, 8px);
+}
+
+.app-workflow-main:not(.home-workflow-main) .fleet-field__hint {
+  margin-top: var(--ds-spacing-1, 4px);
+}
+
+/* Single workflow timer — hide per-section accordion timers */
+.app-surface:has(> main.app-workflow-main:not(.home-workflow-main)) .fleet-accordion-header__timer {
+  display: none;
+}
+
+/* Optional sections: quiet grey text, not bordered pills */
+.app-workflow-main:not(.home-workflow-main) .fleet-status-chip--inline.fleet-status-chip--optional {
+  border: 0;
+  background: transparent;
+  padding: 0;
+  color: var(--color-fleet-text-secondary);
+  font-weight: 500;
+}
+
+/* Required: subtle text indicator */
+.app-workflow-main:not(.home-workflow-main) .fleet-status-chip--inline.fleet-status-chip--required,
+.app-workflow-main:not(.home-workflow-main) .vehicle-card__odometer-required-chip {
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  padding: 0;
+  color: var(--color-fleet-text-red-secondary);
+  font-size: var(--ds-font-workflow-chip-size);
+  font-weight: 500;
+  letter-spacing: normal;
+  text-transform: none;
+}
+
+.app-workflow-main:not(.home-workflow-main) .vehicle-card {
+  border-color: var(--ds-color-divider);
+  box-shadow: none;
+}
+
+.app-workflow-main:not(.home-workflow-main) .vehicle-card__odometer {
+  padding: var(--ds-spacing-2, 8px) var(--ds-spacing-3, 12px);
+}
+
+.app-workflow-main:not(.home-workflow-main) .vehicle-card__report,
+.app-workflow-main:not(.home-workflow-main) .workflow-vehicle-stack__report {
+  font-size: var(--ds-type-14);
+  font-weight: 600;
+}
+
+@container app (max-width: 399px) {
+  .app-workflow-main:not(.home-workflow-main) .fleet-accordion-header__title {
+    font-size: var(--ds-font-workflow-section-title-size);
+    font-weight: var(--ds-font-workflow-section-title-weight);
+  }
+
+  .app-workflow-main:not(.home-workflow-main) .fleet-mode-tab,
+  .app-workflow-main:not(.home-workflow-main) .fleet-mode-tab span {
+    font-size: var(--ds-font-workflow-label-size);
+    font-weight: var(--ds-font-workflow-label-weight);
+  }
+}

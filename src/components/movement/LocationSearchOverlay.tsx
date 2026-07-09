@@ -1,5 +1,6 @@
 import { ChevronLeft, Search } from 'lucide-react'
 import { useId, useMemo, useState } from 'react'
+import { useI18n } from '../../i18n/I18nProvider'
 import { FullScreenOverlay } from '../ui/FullScreenOverlay'
 import { StatusBar } from '../ui/StatusBar'
 import { TextField } from '../ui/TextField'
@@ -29,7 +30,7 @@ type LocationSearchOverlayProps = {
 
 type ListView =
   | { kind: 'recent'; locations: string[] }
-  | { kind: 'browse'; locations: string[] }
+  | { kind: 'idle' }
   | { kind: 'search'; locations: string[] }
   | { kind: 'no-results'; query: string }
 
@@ -47,7 +48,7 @@ function LocationResultsList({
           <button
             type="button"
             onClick={() => onSelect(location)}
-            className="field-target flex w-full items-center border-b border-[var(--color-border-light)] px-4 text-left hover:bg-[var(--color-surface-muted)]"
+            className="field-target flex w-full items-center border-b border-[var(--color-border-light)] px-4 text-left active:bg-[var(--color-surface-muted)]"
             {...trackProps('movement.location.select', {
               location: slugifyTrackValue(location),
             })}
@@ -69,6 +70,9 @@ export function LocationSearchOverlay({
 }: LocationSearchOverlayProps) {
   const titleId = useId()
   const [query, setQuery] = useState('')
+  const { messages, t } = useI18n()
+  const locationCopy = messages.home.location
+  const searchCopy = messages.movement.locationSearch
 
   const listView = useMemo((): ListView => {
     const trimmed = query.trim().toLowerCase()
@@ -78,7 +82,7 @@ export function LocationSearchOverlay({
       if (recent.length > 0) {
         return { kind: 'recent', locations: recent }
       }
-      return { kind: 'browse', locations: [...LOCATIONS].sort((a, b) => a.localeCompare(b)) }
+      return { kind: 'idle' }
     }
 
     const matches = LOCATIONS.filter((location) =>
@@ -105,14 +109,14 @@ export function LocationSearchOverlay({
         <button
           type="button"
           onClick={onClose}
-          className="field-target flex shrink-0 items-center justify-center rounded-full"
-          aria-label="Close search"
+          className="field-target flex shrink-0 items-center justify-center rounded"
+          aria-label={searchCopy.closeSearch}
           {...trackProps('movement.location.search-close')}
         >
           <ChevronLeft className="h-6 w-6" />
         </button>
         <h2 id={titleId} className="text-base font-semibold">
-          Select Location
+          {locationCopy.selectLabel}
         </h2>
       </div>
 
@@ -120,7 +124,7 @@ export function LocationSearchOverlay({
         <TextField
           value={query}
           onChange={setQuery}
-          placeholder="Search locations..."
+          placeholder={locationCopy.searchPlaceholder}
           startIcon={Search}
           onClear={() => setQuery('')}
           clearTrackTag="movement.location.search-clear"
@@ -133,25 +137,24 @@ export function LocationSearchOverlay({
       <div className="flex-1 overflow-y-auto px-4 pb-4">
         {listView.kind === 'no-results' && (
           <div className="location-search-empty">
-            <p className="location-search-empty__title">No locations found</p>
+            <p className="location-search-empty__title">{locationCopy.noResultsTitle}</p>
             <p className="location-search-empty__hint">
-              No matches for &ldquo;{listView.query}&rdquo;. Try a different search.
+              {t('home.location.noResultsHint', { query: listView.query })}
             </p>
           </div>
         )}
 
         {listView.kind === 'recent' && (
           <>
-            <p className="location-search-section-label">Recent</p>
+            <p className="location-search-section-label">{locationCopy.recentLabel}</p>
             <LocationResultsList locations={listView.locations} onSelect={handleSelect} />
           </>
         )}
 
-        {listView.kind === 'browse' && (
-          <>
-            <p className="location-search-section-label">All locations</p>
-            <LocationResultsList locations={listView.locations} onSelect={handleSelect} />
-          </>
+        {listView.kind === 'idle' && (
+          <p className="location-search-empty__hint px-1" role="status">
+            {searchCopy.idleHint}
+          </p>
         )}
 
         {listView.kind === 'search' && (

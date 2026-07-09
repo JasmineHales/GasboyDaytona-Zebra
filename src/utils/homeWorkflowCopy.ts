@@ -21,6 +21,12 @@ const WORKFLOW_META: Array<{
   { id: 'dispatcher', variant: 'dispatcher', group: 'turnaround', comingSoon: true },
   { id: 'inspection', variant: 'inspection', group: 'turnaround', comingSoon: true },
   { id: 'keys', variant: 'keys', group: 'turnaround', comingSoon: true },
+  {
+    id: 'non-driving-activity',
+    variant: 'non-driving-activity',
+    group: 'turnaround',
+    comingSoon: true,
+  },
 ]
 
 export function buildHomeWorkflowItems(

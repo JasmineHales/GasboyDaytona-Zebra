@@ -1,25 +1,32 @@
-export type AppLanguageId = 'en' | 'es' | 'fr'
+import {
+  getAppLanguageCatalog,
+  getAppLanguageEntry,
+  isAppLanguageId,
+  type AppLanguage,
+  type AppLanguageId,
+} from './appLanguageCatalog'
 
-export type AppLanguage = {
-  id: AppLanguageId
-  label: string
-  nativeLabel: string
-}
+export type { AppLanguage, AppLanguageId }
 
 const STORAGE_KEY = 'remote-off.app-language'
 
-export const APP_LANGUAGES: AppLanguage[] = [
-  { id: 'en', label: 'English', nativeLabel: 'English' },
-  { id: 'es', label: 'Spanish', nativeLabel: 'Español' },
-  { id: 'fr', label: 'French', nativeLabel: 'Français' },
-]
+/** Locales with full in-app message translations. Others fall back to English copy. */
+export const TRANSLATED_LANGUAGE_IDS = ['en', 'es', 'fr'] as const
+export type TranslatedLanguageId = (typeof TRANSLATED_LANGUAGE_IDS)[number]
+
+export function resolveTranslatedLanguageId(language: AppLanguageId): TranslatedLanguageId {
+  if (language === 'es' || language === 'fr') return language
+  return 'en'
+}
+
+export const APP_LANGUAGES: AppLanguage[] = getAppLanguageCatalog()
 
 export function readAppLanguage(): AppLanguageId {
   if (typeof window === 'undefined') return 'en'
 
   try {
     const stored = localStorage.getItem(STORAGE_KEY)
-    if (stored === 'en' || stored === 'es' || stored === 'fr') return stored
+    if (stored && isAppLanguageId(stored)) return stored
   } catch {
     // ignore
   }
@@ -36,5 +43,5 @@ export function persistAppLanguage(language: AppLanguageId): void {
 }
 
 export function appLanguageLabel(language: AppLanguageId): string {
-  return APP_LANGUAGES.find((entry) => entry.id === language)?.label ?? 'English'
+  return getAppLanguageEntry(language)?.label ?? 'English'
 }

@@ -1,0 +1,10 @@
+flowchart TD
+  H[home-work] --> V[Tap VSA]
+  V --> VS[vehicle-search · 8LAK631]
+  VS --> HC[Hold confirm in search]
+  HC --> VSA[stall-default]
+  VSA --> OF[odometer-manual-filled]
+  OF --> CD[cleaning-default]
+  CD --> IP[cleaning-in-progress]
+  IP --> CC[cleaning-complete]
+  CC --> FIN[vsa-complete · Footer Complete]

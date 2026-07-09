@@ -11,23 +11,44 @@ import {
   type TutorialForceTarget,
 } from './utils/tutorialSteps'
 import { HomePage } from './components/HomePage'
+import { InitialSetupScreen } from './components/InitialSetupScreen'
 import { TransportScreen } from './components/TransportScreen'
 import { TrackingPage } from './components/TrackingPage'
 import { VsaScreen } from './components/VsaScreen'
 import { IssueOverlay } from './components/fuel/IssueOverlay'
+import { VehicleSearch } from './components/vehicle/VehicleSearch'
 import type { FlowContext } from './types/flow'
-import { TRANSPORT_VEHICLE, VSA_VEHICLE } from './utils/vehicleSummary'
+import type { SelectedVehicle } from './types/vehicleSearch'
+import {
+  TRANSPORT_VEHICLE,
+  VSA_VEHICLE,
+  type FuelSimulationConfig,
+  type VehicleProfile,
+} from './utils/vehicleSummary'
 import {
   clearAuth,
   MOCK_SSO_USER,
   persistAuth,
   readAuthenticated,
+  readAuthMethod,
   readSsoUser,
   type SsoUser,
 } from './utils/auth'
+import {
+  persistOperatorSite,
+  resolveOperatorSite,
+  type OperatorSiteId,
+} from './utils/operatorSites'
+import { recordRecentOperatorSite } from './utils/recentOperatorSites'
+import {
+  markInitialSetupComplete,
+  readInitialSetupComplete,
+} from './utils/initialSetup'
+import { useTranslate } from './i18n/I18nProvider'
 import { useClickTracking } from './hooks/useClickTracking'
 import { useFlow } from './hooks/useFlow'
 import { getRuntimeMode } from './utils/runtime'
+import { EM45_VIEWPORT } from './utils/devDeviceFrame'
 import {
   clearPersistedWorkflow,
   loadPersistedWorkflow,
@@ -41,12 +62,15 @@ import {
   type WidgetStateItem,
   type WorkflowView,
 } from './utils/flowNavigation'
-import type { DevDeviceFrameId } from './utils/devDeviceFrame'
 import {
-  EM45_VIEWPORT,
-  persistDevDeviceFrame,
-  readDevDeviceFrame,
-} from './utils/devDeviceFrame'
+  findVehicleCatalogEntry,
+  selectedVehicleToProfile,
+} from './utils/vehicleSearchCatalog'
+import { workflowToActivityType } from './utils/vehicleSearchActivity'
+import { isVehicleSearchDevStateId } from './utils/vehicleSearchDevStates'
+import { consumeCaptureSeed } from './utils/captureSeed'
+import { resetSessionTimer } from './components/ui/SessionTimer'
+import { isTutorialModeActive } from './utils/tutorialModeState'
 
 type LoginPreview = 'device' | 'browser' | null
 
@@ -55,6 +79,10 @@ function shouldForceLoginScreen() {
 }
 
 function initialView(force: TutorialForceTarget | null): AppView {
+  const seed = import.meta.env.DEV ? consumeCaptureSeed() : null
+  if (seed?.page === 'tracking') return 'tracking'
+  if (seed?.page === 'workflow' && seed.activeView) return seed.activeView
+  if (seed?.page === 'home') return 'home'
   if (force === 'transport') return 'transport'
   if (force === 'vsa') return 'vsa'
   if (force === 'tracking') return 'tracking'
@@ -63,7 +91,15 @@ function initialView(force: TutorialForceTarget | null): AppView {
   return 'home'
 }
 
+function initialCaptureAuth() {
+  const seed = import.meta.env.DEV ? consumeCaptureSeed() : null
+  if (seed?.page === 'login') return { authenticated: false, setup: false }
+  if (seed?.page === 'setup') return { authenticated: true, setup: true }
+  return null
+}
+
 export default function App() {
+  const t = useTranslate()
   const [runtimeMode] = useState(() => getRuntimeMode())
   const isHertzDevice = runtimeMode === 'hertz-device'
   const [tutorialForce] = useState(() => {
@@ -73,19 +109,37 @@ export default function App() {
     }
     return force
   })
+  const captureAuth = import.meta.env.DEV ? initialCaptureAuth() : null
   const [isAuthenticated, setIsAuthenticated] = useState(
-    () => !shouldForceLoginScreen() && readAuthenticated(),
+    () =>
+      captureAuth?.authenticated ??
+      (!shouldForceLoginScreen() && readAuthenticated()),
   )
   const [loginPreview, setLoginPreview] = useState<LoginPreview>(null)
   const [devExperience, setDevExperience] = useState<'device' | 'browser'>(() =>
-    isHertzDevice ? 'device' : 'browser',
-  )
-  const [deviceFrame, setDeviceFrame] = useState<DevDeviceFrameId>(() =>
-    readDevDeviceFrame(),
+    isHertzDevice || readAuthMethod() === 'device' ? 'device' : 'browser',
   )
   const [ssoUser, setSsoUser] = useState<SsoUser | null>(() => readSsoUser())
+  const [operatorSite, setOperatorSite] = useState(() =>
+    resolveOperatorSite(readSsoUser()?.site ?? MOCK_SSO_USER.site),
+  )
+  const [showInitialSetup, setShowInitialSetup] = useState(
+    () =>
+      captureAuth?.setup ??
+      (readAuthenticated() && !readInitialSetupComplete()),
+  )
   const [view, setView] = useState<AppView>(() => initialView(tutorialForce))
   const [activeWidgetKey, setActiveWidgetKey] = useState<string | null>(null)
+  const captureSeed = import.meta.env.DEV ? consumeCaptureSeed() : null
+  const [vehicleSearchWorkflow, setVehicleSearchWorkflow] = useState<WorkflowView | null>(
+    () => captureSeed?.vehicleSearch?.workflow ?? null,
+  )
+  const [vehicleSearchDevState, setVehicleSearchDevState] = useState<string | null>(
+    () => captureSeed?.vehicleSearch?.devState ?? 'vehicle-search:idle',
+  )
+  const [workflowVehicleProfile, setWorkflowVehicleProfile] = useState<VehicleProfile | null>(
+    null,
+  )
   useClickTracking()
   const {
     context,
@@ -93,6 +147,7 @@ export default function App() {
     applyWidgetState,
     patchDevContext,
     handleAction,
+    recordGallonsCapture,
     handleMovementAction,
     handleStallAction,
     handleCleaningAction,
@@ -100,6 +155,9 @@ export default function App() {
 
   const showLogin = !isAuthenticated || loginPreview != null
   const loginVariant = loginPreview ?? devExperience
+  const showAppContent = !showLogin && !showInitialSetup
+  const authMethod = readAuthMethod()
+  const useDeviceHome = isHertzDevice || authMethod === 'device'
   const workflowView: WorkflowView | null =
     !showLogin && view === 'transport'
       ? 'transport'
@@ -139,6 +197,7 @@ export default function App() {
 
   useEffect(() => {
     if (!isAuthenticated || isHertzDevice) return
+    if (readAuthMethod() === 'device') return
     if (!readSsoUser()) {
       clearAuth()
       setIsAuthenticated(false)
@@ -155,6 +214,8 @@ export default function App() {
     }
     persistAuth('browser-sso', MOCK_SSO_USER)
     setSsoUser(MOCK_SSO_USER)
+    setOperatorSite(MOCK_SSO_USER.site)
+    persistOperatorSite(MOCK_SSO_USER.site)
     setIsAuthenticated(true)
   }
 
@@ -180,6 +241,11 @@ export default function App() {
     persistAuth('device')
     setIsAuthenticated(true)
     setLoginPreview(null)
+    if (!readInitialSetupComplete()) {
+      setShowInitialSetup(true)
+      return
+    }
+    setOperatorSite(resolveOperatorSite())
   }
 
   const handleBrowserSignIn = (user: SsoUser) => {
@@ -187,6 +253,37 @@ export default function App() {
     setSsoUser(user)
     setIsAuthenticated(true)
     setLoginPreview(null)
+    if (!readInitialSetupComplete()) {
+      setShowInitialSetup(true)
+      return
+    }
+    persistOperatorSite(user.site)
+    recordRecentOperatorSite(user.site)
+    setOperatorSite(resolveOperatorSite(user.site))
+  }
+
+  const handleInitialSetupComplete = (site: OperatorSiteId) => {
+    persistOperatorSite(site)
+    recordRecentOperatorSite(site)
+    setOperatorSite(site)
+    markInitialSetupComplete()
+    setShowInitialSetup(false)
+    if (ssoUser) {
+      const updated = { ...ssoUser, site }
+      setSsoUser(updated)
+      persistAuth('browser-sso', updated)
+    }
+  }
+
+  const handleOperatorSiteChange = (site: string) => {
+    persistOperatorSite(site)
+    recordRecentOperatorSite(site)
+    setOperatorSite(site)
+    if (ssoUser) {
+      const updated = { ...ssoUser, site }
+      setSsoUser(updated)
+      persistAuth('browser-sso', updated)
+    }
   }
 
   const handleSignOut = () => {
@@ -195,11 +292,15 @@ export default function App() {
     setIsAuthenticated(false)
     setSsoUser(null)
     setLoginPreview(null)
+    setShowInitialSetup(false)
     setView('home')
     setActiveWidgetKey(null)
+    setVehicleSearchWorkflow(null)
+    setWorkflowVehicleProfile(null)
   }
 
   const enterWorkflow = (workflow: WorkflowView) => {
+    resetSessionTimer()
     if (workflow === 'transport') {
       goToScreen('transport-default')
       setActiveWidgetKey('transport:default')
@@ -213,23 +314,113 @@ export default function App() {
     setView(workflow)
   }
 
+  const requestWorkflow = (workflow: WorkflowView) => {
+    setVehicleSearchWorkflow(workflow)
+    setVehicleSearchDevState('vehicle-search:idle')
+  }
+
+  const handleVehicleSearchCancel = () => {
+    setVehicleSearchWorkflow(null)
+    setVehicleSearchDevState('vehicle-search:idle')
+  }
+
+  const fuelSimulationContextPatch = (
+    fuelSimulation?: FuelSimulationConfig,
+  ): Partial<FlowContext> => {
+    if (!fuelSimulation) {
+      return {
+        fuelSimAutoCompleteMs: undefined,
+        fuelSimPumpStatusDelayMs: undefined,
+        fuelSimGallons: undefined,
+        fuelSimPumpStopDelayMs: undefined,
+        fuelSimPumpStopGallons: undefined,
+        fuelSimUnlockOutcome: undefined,
+        fuelSimManualCompleteOnly: undefined,
+      }
+    }
+
+    return {
+      fuelSimAutoCompleteMs: fuelSimulation.autoCompleteMs,
+      fuelSimPumpStatusDelayMs: fuelSimulation.pumpStatusDelayMs ?? 4_000,
+      fuelSimGallons: fuelSimulation.gallons,
+      fuelSimPumpStopDelayMs: fuelSimulation.pumpStopDelayMs,
+      fuelSimPumpStopGallons: fuelSimulation.pumpStopGallons,
+      fuelSimUnlockOutcome: fuelSimulation.unlockOutcome,
+      fuelSimManualCompleteOnly: fuelSimulation.manualCompleteOnly,
+    }
+  }
+
+  const handleVehicleSelected = (vehicle: SelectedVehicle) => {
+    const catalogEntry =
+      findVehicleCatalogEntry((entry) => entry.vehicleId === vehicle.vehicleId) ??
+      findVehicleCatalogEntry((entry) => entry.unitNumber === vehicle.unitNumber)
+
+    const profile: VehicleProfile = catalogEntry
+      ? selectedVehicleToProfile(catalogEntry)
+      : {
+          unitId: vehicle.unitNumber,
+          name: `${vehicle.make} ${vehicle.model}`,
+          vehicleClass: '',
+          licensePlate: vehicle.licensePlate,
+          make: vehicle.make,
+          model: vehicle.model,
+          vehicleType: '—',
+          vin: vehicle.vin,
+          color: vehicle.color,
+          state: vehicle.state,
+          odometerMiles: 0,
+          mileageState: TRANSPORT_VEHICLE.mileageState,
+        }
+
+    setWorkflowVehicleProfile(profile)
+
+    const workflow = vehicleSearchWorkflow
+    setVehicleSearchWorkflow(null)
+    if (workflow) {
+      enterWorkflow(workflow)
+      patchDevContext({
+        mileageState: profile.mileageState,
+        odometerReading: '',
+        ...fuelSimulationContextPatch(profile.fuelSimulation),
+      })
+    }
+  }
+
+  const resolveWorkflowVehicleProfile = (workflow: WorkflowView): VehicleProfile => {
+    if (workflowVehicleProfile) return workflowVehicleProfile
+    if (workflow === 'vsa') return VSA_VEHICLE
+    return TRANSPORT_VEHICLE
+  }
+
   const handlePageSelect = (item: PageNavItem) => {
     if (item.view === 'login') {
       setIsAuthenticated(false)
       setLoginPreview(devExperience)
+      setShowInitialSetup(false)
       return
     }
 
     setLoginPreview(null)
     ensureDevAuth(devExperience)
 
+    if (item.view === 'setup') {
+      setShowInitialSetup(true)
+      setView('home')
+      return
+    }
+
+    setShowInitialSetup(false)
+
     if (item.view === 'transport') {
+      resetSessionTimer()
       goToScreen('transport-default')
       setActiveWidgetKey('transport:default')
     } else if (item.view === 'vsa') {
+      resetSessionTimer()
       goToScreen('stall-default')
       setActiveWidgetKey('vsa:default')
     } else if (item.view === 'fuel') {
+      resetSessionTimer()
       goToScreen('fueling-default')
       setActiveWidgetKey('fuel-remote:fueling-default')
     }
@@ -247,6 +438,8 @@ export default function App() {
   }
 
   const handleFlowAction = (action: string, payload?: string) => {
+    if (isTutorialModeActive()) return
+
     if (action === 'workflow-finish') {
       handleAction('complete', payload)
       clearPersistedWorkflow()
@@ -269,6 +462,7 @@ export default function App() {
     }
     if (action === 'back') {
       clearPersistedWorkflow()
+      setWorkflowVehicleProfile(null)
       setView('home')
       setActiveWidgetKey(null)
       return
@@ -284,12 +478,22 @@ export default function App() {
     if ('mileageState' in patch || 'odometerReading' in patch) {
       setActiveWidgetKey(null)
     }
+    if ('vsaStallEnabled' in patch) {
+      if (patch.vsaStallEnabled === false) {
+        applyWidgetState('vsa-no-stall-default')
+        setActiveWidgetKey('vsa:no-stall')
+      } else if (patch.vsaStallEnabled === true && view === 'vsa') {
+        applyWidgetState('stall-default')
+        setActiveWidgetKey('vsa:default')
+      }
+    }
     patchDevContext(patch)
   }
 
   const activePageKey = resolveActivePageKey({
     view,
     showLogin,
+    showSetup: showInitialSetup,
   })
 
   const resolvedWidgetKey =
@@ -298,26 +502,22 @@ export default function App() {
       ? resolveActiveWidgetKey(workflowView, context.screen, context)
       : null)
 
-  const handleDeviceFrameChange = (frame: DevDeviceFrameId) => {
-    setDeviceFrame(frame)
-    persistDevDeviceFrame(frame)
-  }
-
-  const isEm45Frame = deviceFrame === 'em45'
-  const appShellClassName = isEm45Frame
-    ? 'app-shell relative flex min-h-0 flex-1 flex-col overflow-hidden bg-white'
-    : 'app-shell relative flex min-h-0 flex-1 flex-col overflow-hidden bg-white sm:max-w-xl sm:rounded-xl sm:shadow-lg md:max-w-2xl md:rounded-2xl lg:max-w-3xl xl:max-w-4xl'
-
   const browserUser = ssoUser ?? readSsoUser()
+
+  const isEm45Frame =
+    import.meta.env.DEV && loginVariant === 'device' && !isHertzDevice
+  const appShellClassName = isEm45Frame
+    ? 'app-shell app-surface relative flex min-h-0 flex-1 flex-col overflow-hidden'
+    : 'app-shell app-surface relative flex min-h-0 flex-1 flex-col overflow-hidden sm:max-w-xl sm:rounded-xl sm:shadow-lg md:max-w-2xl md:rounded-2xl lg:max-w-3xl xl:max-w-4xl'
 
   return (
     <div
       className="app-viewport flex h-dvh min-h-0"
       data-runtime={runtimeMode}
-      data-device-frame={deviceFrame}
+      data-device-frame={isEm45Frame ? 'em45' : 'responsive'}
     >
-      <a href="#main-content" className="fleet-sr-only">
-        Skip to main content
+      <a href="#main-content" className="fleet-skip-link">
+        {t('common.skipToMainContent')}
       </a>
       <FlowNavigator
         activePageKey={activePageKey}
@@ -326,13 +526,15 @@ export default function App() {
         context={context}
         view={view}
         showLogin={showLogin}
+        showSetup={showInitialSetup}
         loginVariant={loginVariant}
         onSelectPage={handlePageSelect}
         onSelectWidget={handleWidgetSelect}
         onLoginVariantChange={handleExperienceChange}
-        onDeviceFrameChange={handleDeviceFrameChange}
-        deviceFrame={deviceFrame}
         onPatchContext={handlePatchContext}
+        vehicleSearchActive={Boolean(vehicleSearchWorkflow)}
+        vehicleSearchDevState={vehicleSearchDevState}
+        onVehicleSearchDevStateSelect={setVehicleSearchDevState}
       />
       <div
         className={`app-preview-column flex min-h-0 min-w-0 flex-1 flex-col bg-[var(--color-hertz-page)]${
@@ -358,11 +560,12 @@ export default function App() {
             }`}
             data-em45-preview={isEm45Frame ? '' : undefined}
           >
-          <div
-            className={appShellClassName}
-            data-current-view={showLogin ? 'login' : view}
-            data-current-screen={context.screen}
-          >
+        <div
+          className={appShellClassName}
+          data-current-view={showLogin ? 'login' : showInitialSetup ? 'setup' : view}
+          data-current-screen={context.screen}
+        >
+          <div id="app-main-shell" className="flex min-h-0 flex-1 flex-col overflow-hidden">
           {showLogin && (
             <>
               {loginVariant === 'device' ? (
@@ -372,38 +575,63 @@ export default function App() {
               )}
             </>
           )}
-          {!showLogin && view === 'home' && isHertzDevice && (
+          {!showLogin && showInitialSetup && (
+            <InitialSetupScreen
+              onComplete={handleInitialSetupComplete}
+              applyDefaults={!readInitialSetupComplete()}
+            />
+          )}
+          {showAppContent && view === 'home' && vehicleSearchWorkflow && (
+            <VehicleSearch
+              activityType={workflowToActivityType(vehicleSearchWorkflow)}
+              site={operatorSite}
+              onVehicleSelected={handleVehicleSelected}
+              onCancel={handleVehicleSearchCancel}
+              devPreviewState={
+                vehicleSearchDevState && isVehicleSearchDevStateId(vehicleSearchDevState)
+                  ? vehicleSearchDevState
+                  : null
+              }
+            />
+          )}
+          {showAppContent && view === 'home' && useDeviceHome && !vehicleSearchWorkflow && (
             <HomePage
+              site={operatorSite}
+              onSiteChange={handleOperatorSiteChange}
               forceTutorial={shouldForceTutorial(tutorialForce, 'home')}
-              onSelectVsa={() => enterWorkflow('vsa')}
-              onSelectTransport={() => enterWorkflow('transport')}
-              onSelectFuel={() => enterWorkflow('fuel')}
+              onSelectVsa={() => requestWorkflow('vsa')}
+              onSelectTransport={() => requestWorkflow('transport')}
+              onSelectFuel={() => requestWorkflow('fuel')}
               onReportIssue={() => handleAction('report-issue')}
               onSignOut={handleSignOut}
             />
           )}
-          {!showLogin && view === 'home' && !isHertzDevice && browserUser && (
+          {showAppContent && view === 'home' && !useDeviceHome && browserUser && !vehicleSearchWorkflow && (
             <BrowserHomePage
               user={browserUser}
+              site={operatorSite}
+              onSiteChange={handleOperatorSiteChange}
               forceTutorial={shouldForceTutorial(tutorialForce, 'home')}
-              onSelectVsa={() => enterWorkflow('vsa')}
-              onSelectTransport={() => enterWorkflow('transport')}
-              onSelectFuel={() => enterWorkflow('fuel')}
+              onSelectVsa={() => requestWorkflow('vsa')}
+              onSelectTransport={() => requestWorkflow('transport')}
+              onSelectFuel={() => requestWorkflow('fuel')}
               onReportIssue={() => handleAction('report-issue')}
               onSignOut={handleSignOut}
             />
           )}
-          {!showLogin && view === 'tracking' && (
+          {showAppContent && view === 'tracking' && (
             <TrackingPage
               forceTutorial={shouldForceTutorial(tutorialForce, 'tracking')}
               onBack={() => setView('home')}
             />
           )}
-          {!showLogin && view === 'vsa' && (
+          {showAppContent && view === 'vsa' && (
             <VsaScreen
               key="vsa"
               forceTutorial={shouldForceTutorial(tutorialForce, 'vsa')}
               context={context}
+              vehicleProfile={resolveWorkflowVehicleProfile('vsa')}
+              site={operatorSite}
               onAction={handleFlowAction}
               onMovementAction={handleMovementAction}
               onStallAction={handleStallAction}
@@ -411,35 +639,41 @@ export default function App() {
               onSignOut={handleSignOut}
             />
           )}
-          {!showLogin && view === 'transport' && (
+          {showAppContent && view === 'transport' && (
             <TransportScreen
               key="transport"
               forceTutorial={shouldForceTutorial(tutorialForce, 'transport')}
               sections={['movement', 'fuel']}
-              defaultExpanded={null}
+              defaultExpanded="movement"
+              vehicleProfile={resolveWorkflowVehicleProfile('transport')}
+              site={operatorSite}
               context={context}
               onAction={handleFlowAction}
+              onGallonsCaptureRecord={recordGallonsCapture}
               onMovementAction={handleMovementAction}
               onStallAction={handleStallAction}
               onCleaningAction={handleCleaningAction}
               onSignOut={handleSignOut}
             />
           )}
-          {!showLogin && view === 'fuel' && (
+          {showAppContent && view === 'fuel' && (
             <TransportScreen
               key="fuel"
               sections={['fuel']}
               defaultExpanded="fuel"
               workflowFinishId="fuel"
+              vehicleProfile={resolveWorkflowVehicleProfile('fuel')}
+              site={operatorSite}
               context={context}
               onAction={handleFlowAction}
+              onGallonsCaptureRecord={recordGallonsCapture}
               onMovementAction={handleMovementAction}
               onStallAction={handleStallAction}
               onCleaningAction={handleCleaningAction}
               onSignOut={handleSignOut}
             />
           )}
-          {!showLogin && context.showIssueOverlay && (
+          {showAppContent && context.showIssueOverlay && (
             <IssueOverlay
               defaultPumpNumber={context.pumpNumber}
               source={
@@ -448,6 +682,13 @@ export default function App() {
                   : context.issueReportSource === 'vehicle'
                     ? 'vehicle'
                     : 'header'
+              }
+              vehicleProfile={
+                view === 'vsa'
+                  ? VSA_VEHICLE
+                  : view === 'transport' || view === 'fuel'
+                    ? TRANSPORT_VEHICLE
+                    : undefined
               }
               vehicle={
                 view === 'vsa'
@@ -467,6 +708,8 @@ export default function App() {
             />
           )}
           </div>
+          <div id="app-overlay-root" className="app-overlay-root" />
+        </div>
           </div>
         </div>
       </div>

@@ -1,5 +1,12 @@
 import { AlertCircle, GraduationCap, Languages, LogOut, MoreVertical } from 'lucide-react'
-import { useEffect, useRef, useState, type ReactNode } from 'react'
+import {
+  useEffect,
+  useRef,
+  useState,
+  type KeyboardEvent,
+  type ReactNode,
+  type Ref,
+} from 'react'
 import { useTranslate } from '../../i18n/I18nProvider'
 import { trackProps } from '../../utils/tracking'
 
@@ -20,13 +27,16 @@ type MenuItemProps = {
   trackTag: string
   tutorialId?: string
   onClick: () => void
+  itemRef?: Ref<HTMLButtonElement>
 }
 
-function MenuItem({ icon, label, trackTag, tutorialId, onClick }: MenuItemProps) {
+function MenuItem({ icon, label, trackTag, tutorialId, onClick, itemRef }: MenuItemProps) {
   return (
     <button
+      ref={itemRef}
       type="button"
       role="menuitem"
+      tabIndex={-1}
       onClick={onClick}
       className="header-menu-item"
       data-tutorial={tutorialId}
@@ -53,6 +63,8 @@ export function HeaderMenu({
   const isControlled = menuOpen !== undefined
   const open = isControlled ? menuOpen : internalOpen
   const containerRef = useRef<HTMLDivElement>(null)
+  const toggleRef = useRef<HTMLButtonElement>(null)
+  const itemRefs = useRef<Array<HTMLButtonElement | null>>([])
 
   const setOpen = (value: boolean) => {
     if (isControlled) {
@@ -60,6 +72,11 @@ export function HeaderMenu({
     } else {
       setInternalOpen(value)
     }
+  }
+
+  const closeMenu = () => {
+    setOpen(false)
+    toggleRef.current?.focus()
   }
 
   useEffect(() => {
@@ -75,29 +92,69 @@ export function HeaderMenu({
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [open, isControlled, lockMenuOpen])
 
+  useEffect(() => {
+    if (!open) return
+    requestAnimationFrame(() => {
+      itemRefs.current[0]?.focus()
+    })
+  }, [open])
+
   const handleReportIssue = () => {
-    setOpen(false)
+    closeMenu()
     onReportIssue?.()
   }
 
   const handleSignOut = () => {
-    setOpen(false)
+    closeMenu()
     onSignOut?.()
   }
 
   const handleReplayTutorial = () => {
-    setOpen(false)
+    closeMenu()
     onReplayTutorial?.()
   }
 
   const handleLanguageSettings = () => {
-    setOpen(false)
+    closeMenu()
     onLanguageSettings?.()
+  }
+
+  const handleMenuKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
+    const items = itemRefs.current.filter((item): item is HTMLButtonElement => item != null)
+    if (items.length === 0) return
+
+    const currentIndex = items.findIndex((item) => item === document.activeElement)
+
+    if (event.key === 'Escape') {
+      event.preventDefault()
+      closeMenu()
+      return
+    }
+
+    if (event.key === 'ArrowDown') {
+      event.preventDefault()
+      const nextIndex = currentIndex < 0 ? 0 : (currentIndex + 1) % items.length
+      items[nextIndex]?.focus()
+      return
+    }
+
+    if (event.key === 'ArrowUp') {
+      event.preventDefault()
+      const nextIndex =
+        currentIndex <= 0 ? items.length - 1 : currentIndex - 1
+      items[nextIndex]?.focus()
+    }
+  }
+
+  let itemIndex = 0
+  const registerItemRef = (index: number) => (element: HTMLButtonElement | null) => {
+    itemRefs.current[index] = element
   }
 
   return (
     <div ref={containerRef} className="relative flex flex-col items-end">
       <button
+        ref={toggleRef}
         type="button"
         onClick={() => {
           if (lockMenuOpen) return
@@ -116,11 +173,13 @@ export function HeaderMenu({
       {open && (
         <div
           role="menu"
-          className={`absolute right-0 top-full mt-4 w-[193px] overflow-hidden rounded-[4px] bg-white p-2 shadow-[0px_3px_14px_2px_rgba(0,0,0,0.12),0px_8px_10px_1px_rgba(0,0,0,0.14),0px_5px_5px_-3px_rgba(0,0,0,0.2)] ${elevateMenu ? 'z-[210]' : 'z-30'}`}
+          onKeyDown={handleMenuKeyDown}
+          className={`header-menu-dropdown absolute right-0 top-full mt-4 w-[193px] overflow-hidden rounded bg-[var(--color-fleet-surface)] p-2 shadow-[0px_3px_14px_2px_rgba(0,0,0,0.12),0px_8px_10px_1px_rgba(0,0,0,0.14),0px_5px_5px_-3px_rgba(0,0,0,0.2)] ${elevateMenu ? 'z-[210]' : 'z-30'}`}
         >
           <div className="flex flex-col gap-4 py-2">
             {onReplayTutorial && (
               <MenuItem
+                itemRef={registerItemRef(itemIndex++)}
                 icon={<GraduationCap className="h-6 w-6" />}
                 label={t('header.menu.replayTutorial')}
                 trackTag="header.menu.replay-tutorial"
@@ -128,6 +187,7 @@ export function HeaderMenu({
               />
             )}
             <MenuItem
+              itemRef={registerItemRef(itemIndex++)}
               icon={<AlertCircle className="h-6 w-6" />}
               label={t('header.menu.reportIssue')}
               trackTag="header.menu.report-issue"
@@ -135,12 +195,14 @@ export function HeaderMenu({
               onClick={handleReportIssue}
             />
             <MenuItem
+              itemRef={registerItemRef(itemIndex++)}
               icon={<Languages className="h-6 w-6" />}
               label={t('header.menu.languageSettings')}
               trackTag="header.menu.language-settings"
               onClick={handleLanguageSettings}
             />
             <MenuItem
+              itemRef={registerItemRef(itemIndex++)}
               icon={<LogOut className="h-6 w-6" />}
               label={t('header.menu.signOut')}
               trackTag="header.menu.sign-out"

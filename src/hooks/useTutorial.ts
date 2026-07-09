@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
+import { enterTutorialMode, exitTutorialMode } from '../utils/tutorialMode'
 import type { TutorialStep } from '../utils/tutorialSteps'
 
 export function hasCompletedTutorial(storageKey: string): boolean {
@@ -62,6 +63,14 @@ export function useTutorial({
       setStepIndex(0)
     }
   }, [autoStart, forceStart, storageKey])
+
+  useEffect(() => {
+    if (!active) return
+    enterTutorialMode()
+    return () => {
+      exitTutorialMode()
+    }
+  }, [active])
 
   const step = steps[stepIndex] ?? null
   const isFirst = stepIndex === 0

@@ -1,4 +1,5 @@
 import type { FlowContext, WorkflowSection } from '../types/flow'
+import { isTutorialModeActive } from './tutorialModeState'
 
 const STORAGE_KEY = 'remote-off.workflow.v3'
 
@@ -36,6 +37,8 @@ export function loadPersistedWorkflow(): PersistedWorkflow | null {
 }
 
 export function savePersistedWorkflow(patch: Partial<PersistedWorkflow>): void {
+  if (isTutorialModeActive()) return
+
   try {
     const current = loadPersistedWorkflow()
     const next: PersistedWorkflow = {
@@ -54,6 +57,14 @@ export function savePersistedWorkflow(patch: Partial<PersistedWorkflow>): void {
 export function clearPersistedWorkflow(): void {
   try {
     sessionStorage.removeItem(STORAGE_KEY)
+  } catch {
+    // ignore
+  }
+}
+
+export function restorePersistedWorkflow(snapshot: PersistedWorkflow): void {
+  try {
+    sessionStorage.setItem(STORAGE_KEY, JSON.stringify(snapshot))
   } catch {
     // ignore
   }

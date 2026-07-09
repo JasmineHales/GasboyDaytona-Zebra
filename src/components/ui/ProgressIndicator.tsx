@@ -22,53 +22,6 @@ export type ProgressIndicatorProps = {
   tone?: ProgressTone
 }
 
-export function ProgressIndicator({
-  step,
-  label,
-  description,
-  badgeVariant = 'active',
-  labelVariant = 'default',
-  showProgress = true,
-  progressPercent = 0,
-  totalSteps,
-}: ProgressIndicatorProps) {
-  const fill = Math.min(100, Math.max(0, progressPercent))
-  const showStepCount = totalSteps != null
-
-  return (
-    <div
-      data-accordion-scroll-anchor
-      className="fleet-progress"
-      role="group"
-      aria-label={`Step ${step}${totalSteps ? ` of ${totalSteps}` : ''}: ${label}, ${fill}% complete`}
-    >
-      <div className="fleet-progress__header">
-        <p className={`fleet-progress__label fleet-progress__label--${labelVariant}`}>
-          <span>{label}</span>
-          {showStepCount && (
-            <span className="fleet-progress__step-count">
-              ({step}/{totalSteps})
-            </span>
-          )}
-        </p>
-        {description && <p className="fleet-progress__description">{description}</p>}
-      </div>
-
-      {showProgress && (
-        <div
-          className="fleet-progress__track"
-          role="progressbar"
-          aria-valuemin={0}
-          aria-valuemax={100}
-          aria-valuenow={fill}
-          aria-label={`${label} progress`}
-        >
-          <div
-            className={`fleet-progress__fill fleet-progress__fill--${badgeVariant}`}
-            style={{ width: `${fill}%` }}
-          />
-        </div>
-      )}
-    </div>
-  )
+export function ProgressIndicator(_props: ProgressIndicatorProps) {
+  return null
 }
